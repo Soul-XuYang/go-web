@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>用户注册界面</title>
+    <link rel="stylesheet" href="/static/base.css" />
+</head>
+
+<body>
+    <div class="card">
+        <h1>创建账户</h1>
+        <p class="sub">请您填写以下信息以完成注册</p>
+
+        <form id="form">
+            <label>用户名</label>
+            <div class="input">
+                <input id="username" autocomplete="username" required autofocus />
+            </div>
+
+            <!-- 先“密码”，再“确认密码” -->
+            <label>密码</label>
+            <div class="input">
+                <input id="password" type="password" autocomplete="new-password" required />
+                <span class="toggle" id="togglePwd">显示</span>
+            </div>
+
+            <label>确认密码</label>
+            <div class="input">
+                <input id="confirm" type="password" autocomplete="new-password" required />
+                <span class="toggle" id="toggleConfirm">显示</span>
+            </div>
+
+            <div class="actions">
+                <button id="btn" type="submit">创建账号</button>
+                <div class="msg" id="msg"></div>
+            </div>
+        </form>
+
+        <div class="footer">
+            已有账号？<a href="/auth/login">去登录</a>
+        </div>
+    </div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const btn = $('#btn'), msg = $('#msg');
+        const username = $('#username'), password = $('#password'), confirm = $('#confirm');
+
+        // 显示/隐藏密码
+        const bindToggle = (inputEl, toggleEl) => {
+            toggleEl.onclick = () => {
+                const t = inputEl.type === 'password' ? 'text' : 'password';
+                inputEl.type = t;
+                toggleEl.textContent = t === 'password' ? '显示' : '隐藏';
+            };
+        };
+        bindToggle(password, $('#togglePwd'));
+        bindToggle(confirm, $('#toggleConfirm'));
+
+        document.getElementById('form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            msg.className = 'msg'; msg.textContent = '';
+
+            const u = username.value.trim();  //实际的密码
+            const p = password.value;
+            const c = confirm.value;  //确认密码
+
+            if (!u) { msg.classList.add('error'); msg.textContent = '请输入用户名'; return; }
+            if (p.length < 6) { msg.classList.add('error'); msg.textContent = '密码至少 6 位字符'; return; }
+            if (p !== c) { msg.classList.add('error'); msg.textContent = '两次输入的密码不一致'; return; }
+
+            btn.disabled = true; btn.textContent = '提交中...';
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // 只发后端需要的两个字段
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    msg.classList.add('error');
+                    msg.textContent = data.error || '注册失败';
+                } else {
+                    // 你的后端会返回 {"token":"Bearer ..."}
+                    localStorage.setItem('token', data.token);
+                    msg.classList.add('ok');
+                    msg.textContent = '注册成功，正在跳转...';
+                    location.href = '/dashboard';
+                }
+            } catch (_) {
+                msg.classList.add('error');
+                msg.textContent = '网络错误';
+            } finally {
+                btn.disabled = false; btn.textContent = '创建账号';
+            }
+        });
+    </script>
+</body>
+
+</html>

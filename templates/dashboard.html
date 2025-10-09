@@ -1,0 +1,31 @@
+<!-- 这是一个受例保护页的测试端 -->
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/static/base.css" />
+</head>
+
+<body>
+    <div class="card">
+        <h1>Dashboard</h1>
+        <p class="sub">本页面是示例受保护页</p>
+        <pre id="me" class="msg">加载中...</pre>
+        <div class="actions"><button id="logout">退出登录</button></div>
+    </div>
+    <script>
+        const t = localStorage.getItem('token');
+        if (!t) location.href = '/auth/login';
+        fetch('/api/me', { headers: { Authorization: t } })
+            .then(r => r.ok ? r.json() : Promise.reject(r))
+            .then(d => { document.getElementById('me').textContent = JSON.stringify(d, null, 2) })
+            .catch(() => location.href = '/auth/login');
+        document.getElementById('logout').onclick = () => {
+            localStorage.removeItem('token'); location.href = '/auth/login';
+        };
+    </script>
+</body>
+
+</html>

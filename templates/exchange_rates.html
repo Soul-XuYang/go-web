@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>汇率管理</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        /* 放大视觉与间距 */
+        html {
+            font-size: 18px;
+        }
+
+        body {
+            padding: 4vh 16px;
+        }
+
+        .card {
+            max-width: 1080px;
+            width: 100%;
+            padding: 36px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        .sub {
+            font-size: 1.1rem;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px
+        }
+
+        .user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .08)
+        }
+
+        .user .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--ok);
+            display: inline-block
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            align-items: center
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px
+        }
+
+        @media (max-width:960px) {
+            .grid {
+                grid-template-columns: 1fr 1fr
+            }
+        }
+
+        label {
+            font-size: 1rem
+        }
+
+        .input {
+            padding: 14px 16px
+        }
+
+        /* 输入框更大 */
+        .input input {
+            font-size: 1.05rem
+        }
+
+        .msg {
+            margin-top: 10px;
+            min-height: 1.2em
+        }
+
+        /* 表格更易读：粘性表头+条纹+悬停 */
+        .table-wrap {
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 12px;
+            overflow: hidden
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 1.05rem
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: rgba(0, 0, 0, .15);
+            backdrop-filter: blur(4px);
+            color: var(--muted);
+            font-weight: 800;
+            text-align: left;
+            padding: 14px 16px;
+        }
+
+        tbody td {
+            padding: 14px 16px;
+            border-top: 1px solid rgba(255, 255, 255, .06)
+        }
+
+        tbody tr:nth-child(odd) {
+            background: rgba(255, 255, 255, .02)
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, .05)
+        }
+
+        .pill {
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .1);
+            font-weight: 700
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="toolbar">
+            <div>
+                <h1>汇率管理</h1>
+                <div class="sub">查看已有汇率、并新增一条记录</div>
+            </div>
+            <div class="actions">
+                <div class="user">
+                    <span class="dot"></span>
+                    <span id="username">加载中…</span>
+                </div>
+                <button id="refresh" class="pill">刷新</button>
+                <button id="logout" class="pill">退出登录</button>
+            </div>
+        </div>
+
+        <!-- 新增表单 -->
+        <form id="form">
+            <div class="grid">
+                <div>
+                    <label>源货币（FromCurrency）</label>
+                    <div class="input"><input id="from" placeholder="如：USD" maxlength="10" required /></div>
+                </div>
+                <div>
+                    <label>目标货币（ToCurrency）</label>
+                    <div class="input"><input id="to" placeholder="如：CNY" maxlength="10" required /></div>
+                </div>
+                <div>
+                    <label>汇率（Rate）</label>
+                    <div class="input"><input id="rate" type="number" step="0.00000001" placeholder="如：7.1234"
+                            required /></div>
+                </div>
+                <div style="display:flex;align-items:flex-end">
+                    <button id="btn" type="submit">新增</button>
+                </div>
+            </div>
+            <div id="msg" class="msg"></div>
+        </form>
+
+        <!-- 列表 -->
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:80px">#</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Rate</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody">
+                    <tr>
+                        <td colspan="5" class="muted">加载中…</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const tbody = $('#tbody'), msg = $('#msg'), btn = $('#btn'), usernameEl = $('#username');
+
+        // 前端最小守卫：没有 token 就回登录
+        const token = localStorage.getItem('token');
+        if (!token) location.href = '/auth/login';
+
+        // 1) 拉用户名（GET /api/me）
+        async function loadMe() {
+            try {
+                const res = await fetch('/api/me', { headers: { Authorization: token } });
+                if (!res.ok) throw new Error('unauthorized');
+                const data = await res.json();
+                usernameEl.textContent = data.username || '未知用户';
+            } catch {
+                // token 失效
+                localStorage.removeItem('token');
+                location.href = '/auth/login';
+            }
+        }
+
+        // 2) 拉汇率列表
+        async function loadRates() {
+            tbody.innerHTML = `<tr><td colspan="5" class="muted">加载中…</td></tr>`;
+            try {
+                const res = await fetch('/api/exchangeRates', { headers: { Authorization: token } });
+                if (!res.ok) throw new Error('加载失败');
+                const list = await res.json();
+
+                if (!Array.isArray(list) || list.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="muted">暂无数据</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = list.map((it, idx) => {
+                    // 兼容不同 json 标签风格
+                    const from = it.FromCurrency ?? it.from_currency ?? it.from ?? '';
+                    const to = it.ToCurrency ?? it.to_currency ?? it.to ?? '';
+                    const rate = it.Rate ?? it.rate ?? '';
+                    const date = it.Date ?? it.date ?? '';
+                    const d = typeof date === 'string' && date ? date : (date ? new Date(date).toISOString() : '');
+                    return `
+            <tr>
+              <td>${idx + 1}</td>
+              <td>${from}</td>
+              <td>${to}</td>
+              <td>${rate}</td>
+              <td>${d}</td>
+            </tr>`;
+                }).join('');
+            } catch {
+                tbody.innerHTML = `<tr><td colspan="5" class="badge-err">加载失败</td></tr>`;
+            }
+        }
+
+        // 3) 新增一条
+        $('#form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            msg.className = 'msg'; msg.textContent = '';
+
+            const from = $('#from').value.trim();
+            const to = $('#to').value.trim();
+            const rate = $('#rate').value;
+
+            if (!from || !to) { msg.classList.add('error'); msg.textContent = '请输入 From/To'; return; }
+            if (!rate || Number(rate) <= 0) { msg.classList.add('error'); msg.textContent = '汇率需为正数'; return; }
+
+            btn.disabled = true; btn.textContent = '提交中…';
+            try {
+                const res = await fetch('/api/exchangeRates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: token
+                    },
+                    // ↓↓↓ 按你后端的 JSON 标签调整；这里默认用大写开头（你之前示例）
+                    body: JSON.stringify({ FromCurrency: from, ToCurrency: to, Rate: Number(rate) })
+                });
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    msg.classList.add('error'); msg.textContent = data.error || '新增失败';
+                    return;
+                }
+                msg.classList.add('ok'); msg.textContent = '新增成功';
+                $('#rate').value = '';
+                loadRates();
+            } catch {
+                msg.classList.add('error'); msg.textContent = '网络错误';
+            } finally {
+                btn.disabled = false; btn.textContent = '新增';
+            }
+        });
+
+        // 刷新 / 退出
+        $('#refresh').onclick = () => { loadRates(); };
+        $('#logout').onclick = () => {
+            localStorage.removeItem('token');
+            location.href = '/auth/login';
+        };
+
+        // 初始化
+        loadMe();
+        loadRates();
+    </script>
+</body>
+
+</html>

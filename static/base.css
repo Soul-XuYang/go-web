@@ -1,0 +1,187 @@
+:root {
+    --bg: #0b1020;
+    --card: #111b2e;
+    --text: #e8eefc;
+    --muted: #9fb0d1;
+    --primary: #4da3ff;
+    --primary-strong: #2a7fe2;
+    --danger: #ff6b6b;
+    --ok: #3ddc97;
+    --ring: 0 0 0 3px rgba(77, 163, 255, .25);
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #f7f9fe;
+        --card: #ffffff;
+        --text: #14213d;
+        --muted: #6b7a99;
+        --primary: #1f7ae0;
+        --primary-strong: #1461b8;
+        --danger: #d64545;
+        --ok: #14b88a;
+        --ring: 0 0 0 3px rgba(31, 122, 224, .18);
+    }
+}
+
+* {
+    box-sizing: border-box
+}
+
+html,
+body {
+    height: 100%
+}
+
+body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
+    color: var(--text);
+    background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(77, 163, 255, .15), transparent 60%),
+        radial-gradient(900px 500px at 110% 10%, rgba(61, 220, 151, .12), transparent 55%),
+        var(--bg);
+    display: grid;
+    place-items: center;
+    padding: 6vh 16px;
+}
+
+.card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card);
+    border: 1px solid rgba(255, 255, 255, .06);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .25);
+    animation: pop .25s ease-out;
+}
+
+@keyframes pop {
+    from {
+        transform: translateY(6px);
+        opacity: .0
+    }
+
+    to {
+        transform: none;
+        opacity: 1
+    }
+}
+
+h1 {
+    margin: 0 0 6px;
+    font-size: 1.6rem
+}
+
+p.sub {
+    margin: 0 0 16px;
+    color: var(--muted);
+    font-size: .95rem
+}
+
+label {
+    display: block;
+    font-size: .9rem;
+    margin: 14px 0 6px
+}
+
+.input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.input:focus-within {
+    outline: none;
+    box-shadow: var(--ring);
+    border-color: transparent;
+}
+
+.input input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    color: var(--text);
+    font-size: 1rem;
+}
+
+a {
+    color: var(--primary);
+    text-decoration: none
+}
+
+a:hover {
+    text-decoration: underline
+}
+
+.actions {
+    margin-top: 16px
+}
+
+button {
+    width: 100%;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-weight: 600;
+    background: linear-gradient(180deg, var(--primary), var(--primary-strong));
+    color: white;
+    cursor: pointer;
+    transition: transform .03s ease;
+}
+
+button:active {
+    transform: translateY(1px)
+}
+
+button[disabled] {
+    opacity: .7;
+    cursor: not-allowed
+}
+
+.row {
+    display: flex;
+    gap: 10px
+}
+
+.row>* {
+    flex: 1
+}
+
+.msg {
+    margin-top: 10px;
+    font-size: .92rem
+}
+
+.msg.error {
+    color: var(--danger)
+}
+
+.msg.ok {
+    color: var(--ok)
+}
+
+.footer {
+    margin-top: 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: .92rem
+}
+
+.toggle {
+    font-size: .85rem;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+}
+
+.small {
+    font-size: .85rem;
+    color: var(--muted)
+}

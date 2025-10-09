@@ -1,6 +1,7 @@
 package config // 建立包
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/spf13/viper"
@@ -19,7 +20,7 @@ type Config struct { //标明这个配置文件是可以全局使用的
 	}
 }
 
-var AppConfig *Config //创建配置文件-指针全局可以修改并且避免拷贝
+var AppConfig *Config //创建配置文件-指针全局可以修改并且避免拷贝-配置句柄
 
 // 使用viper读取配置文件
 func InitConfig() {
@@ -36,9 +37,11 @@ func InitConfig() {
 		log.Fatalf("Error unmarshalling config file: %v", err)
 	}
 	initDB()
+	runMigrations()
+	printURL()
 }
 func GetPort() string {
-	if AppConfig == nil || AppConfig.App.Port == "" {
+	if AppConfig == nil || AppConfig.App.Port == "" { //要么配置为空要么端口无
 		log.Println("Warning: Port is not set in config file, using default port 8080")
 		return ":8080"
 	}
@@ -48,4 +51,7 @@ func GetPort() string {
 		port = ":" + port
 	}
 	return port
+}
+func printURL() {
+	fmt.Printf("Login:http://localhost%s/auth/login\n", GetPort())
 }
