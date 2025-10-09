@@ -26,3 +26,4 @@ func GenerateJWT(username string) (string, error) {
 	signedToken, err := token.SignedString([]byte("secret"))
 	return "Bearer " + signedToken, err // 注意 Bearer 后面要有空格
 }
+

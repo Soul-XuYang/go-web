@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"project/config"
 	"project/router"
-
+    "log"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,6 +13,7 @@ type Info struct {
 }
 
 func main() {
+	log.Println("| Main app has runned:")
 	config.InitConfig() // 初始化配置-只对包里的全局变量初始化
 	fmt.Printf("Port%s\n", config.AppConfig.App.Port)
 	r := router.SetupRouter()              // 路由设置
