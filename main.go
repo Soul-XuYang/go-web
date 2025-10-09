@@ -21,5 +21,4 @@ func main() {
 	})
 	port := config.GetPort() // 获取端口-这里config是包名
 	r.Run(port)              // 监听端口并启动服务
-
 }
