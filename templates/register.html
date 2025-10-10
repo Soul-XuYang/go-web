@@ -89,7 +89,7 @@
                     localStorage.setItem('token', data.token);
                     msg.classList.add('ok');
                     msg.textContent = '注册成功，正在跳转...';
-                    location.href = '/dashboard';
+                    location.href = '/page/shell';
                 }
             } catch (_) {
                 msg.classList.add('error');

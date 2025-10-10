@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"project/global"
 
@@ -19,5 +20,5 @@ func initRedis() {
 
 	}
 	global.RedisDB = RedisClient
-	log.Println("Redis DataBase connection success!")
+	fmt.Println("2. Redis DataBase connection success!")
 }

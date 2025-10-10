@@ -20,17 +20,26 @@ func SetupRouter() *gin.Engine {
 	auth := r.Group("/api/auth") //给出路由组的路径
 	auth.POST("/login", controllers.Login)
 	auth.POST("/register", controllers.Register)
+    auth.POST("/logout", controllers.Logout) 
 
-	// 分组
-	r.GET("/rates", func(c *gin.Context) {
-		c.HTML(200, "exchange_rates.html", nil)
-	})
-	api := r.Group("/api")
-	api.Use(middlewares.AuthMiddleWare())
+    page := r.Group("/page", middlewares.AuthMiddleWare())  //也是需要登录
+	{
+	    page.GET("/shell", controllers.ShellPage)
+	    page.GET("/rates", func(c *gin.Context) { c.HTML(200, "exchange_rates.html", nil) })
+	}
+
+	// 受保护的 API（数据接口，需要登录）
+	api := r.Group("/api", middlewares.AuthMiddleWare())
 	{
 		api.GET("/me", controllers.GetUserName)
+
 		api.GET("/exchangeRates", controllers.GetExchangeRates)
 		api.POST("/exchangeRates", controllers.CreateExchangeRate)
+
+		// 以后文章模块也放这里，比如：
+		// api.GET("/articles", controllers.ListMyArticles)
+		// api.POST("/articles", controllers.CreateArticle)
+		// ...
 	}
 
 	return r //返回路由组

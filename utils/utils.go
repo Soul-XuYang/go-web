@@ -11,7 +11,7 @@ import (
 )
 
 const cipher_number = 12 //自动识别类型
-const expire_hours = 72
+const Expire_hours = 72
 
 func HashPassword(pwd string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(pwd), cipher_number)
@@ -21,7 +21,7 @@ func GenerateJWT(username string) (string, error) {
 	// 用 MapClaims 时，直接传入 jwt.MapClaims{...}
 	claims := jwt.MapClaims{
 		"username": username,
-		"exp":      time.Now().Add(time.Duration(expire_hours) * time.Hour).Unix(), // 过期时间（秒）
+		"exp":      time.Now().Add(time.Duration(Expire_hours) * time.Hour).Unix(), // 过期时间（秒）
 		"iat":      time.Now().Unix(),                                              // 签发时间（可选）
 		"nbf":      time.Now().Unix(),                                              // 生效时间（可选）
 	}

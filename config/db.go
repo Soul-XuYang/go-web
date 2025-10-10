@@ -25,7 +25,7 @@ func initDB() { //注意这个是小写只能在当前包使用，大写才能�
 	sqlDB.SetMaxOpenConns(AppConfig.Database.MaxOpenConns)
 	sqlDB.SetConnMaxLifetime(time.Duration(AppConfig.Database.ConnMaxLifetimeHours) * time.Hour) // 设置最大连接时间,连接1h后就断开了连接
 	global.DB = db
-	fmt.Println("DataBase connection success!")
+	fmt.Println("1. DataBase connection success!")
 }
 func runMigrations() {
 	if err := global.DB.AutoMigrate(

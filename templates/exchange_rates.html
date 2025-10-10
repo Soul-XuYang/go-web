@@ -7,7 +7,7 @@
     <title>汇率管理</title>
     <link rel="stylesheet" href="/static/base.css" />
     <style>
-        /* 放大视觉与间距 */
+        /* 只做轻布局与可读性增强，不改变 base.css 控件风格 */
         html {
             font-size: 18px;
         }
@@ -19,23 +19,15 @@
         .card {
             max-width: 1080px;
             width: 100%;
+            margin: 0 auto;
             padding: 36px;
-        }
-
-        h1 {
-            font-size: 2rem;
-            margin: 0;
-        }
-
-        .sub {
-            font-size: 1.1rem;
         }
 
         .toolbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 22px
+            margin-bottom: 22px;
         }
 
         .user {
@@ -46,7 +38,7 @@
             padding: 10px 14px;
             border-radius: 999px;
             background: rgba(255, 255, 255, .06);
-            border: 1px solid rgba(255, 255, 255, .08)
+            border: 1px solid rgba(255, 255, 255, .08);
         }
 
         .user .dot {
@@ -54,58 +46,52 @@
             height: 10px;
             border-radius: 50%;
             background: var(--ok);
-            display: inline-block
+            display: inline-block;
         }
 
         .actions {
             display: flex;
             gap: 12px;
-            align-items: center
+            align-items: center;
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 14px
+            gap: 14px;
         }
 
         @media (max-width:960px) {
             .grid {
-                grid-template-columns: 1fr 1fr
+                grid-template-columns: 1fr 1fr;
             }
         }
 
-        label {
-            font-size: 1rem
-        }
-
         .input {
-            padding: 14px 16px
+            padding: 14px 16px;
         }
 
-        /* 输入框更大 */
         .input input {
-            font-size: 1.05rem
+            font-size: 1.05rem;
         }
 
         .msg {
             margin-top: 10px;
-            min-height: 1.2em
+            min-height: 1.2em;
         }
 
-        /* 表格更易读：粘性表头+条纹+悬停 */
         .table-wrap {
             margin-top: 20px;
             border: 1px solid rgba(255, 255, 255, .08);
             border-radius: 12px;
-            overflow: hidden
+            overflow: hidden;
         }
 
         table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
-            font-size: 1.05rem
+            font-size: 1.05rem;
         }
 
         thead th {
@@ -121,15 +107,15 @@
 
         tbody td {
             padding: 14px 16px;
-            border-top: 1px solid rgba(255, 255, 255, .06)
+            border-top: 1px solid rgba(255, 255, 255, .06);
         }
 
         tbody tr:nth-child(odd) {
-            background: rgba(255, 255, 255, .02)
+            background: rgba(255, 255, 255, .02);
         }
 
         tbody tr:hover {
-            background: rgba(255, 255, 255, .05)
+            background: rgba(255, 255, 255, .05);
         }
 
         .pill {
@@ -137,16 +123,37 @@
             border-radius: 999px;
             background: rgba(255, 255, 255, .06);
             border: 1px solid rgba(255, 255, 255, .1);
-            font-weight: 700
+            font-weight: 700;
+        }
+
+        /* 右上角固定的“返回主菜单”按钮 */
+        .back-home {
+            position: fixed;
+            right: 16px;
+            top: 16px;
+            z-index: 1000;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: #111827;
+            color: #fff;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+        }
+
+        .back-home:active {
+            opacity: .9;
         }
     </style>
 </head>
 
 <body>
+    <!-- 返回主菜单（右上角固定） -->
+    <button class="back-home" id="backHome">返回主菜单</button>
+
     <div class="card">
         <div class="toolbar">
             <div>
-                <h1>汇率管理</h1>
+                <h1 style="margin:0">汇率管理</h1>
                 <div class="sub">查看已有汇率、并新增一条记录</div>
             </div>
             <div class="actions">
@@ -207,29 +214,41 @@
         const $ = s => document.querySelector(s);
         const tbody = $('#tbody'), msg = $('#msg'), btn = $('#btn'), usernameEl = $('#username');
 
-        // 前端最小守卫：没有 token 就回登录
-        const token = localStorage.getItem('token');
-        if (!token) location.href = '/auth/login';
+        // —— 双重保险：localStorage 的 token（若没有，仍可依赖 Cookie） ——
+        function buildAuthHeader() {
+            const raw = localStorage.getItem('token');
+            if (!raw) return {};
+            const token = raw.toLowerCase().startsWith('bearer ') ? raw : ('Bearer ' + raw);
+            return { Authorization: token };
+        }
 
-        // 1) 拉用户名（GET /api/me）
-        async function loadMe() {
-            try {
-                const res = await fetch('/api/me', { headers: { Authorization: token } });
-                if (!res.ok) throw new Error('unauthorized');
-                const data = await res.json();
-                usernameEl.textContent = data.username || '未知用户';
-            } catch {
-                // token 失效
+        async function authFetch(url, opts = {}) {
+            const headers = Object.assign({ 'Content-Type': 'application/json' }, buildAuthHeader(), opts.headers || {});
+            const res = await fetch(url, { ...opts, headers });
+            if (res.status === 401) {
                 localStorage.removeItem('token');
                 location.href = '/auth/login';
+                throw new Error('Unauthorized');
+            }
+            return res;
+        }
+
+        // 1) 用户名
+        async function loadMe() {
+            try {
+                const res = await authFetch('/api/me');
+                const data = await res.json().catch(() => ({}));
+                usernameEl.textContent = data.username || '未知用户';
+            } catch {
+                // 已在 authFetch 兜底
             }
         }
 
-        // 2) 拉汇率列表
+        // 2) 列表
         async function loadRates() {
             tbody.innerHTML = `<tr><td colspan="5" class="muted">加载中…</td></tr>`;
             try {
-                const res = await fetch('/api/exchangeRates', { headers: { Authorization: token } });
+                const res = await authFetch('/api/exchangeRates');
                 if (!res.ok) throw new Error('加载失败');
                 const list = await res.json();
 
@@ -238,19 +257,26 @@
                     return;
                 }
                 tbody.innerHTML = list.map((it, idx) => {
-                    // 兼容不同 json 标签风格
-                    const from = it.FromCurrency ?? it.from_currency ?? it.from ?? '';
-                    const to = it.ToCurrency ?? it.to_currency ?? it.to ?? '';
+                    // 兼容字段名（含历史拼写 FromCurreny/ToCurreny）
+                    const from =
+                        it.FromCurrency ?? it.from_currency ?? it.fromCurrency ?? it.from ??
+                        it.FromCurreny ?? it.fromCurreny ?? '';
+
+                    const to =
+                        it.ToCurrency ?? it.to_currency ?? it.toCurrency ?? it.to ??
+                        it.ToCurreny ?? it.toCurreny ?? '';
+
                     const rate = it.Rate ?? it.rate ?? '';
-                    const date = it.Date ?? it.date ?? '';
-                    const d = typeof date === 'string' && date ? date : (date ? new Date(date).toISOString() : '');
+                    const rawDate = it.Date ?? it.date ?? '';
+                    const dateStr = rawDate ? new Date(rawDate).toLocaleString() : '';
+
                     return `
             <tr>
               <td>${idx + 1}</td>
               <td>${from}</td>
               <td>${to}</td>
               <td>${rate}</td>
-              <td>${d}</td>
+              <td>${dateStr}</td>
             </tr>`;
                 }).join('');
             } catch {
@@ -258,13 +284,13 @@
             }
         }
 
-        // 3) 新增一条
+        // 3) 新增
         $('#form').addEventListener('submit', async (e) => {
             e.preventDefault();
             msg.className = 'msg'; msg.textContent = '';
 
-            const from = $('#from').value.trim();
-            const to = $('#to').value.trim();
+            const from = $('#from').value.trim().toUpperCase();
+            const to = $('#to').value.trim().toUpperCase();
             const rate = $('#rate').value;
 
             if (!from || !to) { msg.classList.add('error'); msg.textContent = '请输入 From/To'; return; }
@@ -272,13 +298,9 @@
 
             btn.disabled = true; btn.textContent = '提交中…';
             try {
-                const res = await fetch('/api/exchangeRates', {
+                const res = await authFetch('/api/exchangeRates', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: token
-                    },
-                    // ↓↓↓ 按你后端的 JSON 标签调整；这里默认用大写开头（你之前示例）
+                    headers: { 'Content-Type': 'application/json' }, // Authorization 已在 authFetch 加
                     body: JSON.stringify({ FromCurrency: from, ToCurrency: to, Rate: Number(rate) })
                 });
                 const data = await res.json().catch(() => ({}));
@@ -288,7 +310,8 @@
                     return;
                 }
                 msg.classList.add('ok'); msg.textContent = '新增成功';
-                $('#rate').value = '';
+                // ★ 提交成功后清空三个输入框，重新加载列表
+                $('#from').value = ''; $('#to').value = ''; $('#rate').value = '';
                 loadRates();
             } catch {
                 msg.classList.add('error'); msg.textContent = '网络错误';
@@ -297,12 +320,14 @@
             }
         });
 
-        // 刷新 / 退出
-        $('#refresh').onclick = () => { loadRates(); };
-        $('#logout').onclick = () => {
+        // 4) 刷新 / 退出 / 返回主菜单
+        $('#refresh').onclick = () => loadRates();
+        $('#logout').onclick = async () => {
+            await fetch('/api/auth/logout', { method: 'POST' }); // 服务端清 Cookie（若实现了）
             localStorage.removeItem('token');
             location.href = '/auth/login';
         };
+        $('#backHome').onclick = () => { location.href = '/page/shell'; };
 
         // 初始化
         loadMe();

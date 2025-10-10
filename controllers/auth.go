@@ -7,6 +7,7 @@ import (
 	"project/global"
 	"project/models"
 	"project/utils"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -56,7 +57,7 @@ func Register(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "generate token failed"})
 		return
 	}
-
+	utils.SetAuthCookie(c, token, utils.Expire_hours*time.Hour) //给上下文签发token和
 	c.JSON(http.StatusCreated, gin.H{"token": token})
 }
 
@@ -89,6 +90,12 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "generate token failed"})
 		return
 	}
-
+	utils.SetAuthCookie(c, token, utils.Expire_hours*time.Hour)
 	c.JSON(http.StatusOK, gin.H{"token": token})
+}
+
+// controllers/auth.go
+func Logout(c *gin.Context) {
+	utils.ClearAuthCookie(c)
+	c.JSON(200, gin.H{"ok": true})
 }

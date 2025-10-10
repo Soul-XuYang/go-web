@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>控制面板</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        /* 仅做轻布局与点缀，不覆盖 base.css 的控件风格 */
+        :root {
+            --muted: #94a3b8;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        /* 顶部：标题 + 漂亮的用户展示 */
+        .top {
+            max-width: 960px;
+            margin: 20px auto 12px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .04);
+        }
+
+        .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .8rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+        }
+
+        .uname {
+            color: var(--muted);
+            font-size: .95rem;
+        }
+
+        /* 中心卡片区：两张大卡片居中排列 */
+        .wrap {
+            max-width: 960px;
+            margin: 28px auto;
+            padding: 0 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        @media (max-width:860px) {
+            .wrap {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            border: 1px solid rgba(255, 255, 255, .12);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, .03);
+            padding: 24px 20px;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, .16);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .card h2 {
+            margin: 0 0 6px;
+            font-size: 1.18rem;
+        }
+
+        .sub {
+            margin: 0 0 6px;
+            color: var(--muted);
+        }
+
+        /* 大按钮：和登录/注册一致，只调尺寸 */
+        .card .actions {
+            margin-top: 8px;
+        }
+
+        .card .actions button {
+            min-width: 180px;
+            height: 42px;
+            padding: 0 16px;
+            border-radius: 12px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        /* 底部小退出按钮（居中，小巧） */
+        .footer {
+            max-width: 960px;
+            margin: 6px auto 24px;
+            padding: 0 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        #logout {
+            height: 32px;
+            padding: 0 12px;
+            min-width: 96px;
+            border-radius: 999px;
+            font-size: .92rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 顶部：标题 + 用户名（小头像圆点 + 名称） -->
+    <header class="top">
+        <div class="brand">
+            <h1>主菜单</h1>
+        </div>
+        <div class="userbox">
+            <div class="avatar" id="avatar">U</div>
+            <span class="uname" id="username">加载中…</span>
+        </div>
+    </header>
+
+    <!-- 中间：两张入口卡片（我的文章 / 汇率表） -->
+    <main class="wrap">
+        <section class="card">
+            <h2>我的文章</h2>
+            <p class="sub">可进入个人的文章工作区，用户可进行创建、查看、编辑等操作。</p>
+            <div class="actions">
+                <button id="goArticles" class="btn-primary">进入个人文章页</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>汇率表</h2>
+            <p class="sub">公共数据入口，用户可进入汇率表工作区进行查看与新增。</p>
+            <div class="actions">
+                <button id="goRates">进入公共汇率页</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部：小按钮（退出登录） -->
+    <div class="footer">
+        <button id="logout">退出登录</button>
+    </div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+
+        // —— 双重保险：本地 token（如果有）+ Cookie ——
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            if (!t) return null;
+            return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t);
+        }
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign(
+                { 'Content-Type': 'application/json' },
+                token ? { 'Authorization': token } : {},
+                opts.headers || {}
+            );
+            const r = await fetch(url, { ...opts, headers });
+            if (r.status === 401) {
+                localStorage.removeItem('token');
+                location.href = '/auth/login';
+                throw new Error('Unauthorized');
+            }
+            return r;
+        }
+
+        // 生成头像字母（用户名首字母）
+        function initialOf(name) {
+            if (!name) return 'U';
+            const s = String(name).trim();
+            return s ? s[0].toUpperCase() : 'U';
+        }
+
+        // 顶部用户名
+        async function loadMe() {
+            try {
+                const r = await authFetch('/api/me');
+                const d = await r.json().catch(() => ({}));
+                const uname = d.username || 'unknown';
+                $('#username').textContent = uname;
+                $('#avatar').textContent = initialOf(uname);
+            } catch { }
+        }
+
+        // 跳转
+        const gotoArticles = () => location.href = '/articles';
+        const gotoRates = () => location.href = '/page/rates';
+        $('#goArticles').onclick = gotoArticles;
+        $('#goRates').onclick = gotoRates;
+
+        // 退出登录：清服务端 Cookie + 本地 token
+        $('#logout').onclick = async () => {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            localStorage.removeItem('token');
+            location.href = '/auth/login';
+        };
+
+        // 首屏
+        loadMe();
+    </script>
+</body>
+
+</html>
