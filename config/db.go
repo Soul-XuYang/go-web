@@ -33,6 +33,6 @@ func runMigrations() {
 		&models.Article{},
 		&models.ExchangeRate{},
 	); err != nil {
-		log.Fatalf("auto migrate error: %v", err)
+		log.Fatalf("Auto migrate error: %v", err)
 	}
 }

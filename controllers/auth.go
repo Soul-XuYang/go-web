@@ -7,7 +7,8 @@ import (
 	"project/global"
 	"project/models"
 	"project/utils"
-
+    "errors"
+	"gorm.io/gorm"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -29,10 +30,16 @@ func Register(c *gin.Context) { //对应的注册函数
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	// 自动判断是否唯一的用户数据-gorm要大于1.24
 	if err := global.DB.Create(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+       if errors.Is(err, gorm.ErrDuplicatedKey) {
+        c.JSON(http.StatusConflict, gin.H{"error": "username has already existed"})
+        return
+       }
+    c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+    return
+    }
+
 	c.JSON(200, gin.H{"token": token}) //返回token数据-标明创建成功
 	fmt.Println(user.Username + "has created succseeful !")
 

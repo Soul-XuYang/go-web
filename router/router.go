@@ -32,5 +32,6 @@ func SetupRouter() *gin.Engine {
 		api.GET("/exchangeRates", controllers.GetExchangeRates)
 		api.POST("/exchangeRates", controllers.CreateExchangeRate)
 	}
+
 	return r //返回路由组
 }

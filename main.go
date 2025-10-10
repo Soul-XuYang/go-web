@@ -27,3 +27,5 @@ func main() {
 //   login的测试数据
 //   "username": "wxy",
 //   "password": "123456"
+//   "username": "inkkaplum123456",
+//   "password": "123456"
