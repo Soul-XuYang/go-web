@@ -18,6 +18,11 @@ type Config struct { //标明这个配置文件是可以全局使用的
 		MaxOpenConns         int
 		ConnMaxLifetimeHours int
 	}
+	Redis struct {
+		Addr     string
+		DB       int
+		Password string
+	}
 }
 
 var AppConfig *Config //创建配置文件-指针全局可以修改并且避免拷贝-配置句柄
@@ -37,6 +42,7 @@ func InitConfig() {
 		log.Fatalf("Error unmarshalling config file: %v", err)
 	}
 	initDB()
+	initRedis()
 	runMigrations()
 	printURL()
 }
