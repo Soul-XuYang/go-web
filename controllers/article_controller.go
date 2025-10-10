@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"project/global"
 	"project/models"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 // 创建对应的DTO
@@ -30,6 +32,7 @@ type ArticleResp struct { //json传入
 	Created int64  `json:"created"`
 }
 
+// 三个参数
 func CreateArticle(c *gin.Context) {
 	user_id := c.GetUint("user_id") // 中间件放进去的当前用户ID
 
@@ -105,4 +108,20 @@ func UpdateArticle(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, out)
+}
+
+// 测试代码
+func Get_ArticlesByID(c *gin.Context) {
+	id := c.Param("id")
+	var article models.Article
+	if err := global.DB.Where("id = ?", id).First(&article); err != nil {
+		if errors.Is(err.Error, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error})
+			return
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error})
+			return
+		}
+	}
+	c.JSON(200, article)
 }

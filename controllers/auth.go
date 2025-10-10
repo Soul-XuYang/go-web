@@ -2,47 +2,62 @@ package controllers
 
 // auth 身份认证 -包含各种对应路由的操作函数
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"project/global"
 	"project/models"
 	"project/utils"
-    "errors"
-	"gorm.io/gorm"
+
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
-func Register(c *gin.Context) { //对应的注册函数
-	var user models.Users                           // 创建一个变量
-	if err := c.ShouldBindJSON(&user); err != nil { // 请求体是Body，对应的数据传入user中
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()}) // 客户端的异常请求
+// DTO数据
+type RegisterDTO struct {
+	Username string `json:"username" binding:"required,alphanum,min=3,max=32"`
+	Password string `json:"password" binding:"required,min=6,max=64"`
+}
+
+type LoginDTO struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+func Register(c *gin.Context) {
+	var in RegisterDTO //注册的DTO
+	if err := c.ShouldBindJSON(&in); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	hashedPwd, err := utils.HashPassword(user.Password)
+
+	uname := in.Username
+
+	hash, err := utils.HashPassword(in.Password) // 对其加密
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "hash password failed"})
+		return
 	}
-	user.Password = hashedPwd
-	// 注意这里只有密码完成之后才可以进行JWT操作
-	token, err := utils.GenerateJWT(user.Username)
-	if err != nil {
+
+	u := models.Users{Username: uname, Password: hash} //赋值
+
+	if err := global.DB.Create(&u).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			c.JSON(http.StatusConflict, gin.H{"error": "username has already existed"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	// 自动判断是否唯一的用户数据-gorm要大于1.24
-	if err := global.DB.Create(&user).Error; err != nil {
-       if errors.Is(err, gorm.ErrDuplicatedKey) {
-        c.JSON(http.StatusConflict, gin.H{"error": "username has already existed"})
-        return
-       }
-    c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-    return
-    }
 
-	c.JSON(200, gin.H{"token": token}) //返回token数据-标明创建成功
-	fmt.Println(user.Username + "has created succseeful !")
+	// 建议：写库成功后再签发JWT
+	token, err := utils.GenerateJWT(u.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "generate token failed"})
+		return
+	}
 
+	c.JSON(http.StatusCreated, gin.H{"token": token})
 }
 
 func CheckPassword(hash string, pwd string) bool {
@@ -50,29 +65,30 @@ func CheckPassword(hash string, pwd string) bool {
 	return err == nil
 }
 func Login(c *gin.Context) {
-	var input struct {
-		Username string `json:"username"` //这里的标注是设立json的标签
-		Password string `json:"password"`
-	}
-	// ShouldBind 会根据 Content-Type 自动选解析器（JSON/Form…）
-	if err := c.ShouldBindJSON(&input); err != nil { //这里是把请求体的JSON数据绑定到input里
-		c.JSON(http.StatusBadRequest, gin.H{"error:": err.Error()})
+	var in LoginDTO
+	if err := c.ShouldBindJSON(&in); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	var user models.Users // 创建一个用户对象
-	// 传入输入的用户 First是指按主键升序取第一个记录 -SELECT * FROM users WHERE username = ? ORDER BY id ASC LIMIT 1;GORM框架操作
-	if err := global.DB.Where("username = ?", input.Username).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, "This user does not exist!")
-	}
-
-	if !CheckPassword(user.Password, input.Password) {
-		c.JSON(http.StatusUnauthorized, gin.H{"error:": "Wrong Password!"})
+	uname := in.Username
+	var user models.Users
+	if err := global.DB.Where("username = ?", uname).First(&user).Error; err != nil {
+		// 不区分“用户不存在/密码错误”，统一提示，避免枚举用户名
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		return
 	}
-	token, _ := utils.GenerateJWT(user.Username) // 生成对应JWT的Token返回给客户端
-	c.JSON(200, gin.H{"token": token})
-	fmt.Println(input.Username + " has logined successful!")
+
+	if !CheckPassword(user.Password, in.Password) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
+		return
+	}
+
+	token, err := utils.GenerateJWT(user.Username)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "generate token failed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token})
 }
-
-// 注意json大小写不关注
