@@ -124,9 +124,10 @@
             background: rgba(255, 255, 255, .06);
             border: 1px solid rgba(255, 255, 255, .1);
             font-weight: 700;
+            cursor: pointer;
         }
 
-        /* 右上角固定的“返回主菜单”按钮 */
+        /* 右上角固定“返回主菜单”按钮 —— 仅保留布局，色彩从“新增”同步 */
         .back-home {
             position: fixed;
             right: 16px;
@@ -134,13 +135,31 @@
             z-index: 1000;
             padding: 10px 16px;
             border-radius: 999px;
-            background: #111827;
-            color: #fff;
-            border: 1px solid #e5e7eb;
             cursor: pointer;
+            /* 不在此处设置 background / color / border，让脚本与“新增”按钮对齐 */
         }
 
         .back-home:active {
+            opacity: .9;
+        }
+
+        /* 底部按钮区域 */
+        .bottom-actions {
+            margin-top: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .bottom-actions button {
+            padding: 10px 16px;
+            border-radius: 999px;
+            font-weight: 700;
+            min-width: 160px;
+            cursor: pointer;
+            /* 不在此处设置 background / color / border，让脚本与“新增”按钮对齐 */
+        }
+
+        .bottom-actions button:active {
             opacity: .9;
         }
     </style>
@@ -208,6 +227,11 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- 底部按钮区域 -->
+        <div class="bottom-actions">
+            <button id="rmbRates">跳转到RMB汇率页</button>
+        </div>
     </div>
 
     <script>
@@ -239,9 +263,7 @@
                 const res = await authFetch('/api/me');
                 const data = await res.json().catch(() => ({}));
                 usernameEl.textContent = data.username || '未知用户';
-            } catch {
-                // 已在 authFetch 兜底
-            }
+            } catch { /* 已在 authFetch 兜底 */ }
         }
 
         // 2) 列表
@@ -261,11 +283,9 @@
                     const from =
                         it.FromCurrency ?? it.from_currency ?? it.fromCurrency ?? it.from ??
                         it.FromCurreny ?? it.fromCurreny ?? '';
-
                     const to =
                         it.ToCurrency ?? it.to_currency ?? it.toCurrency ?? it.to ??
                         it.ToCurreny ?? it.toCurreny ?? '';
-
                     const rate = it.Rate ?? it.rate ?? '';
                     const rawDate = it.Date ?? it.date ?? '';
                     const dateStr = rawDate ? new Date(rawDate).toLocaleString() : '';
@@ -320,7 +340,7 @@
             }
         });
 
-        // 4) 刷新 / 退出 / 返回主菜单
+        // 4) 刷新 / 退出 / 返回主菜单 / 跳转到RMB汇率页
         $('#refresh').onclick = () => loadRates();
         $('#logout').onclick = async () => {
             await fetch('/api/auth/logout', { method: 'POST' }); // 服务端清 Cookie（若实现了）
@@ -328,10 +348,47 @@
             location.href = '/auth/login';
         };
         $('#backHome').onclick = () => { location.href = '/page/shell'; };
+        $('#rmbRates').onclick = () => { location.href = '/page/rmb-top10'; };
+
+        // 5) 将“返回主菜单 / 跳转到RMB汇率页”两颗按钮的视觉样式与“新增”按钮对齐
+        function alignButtonsWithPrimary() {
+            const src = document.getElementById('btn');
+            if (!src) return;
+            const targets = [document.getElementById('backHome'), document.getElementById('rmbRates')].filter(Boolean);
+            if (targets.length === 0) return;
+
+            const s = getComputedStyle(src);
+            const props = [
+                'background', 'backgroundColor', 'color',
+                'borderColor', 'borderStyle', 'borderWidth', 'borderRadius',
+                'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+                'fontWeight', 'fontSize', 'lineHeight', 'letterSpacing',
+                'boxShadow', 'textTransform', 'transition'
+            ];
+
+            for (const el of targets) {
+                for (const p of props) el.style[p] = s[p];
+                // 交互反馈，尽量贴近“新增”按钮
+                el.addEventListener('mouseenter', () => { el.style.filter = 'brightness(1.05)'; });
+                el.addEventListener('mouseleave', () => { el.style.filter = ''; });
+                el.addEventListener('mousedown', () => { el.style.opacity = '0.9'; });
+                el.addEventListener('mouseup', () => { el.style.opacity = ''; });
+            }
+        }
 
         // 初始化
         loadMe();
         loadRates();
+
+        // 等待样式就绪后对齐（在 DOMContentLoaded 与 load 阶段各尝试一次）
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                requestAnimationFrame(alignButtonsWithPrimary);
+            });
+        } else {
+            requestAnimationFrame(alignButtonsWithPrimary);
+        }
+        window.addEventListener('load', alignButtonsWithPrimary);
     </script>
 </body>
 

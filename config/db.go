@@ -32,6 +32,7 @@ func runMigrations() {
 		&models.Users{},
 		&models.Article{},
 		&models.ExchangeRate{},
+		&models.RmbTop10S{}, // ← 新增,
 	); err != nil {
 		log.Fatalf("Auto migrate error: %v", err)
 	}

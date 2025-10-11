@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const CookieName = "Authorization"
+const CookieName = "Authorization" // token中对应的键
 
 func SetAuthCookie(c *gin.Context, token string, ttl time.Duration) {
 	// 先设置 SameSite 策略（对后续 SetCookie 生效）
@@ -18,7 +18,7 @@ func SetAuthCookie(c *gin.Context, token string, ttl time.Duration) {
 	c.SetCookie(CookieName, token, int(ttl.Seconds()), "/", "", false, true) // HttpOnly
 }
 
-func ClearAuthCookie(c *gin.Context) {
+func ClearAuthCookie(c *gin.Context) { // 清楚cookie
 	c.SetSameSite(http.SameSiteLaxMode)
-	c.SetCookie(CookieName, "", -1, "/", "", false, true)
+	c.SetCookie(CookieName, "", -1, "/", "", false, true) //手动设置为空
 }

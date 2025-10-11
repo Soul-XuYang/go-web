@@ -8,6 +8,56 @@
     --danger: #ff6b6b;
     --ok: #3ddc97;
     --ring: 0 0 0 3px rgba(77, 163, 255, .25);
+    --font-sans: "SF Pro Text", "Segoe UI", "Roboto", "PingFang SC", "Hiragino Sans GB",
+        "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei",
+        "WenQuanYi Micro Hei", Arial, Helvetica, sans-serif;
+}
+
+html {
+    font-size: 18px;
+}
+
+body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: .01em;
+}
+
+/* 表格整体居中：容器 + 单元格 */
+.table-centered {
+    margin: 0 auto;
+    /* 表格本身在父容器中居中 */
+    table-layout: auto;
+}
+
+.table-centered th,
+.table-centered td {
+    text-align: center;
+    /* 文本水平居中 */
+    vertical-align: middle;
+    /* 文本垂直居中 */
+    padding: 12px 14px;
+    /* 稍微增大可读性 */
+}
+
+/* 数字列：使用等宽数字（tabular-nums），字重略提升 */
+.digits {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    letter-spacing: .02em;
+    font-weight: 600;
+    /* 可按需调成 500/600 */
+}
+
+/* 可选：卡片视觉更清爽 */
+.fx-card {
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid rgba(255, 255, 255, .08);
+    overflow: hidden;
 }
 
 @media (prefers-color-scheme: light) {

@@ -18,23 +18,29 @@ func CreateExchangeRate(c *gin.Context) {
 		return
 	}
 	exchangeRate.Date = time.Now() //当前时间
-    //插入数据
-    if err := global.DB.Create(&exchangeRate).Error; err != nil {
+	//插入数据
+	if err := global.DB.Create(&exchangeRate).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 }
+
 // 可以用这种方式查看表
 // fmt.Println(global.DB.Model(&ExchangeRate{}).Statement.Table) // 输出: exchange_rates
 // fmt.Println(global.DB.Model(&User{}).Statement.Table)         // 输出: users
-func GetExchangeRates(c *gin.Context){ //这里采用结构体切片来操作
-    var exchangeRates []models.ExchangeRate
-    if err:=global.DB.Table("exchange_rates").Find(&exchangeRates).Error;err!=nil{
-        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-    } 
-    c.JSON(200,exchangeRates) // 返回结构体数据
+func GetExchangeRates(c *gin.Context) { //这里采用结构体切片来操作
+	var exchangeRates []models.ExchangeRate
+	if err := global.DB.Table("exchange_rates").Find(&exchangeRates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+	c.JSON(200, exchangeRates) // 返回结构体数据
 }
-func GetUserName(c *gin.Context){  //单独的一个名字
-	u, _ := c.Get("username")
-	c.JSON(200, gin.H{"username": u})
+
+func GetUserName(c *gin.Context) {  //展示当前界面的用户名称
+	name, flag := c.Get("username")
+	if flag {
+		c.JSON(200, gin.H{"username": name})
+	} else {
+		c.JSON(200, gin.H{"username": "unknown"})
+	}
 }
