@@ -107,6 +107,21 @@ body {
     animation: pop .25s ease-out;
 }
 
+.ap-link {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, .04);
+    border: 1px solid rgba(0, 0, 0, .08);
+}
+
+.ap-link:hover {
+    text-decoration: underline;
+}
+
+
 @keyframes pop {
     from {
         transform: translateY(6px);

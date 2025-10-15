@@ -28,22 +28,27 @@ func SetupRouter() *gin.Engine {
 		page.GET("/shell", controllers.ShellPage)
 		page.GET("/rates", func(c *gin.Context) { c.HTML(200, "exchange_rates.html", nil) })
 		page.GET("/rmb-top10", func(c *gin.Context) { c.HTML(200, "rmb_top10.html", nil) })
+		//文章界面
+		page.GET("/articles", func(c *gin.Context) { c.HTML(200, "articles_pages.html", nil)  })
 	}
 
 	// 受保护的 API（数据接口，需要登录）
 	api := r.Group("/api", middlewares.AuthMiddleWare())
 	{
-        
-		api.GET("/me",controllers.GetUserName)
+        // 基本信息获取模块
+		api.GET("/me", controllers.GetUserName)
+		api.GET("/ad",controllers.Get_advertisement)
+
+		// 汇率模块
 		api.GET("/exchangeRates", controllers.GetExchangeRates)
 		api.POST("/exchangeRates", controllers.CreateExchangeRate)
 		api.POST("/rmb-top10/refresh", controllers.RefreshRmbTop10) // 手动刷新
 		api.GET("/rmb-top10", controllers.GetRmbTop10)              // 读取快照
 
-		// 以后文章模块也放这里，比如：
-		// api.GET("/articles", controllers.ListMyArticles)
-		// api.POST("/articles", controllers.CreateArticle)
-		// ...
+		//文章操作模块
+		api.GET("/articles", controllers.Get_All_Articles)
+
+
 	}
 
 	return r //返回路由组

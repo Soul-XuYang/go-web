@@ -16,26 +16,29 @@ import (
 
 var top10Symbols = []string{"USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "HKD", "SGD", "KRW"}
 
-type frankResp struct {  //接受数据
+type frankResp struct { //接受数据
 	Base  string             `json:"base"` // 有些版本字段为 "base"；若实际为 "from"，见下方容错
 	From  string             `json:"from"` // 兼容 Frankfurter 新老字段
 	Date  string             `json:"date"` // "YYYY-MM-DD"
 	Rates map[string]float64 `json:"rates"`
 }
 
-func roundN(x float64, n int) float64 {
-	if math.IsNaN(x) || math.IsInf(x, 0) {
+// 四舍五入的有效n位小数
+const vaild_number = 6
+
+func roundN(x float64, n int) float64 { // 浮点数四舍五入到指定小数位数的工具函数
+	if math.IsNaN(x) || math.IsInf(x, 0) { //math.IsInf(x, 0) 是Go语言中用来检查浮点数是否为无穷大的函数
 		return 0
 	}
-	p := math.Pow10(n)
-	return math.Round(x*p) / p
+	p := math.Pow10(n)         //
+	return math.Round(x*p) / p //先放大再舍去小数部分最后缩小
 }
 
 func RefreshRmbTop10(c *gin.Context) {
 	// Frankfurter 兼容两种写法：?base= / ?from=
 	// 建议优先使用 from/to
-	url := "https://api.frankfurter.dev/v1/latest?from=CNY&to=" + strings.Join(top10Symbols, ",")  //查询
-    //https://api.frankfurter.dev/v1/latest?from=CNY&to=USD,EUR,JPY,GBP,AUD,CAD,CHF,HKD,SGD,KRW
+	url := "https://api.frankfurter.dev/v1/latest?from=CNY&to=" + strings.Join(top10Symbols, ",") //查询
+	//https://api.frankfurter.dev/v1/latest?from=CNY&to=USD,EUR,JPY,GBP,AUD,CAD,CHF,HKD,SGD,KRW
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 	req.Header.Set("User-Agent", "ExchangeApp/1.0")
 	resp, err := http.DefaultClient.Do(req)
@@ -72,11 +75,11 @@ func RefreshRmbTop10(c *gin.Context) {
 	for sym, r := range fr.Rates {
 		rate := r
 		// 正向保留 6 位，反向同样 6 位（需要 4 位可把 roundN 的 n 改成 4）
-		rate = roundN(rate, 6)
+		rate = roundN(rate, vaild_number)
 
 		inv := 0.0
 		if rate > 0 {
-			inv = roundN(1.0/rate, 6)
+			inv = roundN(1.0/rate, vaild_number)
 		}
 
 		row := models.RmbTop10S{
@@ -91,7 +94,7 @@ func RefreshRmbTop10(c *gin.Context) {
 			return
 		}
 	}
-    //提交数据
+	//提交数据
 	if err := tx.Commit().Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

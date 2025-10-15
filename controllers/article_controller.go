@@ -24,13 +24,14 @@ type UpdateArticleDTO struct {
 	Preview *string `json:"preview,omitempty"`
 }
 
-type ArticleResp struct { //json传入
-	ID      uint   `json:"id"`
-	Title   string `json:"title"`
-	Preview string `json:"preview"`
-	Likes   int    `json:"likes"`
-	Created int64  `json:"created"`
+type ArticleResp struct {
+	ID       uint   `json:"id"`
+	Title    string `json:"title"`
+	Preview  string `json:"preview"`
+	Likes    int    `json:"likes"` 
+	Created  int64  `json:"created"`
 }
+
 
 // 三个参数
 func CreateArticle(c *gin.Context) {
@@ -109,6 +110,24 @@ func UpdateArticle(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, out)
 }
+// 获取全部文章
+func Get_All_Articles(c *gin.Context) {
+	var all_articles []models.Article
+	if err := global.DB.Find(&all_articles).Error; err != nil {  //这里就是查询全部Find()，一般用where来进行条件查询
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	out := make([]ArticleResp, 0, len(all_articles))
+	for i := 0; i < len(all_articles); i++ {
+		a := all_articles[i]
+	    out = append(out, ArticleResp{
+	        ID: a.ID, Title: a.Title, Preview: a.Preview,
+			Likes: a.Likes, Created: a.CreatedAt.Unix(),
+	    })
+	}
+	c.JSON(http.StatusOK, out)
+}
+
 
 // 测试代码
 func Get_ArticlesByID(c *gin.Context) {

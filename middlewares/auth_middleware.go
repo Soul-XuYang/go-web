@@ -39,6 +39,7 @@ func AuthMiddleWare() gin.HandlerFunc { //返回的是gin下的函数类型
 		}
 		c.Set("user_id", u.ID)
 		c.Set("username", username)
+		c.Set("my_blog",models.My_blog_url)  // 这里先设定在我的文章
 		c.Next() //调用下列的函数
 	}
 }

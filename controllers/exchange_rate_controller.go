@@ -44,3 +44,12 @@ func GetUserName(c *gin.Context) {  //展示当前界面的用户名称
 		c.JSON(200, gin.H{"username": "unknown"})
 	}
 }
+
+func Get_advertisement(c *gin.Context) { //展示当前界面的广告
+    url, flag := c.Get("my_blog")
+	if flag {
+		c.JSON(200, gin.H{"author_url": url})
+	} else {
+		c.JSON(200, gin.H{"authorurl": "unknown"})
+	} 
+}
