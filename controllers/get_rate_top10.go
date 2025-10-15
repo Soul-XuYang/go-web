@@ -34,6 +34,13 @@ func roundN(x float64, n int) float64 { // 浮点数四舍五入到指定小数�
 	return math.Round(x*p) / p //先放大再舍去小数部分最后缩小
 }
 
+// RefreshRmbTop10 godoc
+// @Summary     手动刷新人民币 Top10 汇率
+// @Tags        Exchange
+// @Security    Bearer
+// @Produce     json
+// @Success     200   {object}  map[string]string
+// @Router      /rmb-top10/refresh [post]
 func RefreshRmbTop10(c *gin.Context) {
 	// Frankfurter 兼容两种写法：?base= / ?from=
 	// 建议优先使用 from/to
@@ -115,6 +122,13 @@ type rmbTop10View struct {
 	AsOf   string `json:"as_of"`  //地区国家
 }
 
+// GetRmbTop10 godoc
+// @Summary     读取当前人民币对Top10地区的汇率快照
+// @Tags        Exchange
+// @Security    Bearer
+// @Produce     json
+// @Success     200   {array}   map[string]interface{}
+// @Router      /api/rmb-top10 [get]
 // 读取当前快照（按符号排序）—— 返回字符串化数值，后台的数据类型转换
 func GetRmbTop10(c *gin.Context) {
 	var list []models.RmbTop10S

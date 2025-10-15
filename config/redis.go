@@ -2,10 +2,11 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"project/global"
+	"project/log"
 
 	"github.com/go-redis/redis"
+	"go.uber.org/zap"
 )
 
 func initRedis() {
@@ -16,7 +17,7 @@ func initRedis() {
 	}) //返回一个客户端
 	_, err := RedisClient.Ping().Result()
 	if err != nil {
-		log.Fatalf("Failed to connect to Redis,got error:%v", err)
+		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
 
 	}
 	global.RedisDB = RedisClient

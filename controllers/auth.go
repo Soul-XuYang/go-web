@@ -25,6 +25,15 @@ type LoginDTO struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// Register godoc
+// @Summary     用户注册
+// @Tags        Auth
+// @Accept      json
+// @Produce     json
+// @Param       body  body      controllers.LoginDTO  true  "注册参数"
+// @Success     200   {object}  map[string]string
+// @Failure     400   {object}  map[string]string
+// @Router      /auth/register [post]
 func Register(c *gin.Context) {
 	var in RegisterDTO //注册的DTO
 	if err := c.ShouldBindJSON(&in); err != nil {
@@ -65,6 +74,16 @@ func CheckPassword(hash string, pwd string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pwd)) //第一个是hash加密过的密码，第二个是原装的密码
 	return err == nil
 }
+
+// Login godoc
+// @Summary     用户登录
+// @Tags        Auth
+// @Accept      json
+// @Produce     json
+// @Param       body  body      controllers.LoginDTO  true  "登录参数"
+// @Success     200   {object}  map[string]string
+// @Failure     400   {object}  map[string]string
+// @Router      /auth/login [post]   // 注意：不要写 /api，已由 @BasePath /api 补齐
 func Login(c *gin.Context) {
 	var in LoginDTO
 	if err := c.ShouldBindJSON(&in); err != nil {
@@ -93,6 +112,14 @@ func Login(c *gin.Context) {
 	utils.SetAuthCookie(c, token, utils.Expire_hours*time.Hour)
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
+
+// Logout godoc
+// @Summary     退出登录
+// @Tags        Auth
+// @Security    Bearer
+// @Produce     json
+// @Success     200   {object}  map[string]string
+// @Router      /auth/logout [post]
 
 // controllers/auth.go
 func Logout(c *gin.Context) {

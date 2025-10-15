@@ -2,11 +2,12 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"project/global"
+	"project/log"
 	"project/models"
 	"time"
 
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -15,11 +16,14 @@ func initDB() { //注意这个是小写只能在当前包使用，大写才能�
 	dsn := AppConfig.Database.Dsn
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{}) // 连接数据库 open ，gorm.Config是配置项
 	if err != nil {
-		log.Fatalf("DataBase connection failed ,got error:%v", err)
+		log.L().Fatal("DataBase connection failed",
+			zap.Error(err),
+			zap.String("dsn", dsn),
+		)
 	}
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Fatalf("Failed to set connection pool ,got error:%v", err)
+		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
 	}
 	sqlDB.SetMaxIdleConns(AppConfig.Database.MaxIdleConns)
 	sqlDB.SetMaxOpenConns(AppConfig.Database.MaxOpenConns)
@@ -34,6 +38,6 @@ func runMigrations() {
 		&models.ExchangeRate{},
 		&models.RmbTop10S{}, // ← 新增,
 	); err != nil {
-		log.Fatalf("Auto migrate error: %v", err)
+		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
 	}
 }

@@ -3,13 +3,17 @@ package router
 //路由组-分组
 import (
 	"project/controllers"
+	"project/log"
 	"project/middlewares"
 
 	"github.com/gin-gonic/gin"
 )
 
 func SetupRouter() *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(log.GinLogger(), log.GinRecovery())
+	mountSwagger(r)
+
 	//加载数据
 	r.LoadHTMLGlob("templates/*.html")
 	r.Static("/static", "./static") // 可选：放点 css/js
@@ -29,15 +33,15 @@ func SetupRouter() *gin.Engine {
 		page.GET("/rates", func(c *gin.Context) { c.HTML(200, "exchange_rates.html", nil) })
 		page.GET("/rmb-top10", func(c *gin.Context) { c.HTML(200, "rmb_top10.html", nil) })
 		//文章界面
-		page.GET("/articles", func(c *gin.Context) { c.HTML(200, "articles_pages.html", nil)  })
+		page.GET("/articles", func(c *gin.Context) { c.HTML(200, "articles_pages.html", nil) })
 	}
 
 	// 受保护的 API（数据接口，需要登录）
 	api := r.Group("/api", middlewares.AuthMiddleWare())
 	{
-        // 基本信息获取模块
+		// 基本信息获取模块
 		api.GET("/me", controllers.GetUserName)
-		api.GET("/ad",controllers.Get_advertisement)
+		api.GET("/ad", controllers.Get_advertisement)
 
 		// 汇率模块
 		api.GET("/exchangeRates", controllers.GetExchangeRates)
@@ -47,7 +51,6 @@ func SetupRouter() *gin.Engine {
 
 		//文章操作模块
 		api.GET("/articles", controllers.Get_All_Articles)
-
 
 	}
 

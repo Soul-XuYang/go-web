@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/viper"
 )
+// 项目版本信息在logger里
 
 type Config struct { //标明这个配置文件是可以全局使用的
 	App struct {

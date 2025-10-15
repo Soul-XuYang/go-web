@@ -24,16 +24,26 @@ type UpdateArticleDTO struct {
 	Preview *string `json:"preview,omitempty"`
 }
 
-type ArticleResp struct {
-	ID       uint   `json:"id"`
-	Title    string `json:"title"`
-	Preview  string `json:"preview"`
-	Likes    int    `json:"likes"` 
-	Created  int64  `json:"created"`
+type ArticleResp struct { //DTO这里是给数据库要更改的数据
+	ID      uint   `json:"id"`
+	Title   string `json:"title"`
+	Preview string `json:"preview"`
+	Likes   int    `json:"likes"`
+	Created int64  `json:"created"`
 }
 
-
-// 三个参数
+// CreateArticle godoc
+// @Summary      创建文章
+// @Tags         Articles
+// @Security     Bearer
+// @Accept       json
+// @Produce      json
+// @Param        body  body      controllers.CreateArticleDTO  true  "创建文章参数"
+// @Success      201   {object}  controllers.ArticleResp
+// @Failure      400   {object}  map[string]string
+// @Failure      401   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Router       /api/create_articles [post]
 func CreateArticle(c *gin.Context) {
 	user_id := c.GetUint("user_id") // 中间件放进去的当前用户ID
 
@@ -64,7 +74,21 @@ func CreateArticle(c *gin.Context) {
 	c.JSON(http.StatusCreated, resp) //响应数据-一定要有id之后的数据界面的url就是根据id打开的
 }
 
-// PUT/PATCH请求
+// UpdateArticle godoc
+// @Summary      更新文章数据
+// @Tags         Articles
+// @Security     Bearer
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string                        true  "文章ID"
+// @Param        body  body      controllers.UpdateArticleDTO  true  "更新文章参数"
+// @Success      200   {object}  controllers.ArticleResp
+// @Failure      400   {object}  map[string]string
+// @Failure      401   {object}  map[string]string
+// @Failure      404   {object}  map[string]string
+// @Failure      500   {object}  map[string]string
+// @Router       /api/update_articles/{id} [put]
+// PUT/PATCH请求-更新文章
 func UpdateArticle(c *gin.Context) {
 	user_id := c.GetUint("user_id") // 中间件放进去的当前登录用户ID
 	id := c.Param("id")
@@ -110,24 +134,33 @@ func UpdateArticle(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, out)
 }
+
 // 获取全部文章
+// Get_All_Articles godoc
+// @Summary      获取全部文章
+// @Tags         Articles
+// @Security     Bearer
+// @Produce      json
+// @Success      200  {array}   controllers.ArticleResp
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /api/articles [get]
 func Get_All_Articles(c *gin.Context) {
 	var all_articles []models.Article
-	if err := global.DB.Find(&all_articles).Error; err != nil {  //这里就是查询全部Find()，一般用where来进行条件查询
+	if err := global.DB.Find(&all_articles).Error; err != nil { //这里就是查询全部Find()，一般用where来进行条件查询
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	out := make([]ArticleResp, 0, len(all_articles))
 	for i := 0; i < len(all_articles); i++ {
 		a := all_articles[i]
-	    out = append(out, ArticleResp{
-	        ID: a.ID, Title: a.Title, Preview: a.Preview,
+		out = append(out, ArticleResp{
+			ID: a.ID, Title: a.Title, Preview: a.Preview,
 			Likes: a.Likes, Created: a.CreatedAt.Unix(),
-	    })
+		})
 	}
 	c.JSON(http.StatusOK, out)
 }
-
 
 // 测试代码
 func Get_ArticlesByID(c *gin.Context) {

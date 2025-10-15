@@ -10,6 +10,13 @@ import (
 )
 
 // 汇率数据
+// CreateExchangeRate godoc
+// @Summary     获取当前汇率数据
+// @Tags        Me
+// @Security    Bearer
+// @Produce     json
+// @Success     200   {object}  map[string]string  "示例：{\"username\":\"alice\"}"
+// @Router      /exchangeRates [post]
 func CreateExchangeRate(c *gin.Context) {
 	var exchangeRate models.ExchangeRate
 	// 请求体里是否有
@@ -36,7 +43,14 @@ func GetExchangeRates(c *gin.Context) { //这里采用结构体切片来操作
 	c.JSON(200, exchangeRates) // 返回结构体数据
 }
 
-func GetUserName(c *gin.Context) {  //展示当前界面的用户名称
+// GetUserName godoc
+// @Summary     获取当前用户名
+// @Tags        Me
+// @Security    Bearer
+// @Produce     json
+// @Success     200   {object}  map[string]string  "示例：{\"username\":\"alice\"}"
+// @Router      /me [get]
+func GetUserName(c *gin.Context) { //展示当前界面的用户名称
 	name, flag := c.Get("username")
 	if flag {
 		c.JSON(200, gin.H{"username": name})
@@ -45,11 +59,18 @@ func GetUserName(c *gin.Context) {  //展示当前界面的用户名称
 	}
 }
 
+// Get_advertisement godoc
+// @Summary     获取作者博客广告
+// @Tags        Me
+// @Security    Bearer
+// @Produce     json
+// @Success     200   {object}  map[string]string   "示例：{\"author_url\":\"https://...\"}"
+// @Router      /ad [get]
 func Get_advertisement(c *gin.Context) { //展示当前界面的广告
-    url, flag := c.Get("my_blog")
+	url, flag := c.Get("my_blog")
 	if flag {
 		c.JSON(200, gin.H{"author_url": url})
 	} else {
 		c.JSON(200, gin.H{"authorurl": "unknown"})
-	} 
+	}
 }
