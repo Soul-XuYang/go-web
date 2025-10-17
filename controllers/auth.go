@@ -49,7 +49,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	u := models.Users{Username: uname, Password: hash} //赋值
+	u := models.Users{Username: uname, Password: hash} //赋值,默认注册的用户都是普通用户
 
 	if err := global.DB.Create(&u).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
@@ -61,7 +61,7 @@ func Register(c *gin.Context) {
 	}
 
 	// 建议：写库成功后再签发JWT
-	token, err := utils.GenerateJWT(u.Username)
+	token, err := utils.GenerateJWT(u.Username,u.Role)  
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "generate token failed"})
 		return
@@ -104,7 +104,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, err := utils.GenerateJWT(user.Username)
+	token, err := utils.GenerateJWT(user.Username,user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "generate token failed"})
 		return

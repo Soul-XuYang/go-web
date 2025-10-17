@@ -56,6 +56,10 @@ func SetupRouter() *gin.Engine {
 		api.GET("/articles", controllers.Get_All_Articles)
 
 	}
-
+	
+    // admin := r.Group("/admin", middlewares.RolePermission("admin","superadmin"))
+	{
+		
+	}
 	return r //返回路由组
 }

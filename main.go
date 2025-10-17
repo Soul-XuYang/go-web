@@ -5,8 +5,9 @@ import (
 	"project/log"
 	"project/router"
 
+	_ "project/docs" // 👈 swag init 后会生成
+
 	"github.com/gin-gonic/gin"
-	_ "project/docs"   // 👈 swag init 后会生成
 )
 
 type Info struct {
@@ -34,6 +35,7 @@ func main() {
 	port := config.GetPort() // 获取端口-这里config是包名
 	r.Run(port)              // 监听端口并启动服务
 }
+
 //  开发测试的数据
 //   login的测试数据
 //   "username": "wxy",

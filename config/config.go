@@ -3,9 +3,13 @@ package config // 建立包
 import (
 	"fmt"
 	"log"
+	"project/global"
+	"project/models"
+	"project/utils"
 
 	"github.com/spf13/viper"
 )
+
 // 项目版本信息在logger里
 const Version string = "0.0.1"
 
@@ -46,6 +50,7 @@ func InitConfig() {
 	initDB()
 	initRedis()
 	runMigrations()
+	superadmin_init()
 	printURL()
 }
 func GetPort() string {
@@ -62,4 +67,41 @@ func GetPort() string {
 }
 func printURL() {
 	fmt.Printf("Login:http://localhost%s/auth/login\n", GetPort())
+}
+
+const (
+	superadmin          = "superadmin"
+	superadmin_password = "123456"
+)
+
+func superadmin_init() {
+	u := models.Users{Username: superadmin, Password: superadmin, Role: "superadmin"}
+	// FirstOrCreate 会先查找，如果不存在就创建
+	if err := global.DB.Where("username = ?", superadmin). //FirstOrCreate
+								FirstOrCreate(&u).Error; err != nil {
+		fmt.Println("Failed to create/find superadmin:", err)
+		return
+	}
+	// 如果是新创建的记录，需要加密密码
+	if u.Password == superadmin { // 密码还是原始值，说明是新创建的
+		hashedPassword, err := utils.HashPassword(superadmin_password)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := global.DB.Model(&u).Update("password", hashedPassword).Error; err != nil {
+			fmt.Println("Failed to update password:", err)
+			return
+		}
+	}
+	fmt.Println("3.Superadmin has already initializated!")
+}
+
+// test -删除superadmin用户
+func deleteSuperadminHard() {
+	res := global.DB.Unscoped().Where("username = ?", superadmin).Delete(&models.Users{})
+	if res.Error != nil {
+		fmt.Printf("hard delete failed: %v\n", res.Error)
+		return
+	}
+	fmt.Printf("The superadmin has been hard deleted %d rows\n", res.RowsAffected)
 }

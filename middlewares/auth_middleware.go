@@ -23,7 +23,7 @@ func AuthMiddleWare() gin.HandlerFunc { //返回的是gin下的函数类型
 			c.Abort() //不中止
 			return
 		}
-		username, err := utils.ParseJWT(token)
+		username,_,err := utils.ParseJWT(token)  //不管什么用户我都让其通过
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			c.Abort()
