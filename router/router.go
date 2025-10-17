@@ -56,10 +56,10 @@ func SetupRouter() *gin.Engine {
 		api.GET("/articles", controllers.Get_All_Articles)
 
 	}
-	
-    // admin := r.Group("/admin", middlewares.RolePermission("admin","superadmin"))
+    // 超级管理员系统
+    admin := r.Group("/admin", middlewares.RolePermission("admin","superadmin")) //给定用户的身份登记
 	{
-		
+		admin.GET("/dashboard", func(c *gin.Context) { c.HTML(200, "dashboard.html", nil) })
 	}
 	return r //返回路由组
 }

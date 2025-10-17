@@ -55,7 +55,7 @@ func InitConfig() {
 }
 func GetPort() string {
 	if AppConfig == nil || AppConfig.App.Port == "" { //要么配置为空要么端口无
-		log.Println("Warning: Port is not set in config file, using default port 8080")
+		log.Println("Warning: Port is not set in config file, using default port 8080") //默认端口
 		return ":8080"
 	}
 	// 确保端口格式正确
@@ -93,7 +93,7 @@ func superadmin_init() {
 			return
 		}
 	}
-	fmt.Println("3.Superadmin has already initializated!")
+	fmt.Println("3. Superadmin has already initializated!")
 }
 
 // test -删除superadmin用户

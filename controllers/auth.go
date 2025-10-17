@@ -61,7 +61,7 @@ func Register(c *gin.Context) {
 	}
 
 	// 建议：写库成功后再签发JWT
-	token, err := utils.GenerateJWT(u.Username,u.Role)  
+	token, err := utils.GenerateJWT(u.Username, u.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "generate token failed"})
 		return
@@ -81,7 +81,7 @@ func CheckPassword(hash string, pwd string) bool {
 // @Accept      json
 // @Produce     json
 // @Param       body  body      controllers.LoginDTO  true  "登录参数"
-// @Success     200   {object}  map[string]string
+// @Success     200   {object}  map[string]string  "token,result_url"
 // @Failure     400   {object}  map[string]string
 // @Router      /auth/login [post]   // 注意：不要写 /api，已由 @BasePath /api 补齐
 func Login(c *gin.Context) {
@@ -104,13 +104,20 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, err := utils.GenerateJWT(user.Username,user.Role)
+	token, err := utils.GenerateJWT(user.Username, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "generate token failed"})
 		return
 	}
-	utils.SetAuthCookie(c, token, utils.Expire_hours*time.Hour)
-	c.JSON(http.StatusOK, gin.H{"token": token})
+	Result_Url := "/page/shell" // 登录成功后跳转的页面
+	if user.Role != "user" {
+		Result_Url = "/admin/dashboard"
+	}
+	utils.SetAuthCookie(c, token, utils.Expire_hours*time.Hour) //设定cookie
+	c.JSON(http.StatusOK, gin.H{
+		"token":      token,
+		"result_url": Result_Url,
+	})
 }
 
 // Logout godoc

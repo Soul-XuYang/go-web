@@ -1,30 +1,422 @@
-<!-- 这是一个受例保护页的测试端 -->
 <!doctype html>
-<html>
+<html lang="zh-CN">
 
 <head>
     <meta charset="utf-8" />
-    <title>Dashboard</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dashborad-管理控制台</title>
     <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        /* 补充少量布局样式，尽量不与 base.css 冲突 */
+        :root {
+            --gap: 16px;
+        }
+
+        body {
+            background: #f6f7f9;
+        }
+
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--gap);
+        }
+
+        .topbar h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .topbar .tools {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .topbar select,
+        .topbar input {
+            padding: 6px 10px;
+            font-size: 14px;
+        }
+
+        .grid {
+            display: grid;
+            gap: var(--gap);
+            grid-template-columns: repeat(12, 1fr);
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            padding: 16px;
+        }
+
+        .kpi {
+            grid-column: span 3;
+        }
+
+        .kpi h3 {
+            margin: 0 0 6px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .kpi .val {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .kpi .delta {
+            font-size: 12px;
+            color: #0a7e07;
+        }
+
+        .kpi .delta.neg {
+            color: #b42318;
+        }
+
+        .chart {
+            grid-column: span 8;
+        }
+
+        .table {
+            grid-column: span 4;
+            overflow: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            color: #666;
+            font-weight: 600;
+        }
+
+        .actions {
+            grid-column: span 12;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .actions .btn {
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: #0a67ff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .actions .btn.secondary {
+            background: #eef2ff;
+            color: #0a67ff;
+        }
+
+        .footer-bar {
+            margin-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-link {
+            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: #1f40d1fa;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .muted {
+            color: #777;
+            font-size: 12px;
+        }
+
+        @media (max-width: 960px) {
+            .kpi {
+                grid-column: span 6;
+            }
+
+            .chart {
+                grid-column: span 12;
+            }
+
+            .table {
+                grid-column: span 12;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .kpi {
+                grid-column: span 12;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <div class="card">
-        <h1>Dashboard</h1>
-        <p class="sub">本页面是示例受保护页</p>
-        <pre id="me" class="msg">加载中...</pre>
-        <div class="actions"><button id="logout">退出登录</button></div>
+    <div class="wrap">
+        <!-- 顶部条 -->
+        <div class="topbar">
+            <h1>管理控制台</h1>
+            <div class="tools">
+                <input id="search" placeholder="搜索…" />
+                <select id="range">
+                    <option value="7">最近 7 天</option>
+                    <option value="30" selected>最近 30 天</option>
+                    <option value="90">最近 90 天</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- KPI 指标 -->
+        <div class="grid" id="kpiRow">
+            <div class="card kpi">
+                <h3>活跃用户</h3>
+                <div class="val" id="kpiUsers">--</div>
+                <div class="delta" id="kpiUsersDelta">--</div>
+            </div>
+            <div class="card kpi">
+                <h3>新注册</h3>
+                <div class="val" id="kpiSignups">--</div>
+                <div class="delta" id="kpiSignupsDelta">--</div>
+            </div>
+            <div class="card kpi">
+                <h3>订单数</h3>
+                <div class="val" id="kpiOrders">--</div>
+                <div class="delta" id="kpiOrdersDelta">--</div>
+            </div>
+            <div class="card kpi">
+                <h3>收入 (¥)</h3>
+                <div class="val" id="kpiRevenue">--</div>
+                <div class="delta" id="kpiRevenueDelta">--</div>
+            </div>
+        </div>
+
+        <!-- 图表 + 近期活动 -->
+        <div class="grid" style="margin-top:16px;">
+            <div class="card chart">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <h3 style="margin:0;font-size:16px;">趋势（按日）</h3>
+                    <span class="muted" id="chartMeta">--</span>
+                </div>
+                <canvas id="lineChart" height="220" aria-label="指标趋势图" role="img"></canvas>
+            </div>
+
+            <div class="card table">
+                <h3 style="margin:0 0 8px;font-size:16px;">近期活动</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>事件</th>
+                            <th>用户</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentTbody">
+                        <!-- 动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 快捷操作 -->
+        <div class="card actions" style="margin-top:16px;">
+            <button class="btn" id="btnRefresh">刷新数据</button>
+            <button class="btn secondary" id="btnExport">导出报表</button>
+            <button class="btn secondary" id="btnUsers">用户管理</button>
+            <button class="btn secondary" id="btnSettings">系统设置</button>
+        </div>
+
+        <!-- 底部返回按钮 -->
+        <div class="footer-bar">
+            <span class="muted">提示：/admin 路径已由后端中间件进行权限控制。</span>
+            <a class="back-link" href="/page/shell" id="backLink">返回用户管理界面页</a>
+        </div>
     </div>
+
     <script>
-        const t = localStorage.getItem('token');
-        if (!t) location.href = '/auth/login';
-        fetch('/api/me', { headers: { Authorization: t } })
-            .then(r => r.ok ? r.json() : Promise.reject(r))
-            .then(d => { document.getElementById('me').textContent = JSON.stringify(d, null, 2) })
-            .catch(() => location.href = '/auth/login');
-        document.getElementById('logout').onclick = () => {
-            localStorage.removeItem('token'); location.href = '/auth/login';
-        };
+        // 简单的 Canvas 折线图（无第三方库）
+        function drawLineChart(canvas, series, labels) {
+            const ctx = canvas.getContext('2d');
+            const W = canvas.clientWidth, H = canvas.height;
+            canvas.width = W; // 处理高清屏重绘
+            ctx.clearRect(0, 0, W, H);
+
+            // 边距
+            const pad = { l: 36, r: 12, t: 16, b: 28 };
+            const innerW = W - pad.l - pad.r;
+            const innerH = H - pad.t - pad.b;
+
+            const min = Math.min(...series);
+            const max = Math.max(...series);
+            const lo = Math.floor(min * 0.9);
+            const hi = Math.ceil(max * 1.1);
+            const n = series.length;
+
+            // 轴线
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(pad.l, pad.t);
+            ctx.lineTo(pad.l, pad.t + innerH);
+            ctx.lineTo(pad.l + innerW, pad.t + innerH);
+            ctx.stroke();
+
+            // Y 轴刻度
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+            const ticks = 4;
+            for (let i = 0; i <= ticks; i++) {
+                const yVal = lo + (hi - lo) * i / ticks;
+                const y = pad.t + innerH - innerH * i / ticks;
+                ctx.fillText(Math.round(yVal), 4, y + 4);
+                ctx.strokeStyle = '#f3f4f6';
+                ctx.beginPath();
+                ctx.moveTo(pad.l, y);
+                ctx.lineTo(pad.l + innerW, y);
+                ctx.stroke();
+            }
+
+            // 折线
+            ctx.strokeStyle = '#2563eb';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            series.forEach((v, i) => {
+                const x = pad.l + innerW * (i / (n - 1 || 1));
+                const y = pad.t + innerH * (1 - (v - lo) / (hi - lo || 1));
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // X 轴标签（最多显示 6 个避免拥挤）
+            const show = Math.max(2, Math.min(6, labels.length));
+            const step = Math.max(1, Math.floor(labels.length / show));
+            ctx.fillStyle = '#6b7280';
+            for (let i = 0; i < labels.length; i += step) {
+                const x = pad.l + innerW * (i / (n - 1 || 1));
+                ctx.fillText(labels[i], x - 12, pad.t + innerH + 16);
+            }
+        }
+
+        // 假数据回退
+        function fallbackSummary(days = 30) {
+            const now = new Date();
+            const labels = [...Array(days)].map((_, i) => {
+                const d = new Date(now - (days - 1 - i) * 86400000);
+                return `${d.getMonth() + 1}/${d.getDate()}`;
+            });
+            const rand = (base, vol) => Math.max(0, Math.round(base + (Math.random() - 0.5) * vol));
+            const series = labels.map((_, i) => rand(100 + i * 0.8, 40));
+            return {
+                kpi: {
+                    users: { val: 1289, delta: +5.2 },
+                    signups: { val: 86, delta: -3.1 },
+                    orders: { val: 312, delta: +2.4 },
+                    revenue: { val: 58230, delta: +1.7 },
+                },
+                chart: { series, labels },
+                recent: [
+                    { time: '10:21', event: '创建订单', user: 'alice', status: '已支付' },
+                    { time: '09:58', event: '新增用户', user: 'bob', status: '已激活' },
+                    { time: '09:35', event: '导出报表', user: 'carol', status: '成功' },
+                    { time: '09:10', event: '重置密码', user: 'dave', status: '成功' },
+                ]
+            };
+        }
+
+        async function loadSummary(days = 30) {
+            try {
+                // 若你有后端接口，比如 /api/admin/summary
+                const res = await fetch(`/api/admin/summary?days=${days}`, { credentials: 'include' });
+                if (!res.ok) throw new Error();
+                return await res.json();
+            } catch {
+                return fallbackSummary(days); // 无接口或报错则使用假数据渲染
+            }
+        }
+
+        function setKPI(k) {
+            const fmt = n => n.toLocaleString();
+            const set = (id, val, delta) => {
+                document.getElementById(id).textContent = fmt(val);
+                const dEl = document.getElementById(id + 'Delta');
+                const d = +delta || 0;
+                dEl.textContent = (d >= 0 ? '▲ ' : '▼ ') + Math.abs(d).toFixed(1) + '%';
+                dEl.className = 'delta ' + (d >= 0 ? '' : 'neg');
+            };
+            set('kpiUsers', k.users.val, k.users.delta);
+            set('kpiSignups', k.signups.val, k.signups.delta);
+            set('kpiOrders', k.orders.val, k.orders.delta);
+            set('kpiRevenue', k.revenue.val, k.revenue.delta);
+        }
+
+        function setTable(rows) {
+            const tb = document.getElementById('recentTbody');
+            tb.innerHTML = '';
+            rows.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${r.time}</td><td>${r.event}</td><td>${r.user}</td><td>${r.status}</td>`;
+                tb.appendChild(tr);
+            });
+        }
+
+        async function bootstrap() {
+            const rangeSel = document.getElementById('range');
+            const days = +rangeSel.value || 30;
+            const data = await loadSummary(days);
+
+            setKPI(data.kpi);
+            setTable(data.recent);
+
+            const canvas = document.getElementById('lineChart');
+            drawLineChart(canvas, data.chart.series, data.chart.labels);
+            document.getElementById('chartMeta').textContent = `共 ${data.chart.labels.length} 天`;
+
+            // 交互
+            document.getElementById('btnRefresh').onclick = () => bootstrap();
+            document.getElementById('btnExport').onclick = () => {
+                // 这里可以触发 /api/admin/export
+                alert('已开始导出报表（示例）');
+            };
+            document.getElementById('btnUsers').onclick = () => location.assign('/admin/users');
+            document.getElementById('btnSettings').onclick = () => location.assign('/admin/settings');
+
+            rangeSel.onchange = async () => {
+                const d = await loadSummary(+rangeSel.value || 30);
+                setKPI(d.kpi);
+                setTable(d.recent);
+                drawLineChart(canvas, d.chart.series, d.chart.labels);
+                document.getElementById('chartMeta').textContent = `共 ${d.chart.labels.length} 天`;
+            };
+            window.addEventListener('resize', () => {
+                drawLineChart(canvas, data.chart.series, data.chart.labels);
+            });
+        }
+
+        bootstrap();
     </script>
 </body>
 

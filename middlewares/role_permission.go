@@ -50,3 +50,4 @@ func RolePermission(role_input ...string) gin.HandlerFunc {
 		c.Abort() //中止
 	}
 }
+
