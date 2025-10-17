@@ -3,7 +3,6 @@ package router
 //路由组-分组
 import (
 	"project/controllers"
-	"project/log"
 	"project/middlewares"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +10,7 @@ import (
 
 func SetupRouter() *gin.Engine {
 	r := gin.New()
-	r.Use(log.GinLogger(), log.GinRecovery())
+	r.Use(middlewares.GinLogger(), middlewares.GinRecovery())
 	mountSwagger(r)
 
 	//加载数据
@@ -34,6 +33,7 @@ func SetupRouter() *gin.Engine {
 		page.GET("/rmb-top10", func(c *gin.Context) { c.HTML(200, "rmb_top10.html", nil) })
 		//文章界面
 		page.GET("/articles", func(c *gin.Context) { c.HTML(200, "articles_pages.html", nil) })
+		page.GET("/game/guess", func(c *gin.Context) { c.HTML(200, "game_guess_number.html", nil) })
 	}
 
 	// 受保护的 API（数据接口，需要登录）
@@ -49,6 +49,9 @@ func SetupRouter() *gin.Engine {
 		api.POST("/rmb-top10/refresh", controllers.RefreshRmbTop10) // 手动刷新
 		api.GET("/rmb-top10", controllers.GetRmbTop10)              // 读取快照
 
+		//游戏模块
+		api.POST("/game/guess", controllers.GameGuess)
+		api.POST("/game/reset", controllers.GameGuess_Reset)
 		//文章操作模块
 		api.GET("/articles", controllers.Get_All_Articles)
 

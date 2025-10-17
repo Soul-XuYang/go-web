@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=2" />
+    <title>数字猜猜乐小游戏</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        :root {
+            --muted: #7d9ac2;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        /* 顶部 */
+        .top {
+            max-width: 960px;
+            margin: 20px auto 12px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .04);
+        }
+
+        .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .8rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+        }
+
+        .uname {
+            color: var(--muted);
+            font-size: .95rem;
+        }
+
+        /* 主体两列卡片 */
+        .wrap {
+            max-width: 960px;
+            margin: 28px auto;
+            padding: 0 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        @media (max-width:860px) {
+            .wrap {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            border: 1px solid rgba(255, 255, 255, .12);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, .03);
+            padding: 24px 20px;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, .16);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card h2 {
+            margin: 0 0 6px;
+            font-size: 1.18rem;
+        }
+
+        .sub {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .grow {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* 大号输入与按钮 */
+        #guessInput {
+            height: 56px;
+            font-size: 1.1rem;
+            padding: 0 16px;
+            border-radius: 12px;
+        }
+
+        #btnGuess {
+            height: 56px;
+            min-width: 160px;
+            border-radius: 12px;
+        }
+
+        .stat {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .05);
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: .92rem;
+        }
+
+        .msg {
+            padding: 10px 12px;
+            border-radius: 12px;
+            line-height: 1.5;
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(255, 255, 255, .1);
+            min-height: 44px;
+        }
+
+        .msg.low {
+            border-color: rgba(59, 130, 246, .35);
+        }
+
+        .msg.high {
+            border-color: rgba(245, 158, 11, .35);
+        }
+
+        .msg.correct {
+            border-color: rgba(34, 197, 94, .45);
+            background: rgba(34, 197, 94, .08);
+        }
+
+        .progress {
+            height: 10px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .1);
+        }
+
+        .bar {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width .25s ease;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .btn-ghost {
+            background: transparent;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .score-strong {
+            font-weight: 700;
+        }
+
+        .footer {
+            max-width: 960px;
+            margin: 6px auto 24px;
+            padding: 0 16px;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .footer button {
+            height: 40px;
+            border-radius: 999px;
+            padding: 0 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 顶部：标题 + 用户信息 -->
+    <header class="top">
+        <div class="brand">
+            <h1>数字猜猜乐</h1>
+        </div>
+        <div class="userbox">
+            <div class="avatar" id="avatar">U</div>
+            <span class="uname" id="username">加载中…</span>
+        </div>
+    </header>
+
+    <!-- 主体：左 游戏交互 / 右 进度与分数 -->
+    <main class="wrap">
+        <!-- 左：猜数字 -->
+        <section class="card">
+            <h2>开始猜数字</h2>
+            <p class="sub">系统会生成 1–100 的整数。共三轮，轮次越靠后可用次数越少。</p>
+
+            <div class="row">
+                <input id="guessInput" class="grow" type="number" min="1" max="100" placeholder="输入1-100的整数" />
+                <button id="btnGuess" class="btn-primary">提交</button>
+            </div>
+
+            <div id="feedback" class="msg">在上方输入1-100的整数数字并提交。</div>
+
+            <div class="actions">
+                <button id="btnQuick" class="btn-ghost">随机试一个</button>
+                <button id="btnClear" class="btn-ghost">清空</button>
+            </div>
+        </section>
+
+        <!-- 右：进度与分数 -->
+        <section class="card">
+            <h2>本局进度 & 分数</h2>
+
+            <div class="stat">
+                <span class="chip">当前轮次：<b id="roundText">—</b></span>
+                <span class="chip">本轮已用：<b id="attemptsUsed">0</b></span>
+                <span class="chip">本轮可用：<b id="attemptsAllowed">—</b></span>
+                <span class="chip">本轮剩余：<b id="attemptsRemain">—</b></span>
+            </div>
+
+            <div class="progress">
+                <div id="bar" class="bar"></div>
+            </div>
+            <small class="muted">进度条显示：已用次数 / 本轮总次数</small>
+
+            <hr />
+
+            <div class="row">
+                <div class="grow">
+                    <div>当前总分（进行中）</div>
+                    <div class="score-strong" style="font-size:1.6rem" id="scoreCurrent">0</div>
+                </div>
+                <div>
+                    <div>本局最终分（三轮后）</div>
+                    <div class="score-strong" style="font-size:1.6rem" id="scoreFinal">—</div>
+                </div>
+            </div>
+
+            <div class="stat">
+                <span class="chip muted">提示：完成三轮后会自动开启新的一局。</span>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部：返回主页面 & 退出 -->
+    <div class="footer">
+        <button id="backHome" class="btn-primary">返回主页面</button>
+    </div>
+
+    <script>
+        // ====== 基础封装 ======
+        const $ = s => document.querySelector(s);
+        const API_ME = '/api/me';
+        const API_GUESS = '/api/game/guess';
+
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            if (!t) return null;
+            return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t);
+        }
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign(
+                { 'Content-Type': 'application/json' },
+                token ? { 'Authorization': token } : {},
+                opts.headers || {}
+            );
+            const r = await fetch(url, { ...opts, headers });
+            if (r.status === 401) {
+                localStorage.removeItem('token');
+                location.href = '/auth/login';
+                throw new Error('Unauthorized');
+            }
+            return r;
+        }
+
+        // 顶部用户信息
+        function initialOf(name) {
+            if (!name) return 'U';
+            const s = String(name).trim();
+            return s ? s[0].toUpperCase() : 'U';
+        }
+        async function loadMe() {
+            try {
+                const r = await authFetch(API_ME);
+                const d = await r.json().catch(() => ({}));
+                const uname = d.username || 'unknown';
+                $('#username').textContent = uname;
+                $('#avatar').textContent = initialOf(uname);
+            } catch { }
+        }
+
+        // ====== 前端状态 ======
+        const state = {
+            round: 1,
+            attemptsUsed: 0,
+            attemptsAllowed: null,
+            scoreCurrent: 0,
+            scoreFinal: null
+        };
+
+        // 兜底：从 message 解析“第 X 轮”
+        function parseRoundFromMessage(msg) {
+            const m = String(msg || '').match(/第\s*(\d+)\s*轮/);
+            return m ? parseInt(m[1], 10) : null;
+        }
+
+        // 渲染函数：当 status === "correct" 时，立即切入下一轮/新一局（仅前端改动）
+        function applyAndRender(d) {
+            const { message, status } = d || {};
+            let { attempts, remaining, totalScore, round } = d || {};
+
+            const currentRound = (typeof round === 'number' ? round : parseRoundFromMessage(message)) || state.round || 1;
+
+            const attemptsNum = typeof attempts === 'number' ? attempts : 0;
+            const remainingNum = typeof remaining === 'number' ? remaining : 0;
+            const allowedThisRound = attemptsNum + remainingNum;
+
+            // 1) 先按“当前轮原样数据”渲染
+            $('#feedback').className = 'msg ' + (d?.status || '');
+            $('#feedback').textContent = message || '——';
+
+            if (typeof totalScore === 'number') state.scoreCurrent = totalScore;
+            $('#scoreCurrent').textContent = state.scoreCurrent;
+
+            state.round = currentRound;
+            state.attemptsUsed = attemptsNum || state.attemptsUsed || 0;
+            if (allowedThisRound > 0) state.attemptsAllowed = allowedThisRound;
+
+            $('#roundText').textContent = state.round;
+            $('#attemptsUsed').textContent = state.attemptsUsed;
+            $('#attemptsRemain').textContent = (typeof remaining === 'number') ? remaining : '—';
+            $('#attemptsAllowed').textContent = state.attemptsAllowed ?? '—';
+
+            // 当前轮进度条
+            {
+                const denom = state.attemptsAllowed || 1;
+                const pct = Math.max(0, Math.min(100, (state.attemptsUsed / denom) * 100));
+                $('#bar').style.width = pct + '%';
+            }
+
+            // 2) 若本次猜中，立刻转入下一轮 / 新一局
+            if (status === 'correct') {
+                if (currentRound < 3) {
+                    const nextRound = currentRound + 1;
+                    const nextAllowed = Math.max(1, (allowedThisRound || 0) - 1);
+
+                    state.round = nextRound;
+                    state.attemptsUsed = 0;
+                    state.attemptsAllowed = nextAllowed;
+
+                    $('#roundText').textContent = nextRound;
+                    $('#attemptsUsed').textContent = 0;
+                    $('#attemptsRemain').textContent = nextAllowed;
+                    $('#attemptsAllowed').textContent = nextAllowed;
+                    $('#bar').style.width = '0%';
+                } else {
+                    // 第三轮猜中：显示最终分，复位为新一局界面（等待下一次请求覆盖）
+                    const m = String(message || '').match(/三轮总分[:：]\s*(\d+)/);
+                    if (m) {
+                        state.scoreFinal = Number(m[1]);
+                    } else {
+                        state.scoreFinal = state.scoreCurrent;
+                    }
+                    $('#scoreFinal').textContent = state.scoreFinal;
+
+                    state.round = 1;
+                    state.attemptsUsed = 0;
+                    state.attemptsAllowed = null;
+                    $('#roundText').textContent = 1;
+                    $('#attemptsUsed').textContent = 0;
+                    $('#attemptsRemain').textContent = '—';
+                    $('#attemptsAllowed').textContent = '—';
+                    $('#bar').style.width = '0%';
+
+                    state.scoreCurrent = 0;
+                    $('#scoreCurrent').textContent = 0;
+
+                    const el = $('#scoreFinal');
+                    el.style.transition = 'transform .2s ease';
+                    el.style.transform = 'scale(1.15)';
+                    setTimeout(() => { el.style.transform = 'scale(1)'; }, 240);
+                }
+            }
+
+            // 3) 若文案直接提示“已开启新一局”，也做复位（兼容非 correct 的结束）
+            if (/三轮结束|已开启新一局|已为你开启新的一局/.test(String(message || ''))) {
+                const m2 = String(message || '').match(/三轮总分[:：]\s*(\d+)/);
+                if (m2) {
+                    state.scoreFinal = Number(m2[1]);
+                    $('#scoreFinal').textContent = state.scoreFinal;
+                }
+                state.round = 1;
+                state.attemptsUsed = 0;
+                state.attemptsAllowed = null;
+                $('#roundText').textContent = 1;
+                $('#attemptsUsed').textContent = 0;
+                $('#attemptsRemain').textContent = '—';
+                $('#attemptsAllowed').textContent = '—';
+                $('#bar').style.width = '0%';
+                state.scoreCurrent = 0;
+                $('#scoreCurrent').textContent = 0;
+            }
+        }
+
+        // ====== 交互 ======
+        async function submitGuess(num) {
+            if (isNaN(num) || num < 1 || num > 100) {
+                $('#feedback').className = 'msg';
+                $('#feedback').textContent = '请输入 1–100 的整数。';
+                return;
+            }
+            try {
+                $('#btnGuess').disabled = true;
+                const r = await authFetch(API_GUESS, {
+                    method: 'POST',
+                    body: JSON.stringify({ number: Number(num) })
+                });
+                const d = await r.json();
+                applyAndRender(d);
+            } catch (e) {
+                $('#feedback').className = 'msg';
+                $('#feedback').textContent = '请求失败，请稍后再试。';
+            } finally {
+                $('#btnGuess').disabled = false;
+            }
+        }
+
+        $('#btnGuess').onclick = () => submitGuess($('#guessInput').value);
+        $('#guessInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') submitGuess($('#guessInput').value);
+        });
+        $('#btnQuick').onclick = () => {
+            const v = Math.floor(Math.random() * 100) + 1;
+            $('#guessInput').value = v;
+            submitGuess(v);
+        };
+        $('#btnClear').onclick = () => { $('#guessInput').value = ''; $('#guessInput').focus(); };
+
+        // 底部按钮
+        $('#backHome').onclick = () => location.href = '/page/shell';
+        // 首屏
+        loadMe();
+    </script>
+</body>
+
+</html>
