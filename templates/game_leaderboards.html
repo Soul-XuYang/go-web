@@ -7,141 +7,134 @@
     <title>游戏排行榜</title>
     <link rel="stylesheet" href="/static/base.css" />
     <style>
-        :root {
-            --muted: #94a3b8;
-            --card-min: 360px;
-            --card-gap: 20px;
-            --card-pad: 24px;
-            --card-min-h: 240px;
-        }
-
         body {
             margin: 0;
+            padding: 0 !important;
+            display: block !important;
+            place-items: initial !important;
+            background: var(--bg);
         }
 
-        .top {
-            max-width: 960px;
-            margin: 20px auto 12px;
-            padding: 0 16px;
+        /* 覆盖 base.css 的按钮样式 */
+        button {
+            width: auto !important;
+            font-size: 0.9rem;
+            padding: 8px 16px;
+            height: 36px;
+            border-radius: 8px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
+        .header {
             display: flex;
-            align-items: center;
             justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
         }
 
-        .brand h1 {
+        .header h1 {
             margin: 0;
-            font-size: 1.75rem;
+            font-size: 1.5rem;
+            color: var(--text);
         }
 
-        .userbox {
+        .user-info {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            border: 1px solid rgba(255, 255, 255, .12);
-            background: rgba(255, 255, 255, .04);
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .avatar {
-            width: 26px;
-            height: 26px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             background: var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
-            font-size: .8rem;
-            font-weight: 700;
-            letter-spacing: .5px;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
         }
 
-        .uname {
+        .username {
             color: var(--muted);
-            font-size: .95rem;
+            font-size: 0.9rem;
         }
 
         .toolbar {
-            max-width: 960px;
-            margin: 6px auto 0;
-            padding: 0 16px;
             display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
         }
 
-        .btn-primary {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #fff;
-        }
-
-        .wrap {
-            max-width: 960px;
-            padding: 0 16px;
-            margin: 20px auto 24px;
-            display: grid;
-            gap: var(--card-gap);
-            grid-template-columns: repeat(auto-fit, minmax(var(--card-min), 1fr));
-            align-items: stretch;
-        }
-
-        .card {
-            padding: var(--card-pad);
-            min-height: var(--card-min-h);
-            border: 1px solid rgba(255, 255, 255, .12);
-            border-radius: 16px;
-            background: rgba(255, 255, 255, .03);
-            box-shadow: 0 10px 30px rgba(2, 6, 23, .16);
+        .leaderboard-container {
             display: flex;
-            flex-direction: column;
-            gap: 12px;
+            justify-content: center;
+            margin-bottom: 30px;
         }
 
-        .card h2 {
-            margin: 0;
-            font-size: 1.18rem;
+        .leaderboard-card {
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
         }
 
-        .sub {
-            margin: 0;
+        .card-title {
+            margin: 0 0 8px 0;
+            font-size: 1.2rem;
+            color: var(--text);
+        }
+
+        .card-subtitle {
+            margin: 0 0 20px 0;
             color: var(--muted);
+            font-size: 0.9rem;
         }
 
-        .table {
+        .leaderboard-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 8px;
         }
 
-        .table th,
-        .table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, .08);
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 12px 8px;
             text-align: left;
-            font-size: .95rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .table th {
+        .leaderboard-table th {
             color: var(--muted);
             font-weight: 600;
+            font-size: 0.9rem;
         }
 
-        .score {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
+        .leaderboard-table td {
+            color: var(--text);
         }
 
         .rank-badge {
             display: inline-block;
-            min-width: 28px;
+            min-width: 32px;
             text-align: center;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, .06);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.8rem;
         }
 
         .rank-1 {
@@ -149,75 +142,62 @@
             color: #1f2937;
         }
 
-        /* 金 */
         .rank-2 {
             background: #9ca3af;
             color: #111827;
         }
 
-        /* 银 */
         .rank-3 {
             background: #d97706;
             color: #111827;
         }
 
-        /* 铜 */
-        .me {
-            background: rgba(59, 130, 246, .12);
+        .rank-other {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
         }
 
-        /* 当前用户高亮行 */
-
-        .empty {
-            color: var(--muted);
-            text-align: center;
-            padding: 16px 0;
+        .score {
+            text-align: right;
+            font-weight: 600;
         }
 
         .footer {
-            max-width: 960px;
-            margin: 0 auto 24px;
-            padding: 0 16px;
             display: flex;
             justify-content: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .footer .btn-primary {
-            height: 56px;
-            min-width: 160px;
-            border-radius: 12px;
+            gap: 24px;
         }
     </style>
 </head>
 
 <body>
-    <!-- 顶部 -->
-    <header class="top">
-        <div class="brand">
+    <div class="container">
+        <!-- 顶部标题和用户信息 -->
+        <header class="header">
             <h1>游戏排行榜</h1>
+            <div class="user-info">
+                <div class="avatar" id="avatar">U</div>
+                <span class="username" id="username">加载中…</span>
+            </div>
+        </header>
+
+        <!-- 工具栏 -->
+        <div class="toolbar">
+            <button id="btnRefresh" class="btn-primary">刷新排行榜</button>
         </div>
-        <div class="userbox">
-            <div class="avatar" id="avatar">U</div>
-            <span class="uname" id="username">加载中…</span>
+
+        <!-- 排行榜卡片 -->
+        <div class="leaderboard-container">
+            <div class="leaderboard-card" id="boardWrap">
+                <!-- JS 动态插入排行榜内容 -->
+            </div>
         </div>
-    </header>
 
-    <!-- 工具栏 -->
-    <div class="toolbar">
-        <button id="btnRefresh" class="btn-primary">刷新排行榜</button>
-    </div>
-
-    <!-- 排行卡片容器 -->
-    <main class="wrap" id="boardWrap">
-        <!-- JS 动态插入每个游戏的排行榜卡片 -->
-    </main>
-
-    <!-- 底部 -->
-    <div class="footer">
-        <button id="backHome" class="btn-primary">返回主菜单</button>
-        <button id="logout" class="btn-primary">退出登录</button>
+        <!-- 底部按钮 -->
+        <div class="footer">
+            <button id="backHome" class="btn-primary">返回主菜单</button>
+            <button id="logout" class="btn-primary">退出登录</button>
+        </div>
     </div>
 
     <script>
@@ -228,6 +208,7 @@
             // 和后端的 gameCode 映射到展示标题
             const GAME_TITLES = {
                 'guess_game': '数字猜猜乐 · Top 10',
+                'map_game': '地图寻路挑战 · Top 10',
                 // 以后加更多：'snake': '贪吃蛇 · Top 10', ...
             };
 
@@ -283,36 +264,44 @@
             }
 
             function renderCard(gameCode, items, currentUID) {
-                const card = document.createElement('section');
-                card.className = 'card';
+                const card = document.createElement('div');
+                card.className = 'leaderboard-card';
 
-                const h2 = document.createElement('h2');
-                h2.textContent = titleByCode(gameCode);
+                const title = document.createElement('h2');
+                title.className = 'card-title';
+                title.textContent = titleByCode(gameCode);
 
-                const sub = document.createElement('p');
-                sub.className = 'sub';
-                sub.textContent = '展示 Redis ZSET 的前 10 名（按分数降序）。';
+                const subtitle = document.createElement('p');
+                subtitle.className = 'card-subtitle';
+                if (gameCode === 'map_game') {
+                    subtitle.textContent = '展示前 10 名最快完成记录（用时越短排名越高）。';
+                } else {
+                    subtitle.textContent = '展示 Redis ZSET 的前 10 名（按分数降序）。';
+                }
 
-                card.appendChild(h2);
-                card.appendChild(sub);
+                card.appendChild(title);
+                card.appendChild(subtitle);
 
                 if (!items || items.length === 0) {
                     const empty = document.createElement('div');
-                    empty.className = 'empty';
+                    empty.style.textAlign = 'center';
+                    empty.style.padding = '20px';
+                    empty.style.color = 'var(--muted)';
                     empty.textContent = '暂无上榜数据';
                     card.appendChild(empty);
                     return card;
                 }
 
                 const table = document.createElement('table');
-                table.className = 'table';
+                table.className = 'leaderboard-table';
 
                 const thead = document.createElement('thead');
+                const scoreLabel = gameCode === 'map_game' ? '用时(秒)' : '分数';
                 thead.innerHTML = `
       <tr>
-        <th style="width:88px;">名次</th>
+        <th style="width:80px;">名次</th>
         <th>用户</th>
-        <th class="score">分数</th>
+        <th class="score">${scoreLabel}</th>
       </tr>`;
                 table.appendChild(thead);
 
@@ -320,7 +309,7 @@
 
                 for (const row of items) {
                     const tr = document.createElement('tr');
-                    if (currentUID && row.user_id === currentUID) tr.classList.add('me');
+                    if (currentUID && row.user_id === currentUID) tr.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
 
                     const tdRank = document.createElement('td');
                     const badge = document.createElement('span');
@@ -329,6 +318,7 @@
                     if (row.rank === 1) badge.classList.add('rank-1');
                     else if (row.rank === 2) badge.classList.add('rank-2');
                     else if (row.rank === 3) badge.classList.add('rank-3');
+                    else badge.classList.add('rank-other');
                     tdRank.appendChild(badge);
 
                     const tdUser = document.createElement('td');
@@ -336,7 +326,13 @@
 
                     const tdScore = document.createElement('td');
                     tdScore.className = 'score';
-                    tdScore.textContent = row.score;
+                    // 地图游戏显示时间格式，其他游戏显示分数
+                    if (gameCode === 'map_game') {
+                        const seconds = parseFloat(row.score);
+                        tdScore.textContent = isNaN(seconds) ? row.score : seconds.toFixed(2) + 's';
+                    } else {
+                        tdScore.textContent = row.score;
+                    }
 
                     tr.appendChild(tdRank);
                     tr.appendChild(tdUser);

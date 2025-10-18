@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>动态地图寻路挑战</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        :root {
+            --muted: #7d9ac2;
+            --cell: 24px;
+            --primary: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC";
+            background: #f5f7fb;
+            color: #0f172a;
+        }
+
+        .top {
+            max-width: 1400px;
+            margin: 16px auto 12px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 0, 0, .06);
+            background: rgba(255, 255, 255, .9);
+        }
+
+        .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .uname {
+            color: var(--muted);
+            font-size: .95rem;
+        }
+
+        /* 三列改用 flex（左自适应，中右固定） */
+        .wrap {
+            max-width: 1400px;
+            margin: 16px auto 8px;
+            padding: 0 16px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .card--mapXL {
+            flex: 1 1 0;
+            min-width: 320px;
+        }
+
+        .card--controls {
+            flex: 0 0 380px;
+            max-width: 380px;
+            min-width: 280px;
+        }
+
+        .card--stats {
+            flex: 0 0 320px;
+            max-width: 320px;
+            min-width: 240px;
+        }
+
+        .card {
+            border: 1px solid rgba(0, 0, 0, .06);
+            border-radius: 16px;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, .06);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .card h2 {
+            margin: 0;
+            font-size: 1.15rem;
+        }
+
+        .sub {
+            margin: 0 0 8px;
+            color: rgba(0, 0, 0, 0.856);
+            font-size: .96rem;
+            line-height: 2.0;
+        }
+
+        /* 地图容器 —— 重要： width:100% + overflow:auto，防止撑开其他列 */
+        .map-container {
+            position: relative;
+            background: rgba(0, 0, 0, .03);
+            border: 1px solid rgba(0, 0, 0, .04);
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 360px;
+            max-height: 75vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            /* 超出时滚动，不会把别的列推开 */
+            width: 100%;
+        }
+
+        /* map-grid: 注意 width 与 grid-template-columns 会被 JS 动态设置 */
+        .map-grid {
+            display: grid;
+            gap: 2px;
+            border-radius: 8px;
+            padding: 8px;
+            border: 1px solid rgba(0, 0, 0, .06);
+            max-width: 100%;
+            width: max-content;
+            /* 根据格子数量自适应宽度 */
+        }
+
+        /* 当 mapGrid 中插入提示消息 .msg 时，让它跨列并占满 */
+        .map-grid>.msg {
+            grid-column: 1 / -1;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .map-cell {
+            width: var(--cell);
+            height: var(--cell);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            border: 1px solid rgba(0, 0, 0, .06);
+            transition: all .2s ease;
+            position: relative;
+            background: #f8fafc;
+        }
+
+        .map-cell.wall {
+            background: #1f2937;
+            border-color: #374151;
+            color: transparent;
+        }
+
+        .map-cell.path {
+            background: #e6edf7;
+            border-color: #dbe6f6;
+            color: #6b7280;
+        }
+
+        .map-cell.start {
+            background: #10b981;
+            color: #fff;
+            border-color: #059669;
+        }
+
+        .map-cell.player {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #2563eb;
+            animation: pulse 1.5s infinite;
+        }
+
+        .map-cell.visited {
+            background: #eef2ff;
+            border-color: #dbeafe;
+            color: #6b7280;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .map-controls {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, .06);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: .75rem;
+            color: #374151;
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-game {
+            flex: 1;
+            height: 44px;
+            min-width: 110px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: .92rem;
+            border: none;
+            cursor: pointer
+        }
+
+        .btn-start {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-reset {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        .stat {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            border: 1px solid rgba(0, 0, 0, .06);
+            background: rgba(0, 0, 0, 0.02);
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: .85rem;
+        }
+
+        .msg {
+            padding: 10px 12px;
+            border-radius: 10px;
+            line-height: 1.5;
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            min-height: 44px;
+            font-size: .9rem;
+            word-break: break-word;
+            white-space: normal;
+        }
+
+        .msg.success {
+            border-color: rgba(34, 197, 94, .25);
+            background: rgba(34, 197, 94, .06);
+        }
+
+        .msg.info {
+            border-color: rgba(59, 130, 246, .18);
+            background: rgba(59, 130, 246, .03);
+        }
+
+        .progress {
+            height: 10px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .bar {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width .25s ease;
+        }
+
+        hr {
+            border: none;
+            height: 1px;
+            background: rgba(0, 0, 0, 0.04);
+            margin: 12px 0;
+        }
+
+        .time-display {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 4px 0;
+        }
+
+        .current-time {
+            color: #10b981
+        }
+
+        .total-time {
+            color: #f59e0b
+        }
+
+        .time-label {
+            font-size: .88rem;
+            color: var(--muted);
+            margin-bottom: 2px;
+        }
+
+        /* 方向键：改成 grid，grid-area 精确定位 */
+        .movement-controls {
+            margin: 0;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .movement-controls h3 {
+            margin: 0 0 10px;
+            font-size: .95rem;
+            text-align: center;
+            color: #0f172a;
+        }
+
+        .direction-pad {
+            display: grid;
+            grid-template-columns: 56px 56px 56px;
+            grid-template-rows: 56px 56px 56px;
+            grid-template-areas:
+                ". up ."
+                "left center right"
+                ". down .";
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            max-width: 220px;
+            margin: 0 auto;
+        }
+
+        .btn-up {
+            grid-area: up;
+        }
+
+        .btn-down {
+            grid-area: down;
+        }
+
+        .btn-left {
+            grid-area: left;
+        }
+
+        .btn-right {
+            grid-area: right;
+        }
+
+        .center-indicator {
+            grid-area: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            padding: 8px;
+            background: rgba(59, 130, 246, 0.08);
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.12);
+        }
+
+        .btn-direction {
+            width: 56px;
+            height: 56px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid rgba(0, 0, 0, 0.06);
+            background: #fff;
+            color: #0f172a;
+            cursor: pointer;
+        }
+
+        .btn-direction:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+        .map-legend {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: .85rem;
+            color: var(--muted);
+        }
+
+        .below {
+            max-width: 1400px;
+            margin: 8px auto 24px;
+            padding: 0 16px;
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+        }
+
+        .below .btn-primary {
+            height: 44px;
+            min-width: 160px;
+            border-radius: 10px;
+            font-size: .92rem;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* 响应式：窄屏时改为竖列 */
+        @media (max-width:1100px) {
+            .wrap {
+                flex-direction: column;
+                gap: 14px;
+                padding: 0 12px;
+            }
+
+            .card--controls,
+            .card--stats {
+                flex: 1 1 auto;
+                max-width: 100%;
+            }
+
+            .card--mapXL {
+                max-width: 100%
+            }
+
+            .direction-pad {
+                grid-template-columns: 44px 44px 44px;
+                grid-template-rows: 44px 44px 44px;
+                gap: 6px;
+            }
+
+            .btn-direction {
+                width: 44px;
+                height: 44px;
+            }
+        }
+
+        @media (max-width:600px) {
+            .map-cell {
+                width: 18px;
+                height: 18px;
+                font-size: 11px;
+            }
+
+            .btn-game {
+                min-width: 100px;
+                height: 40px;
+            }
+
+            .map-container {
+                min-height: 320px;
+                max-height: 60vh;
+                padding: 12px;
+            }
+
+            .card {
+                padding: 14px;
+                gap: 8px;
+            }
+
+            .card h2 {
+                font-size: 1.05rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="top">
+        <div class="brand">
+            <h1>地图寻路挑战</h1>
+        </div>
+        <div class="userbox">
+            <div class="avatar" id="avatar">U</div><span class="uname" id="username">加载中…</span>
+        </div>
+    </header>
+
+    <main class="wrap">
+        <!-- 左：地图（自适应） -->
+        <section class="card card--mapXL">
+            <h2>地图显示区</h2>
+            地图游戏规则：
+            <ul style="color:var(--muted);font-size:.9rem;line-height:1.6;">
+                用户移动蓝色玩家>(🔵)从起点出发，探索地图，抵达隐藏终点即自动完成本轮。
+            </ul>
+            <div class="map-legend">
+                <span class="legend-item"><span class="legend-wall">█</span> 障碍物</span>
+                <span class="legend-item"><span class="legend-path">·</span> 可走路径</span>
+                <span class="legend-item"><span class="legend-start">+</span> 起点</span>
+                <span class="legend-item"><span class="legend-player">🔵</span> 玩家</span>
+            </div>
+
+            <div class="map-container">
+                <div class="map-controls">方向键/按钮移动 | 抵达终点自动记录</div>
+                <div id="mapDisplay" class="map-grid">
+                    <div class="msg info">点击“开始游戏”生成地图</div>
+                </div>
+            </div>
+
+            <div id="feedback" class="msg info">请点击“开始游戏”按钮开始第 1 轮挑战。</div>
+        </section>
+
+        <!-- 中：游戏控制 -->
+        <section class="card card--controls">
+            <h2>游戏控制</h2>
+            <div class="game-controls">
+                <button id="btnStart" class="btn-game btn-start">开始游戏</button>
+                <button id="btnReset" class="btn-game btn-reset">重置游戏</button>
+            </div>
+
+            <div class="movement-controls">
+                <h3>移动控制</h3>
+                <!-- 结构调整：方向键与 centerIndicator 都是 direction-pad 的直接子元素 -->
+                <div class="direction-pad" aria-hidden="false">
+                    <button id="btnUp" class="btn-direction btn-up" disabled>↑</button>
+                    <button id="btnLeft" class="btn-direction btn-left" disabled>←</button>
+                    <div class="center-indicator">🔵</div>
+                    <button id="btnRight" class="btn-direction btn-right" disabled>→</button>
+                    <button id="btnDown" class="btn-direction btn-down" disabled>↓</button>
+                </div>
+                <small
+                    style="color:var(--muted);font-size:.8rem;text-align:center;display:block;margin-top:6px;">也可使用键盘方向键控制</small>
+            </div>
+
+            <div class="stat">
+                <span class="chip">当前轮次：<b id="roundText">—</b></span>
+                <span class="chip">难度等级：<b id="difficultyText">—</b></span>
+                <span class="chip">地图大小：<b id="sizeText">—</b></span>
+                <span class="chip">路径距离：<b id="distanceText">—</b></span>
+            </div>
+
+            <div class="progress">
+                <div id="bar" class="bar"></div>
+            </div>
+            <small style="color:var(--muted);font-size:.82rem;">进度条显示：当前轮次 / 总轮次 (3 轮)</small>
+
+            <hr />
+            <div>
+                <div class="time-label">本轮用时（实时）</div>
+                <div class="time-display current-time" id="currentTime">00:00</div>
+                <div class="time-label">三轮总用时</div>
+                <div class="time-display total-time" id="totalTime">00:00</div>
+            </div>
+        </section>
+
+        <!-- 右：个人统计 -->
+        <section class="card card--stats">
+            <h2>个人统计</h2>
+            <div class="stat">
+                <span class="chip">历史最佳：<b id="myBest">—</b></span>
+                <span class="chip">当前排名：<b id="myRank">—</b></span>
+            </div>
+            <hr />
+            <div class="stat"><span class="chip muted">游戏说明：</span></div>
+            <ul style="color:var(--muted);font-size:.9rem;line-height:1.6;">
+                <li>三轮挑战，难度递增（8×8 → 12×12 → 16×16）</li>
+                <li>隐藏终点，抵达即自动完成本轮</li>
+                <li>用时越短排名越高，第三轮结束自动保存成绩</li>
+            </ul>
+            <div class="stat" style="margin-top:8px;">
+                <button id="gotoRanks" class="btn-primary"
+                    style="width:100%; height:42px; border-radius:10px; font-size:.9rem;">查看排行榜</button>
+            </div>
+        </section>
+    </main>
+
+    <div class="below">
+        <button id="backHome" class="btn-primary">返回主菜单</button>
+        <button id="viewRanks" class="btn-primary">地图游戏排行榜</button>
+    </div>
+
+    <script>
+        // ====== 基础封装 ======
+        const $ = s => document.querySelector(s);
+        const API_ME = '/api/me';
+        const API_MAP_START = '/api/game/map/start';
+        const API_MAP_COMPLETE = '/api/game/map/complete';
+        const API_MAP_RESET = '/api/game/map/reset';
+        const API_MYBEST = '/api/game/leaderboard/me?game=map_game';
+
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            if (!t) return null;
+            return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t);
+        }
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign({ 'Content-Type': 'application/json' }, token ? { 'Authorization': token } : {}, opts.headers || {});
+            const r = await fetch(url, { credentials: 'include', ...opts, headers });
+            if (r.status === 401) { localStorage.removeItem('token'); location.href = '/auth/login'; throw new Error('Unauthorized'); }
+            return r;
+        }
+
+        function initialOf(name) { if (!name) return 'U'; const s = String(name).trim(); return s ? s[0].toUpperCase() : 'U'; }
+        async function loadMe() {
+            try {
+                const r = await authFetch(API_ME);
+                const d = await r.json().catch(() => ({}));
+                const uname = d.username || d.name || 'unknown';
+                $('#username').textContent = uname; $('#avatar').textContent = initialOf(uname);
+                return { id: d.user_id || d.id || 0, name: uname };
+            } catch { return { id: 0, name: '' }; }
+        }
+
+        // ====== 游戏状态 ======
+        const gameState = { round: 0, difficulty: 0, size: 0, isActive: false, startTime: null, totalTime: 0, mapData: null, startPoint: null, endPoint: null, playerPos: null, visitedCells: new Set(), completing: false };
+        let currentTimeInterval = null;
+
+        // ====== 时间显示 ======
+        const pad2 = n => String(n).padStart(2, '0');
+        function formatTime(seconds) { const m = Math.floor(seconds / 60), s = Math.floor(seconds % 60); return `${pad2(m)}:${pad2(s)}`; }
+        function updateCurrentTime() { if (!gameState.isActive || !gameState.startTime) return; const elapsed = (Date.now() - gameState.startTime) / 1000; $('#currentTime').textContent = formatTime(elapsed); }
+        function startTimer() { gameState.startTime = Date.now(); currentTimeInterval = setInterval(updateCurrentTime, 1000); }
+        function stopTimer() { if (currentTimeInterval) { clearInterval(currentTimeInterval); currentTimeInterval = null; } }
+
+        // 自适应格子
+        function fitCellSize(size) {
+            const container = document.querySelector('.map-container'); if (!container) return;
+            const inner = container.clientWidth - 40;
+            const usable = inner - (16 + 2) - (size - 1) * 2;
+            let cell = Math.floor(usable / size);
+            cell = Math.max(18, Math.min(cell, 32));
+            document.documentElement.style.setProperty('--cell', cell + 'px');
+        }
+
+        // ====== 地图渲染（mapData: string[]） ======
+        function renderMap(mapData, startPoint, endPoint) {
+            if (!mapData || !mapData.length) { console.error('地图数据为空或无效'); return; }
+            const size = mapData.length;
+            const mapDisplay = $('#mapDisplay');
+            fitCellSize(size);
+            // 设置列数，以便 grid 正确布局格子
+            mapDisplay.style.gridTemplateColumns = `repeat(${size}, var(--cell))`;
+            mapDisplay.style.gridAutoRows = `var(--cell)`;
+            mapDisplay.innerHTML = '';
+
+            gameState.mapData = mapData; gameState.startPoint = startPoint; gameState.endPoint = endPoint;
+            gameState.playerPos = { x: startPoint.x, y: startPoint.y }; gameState.visitedCells.clear(); gameState.size = size;
+
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'map-cell';
+                    cell.dataset.row = i; cell.dataset.col = j;
+                    const ch = mapData[i][j];
+                    if (i === startPoint.x && j === startPoint.y) { cell.classList.add('start', 'player'); cell.textContent = '🔵'; }
+                    else if (ch === 'o' || ch === 'x' || ch === '+') { cell.classList.add('path'); cell.textContent = '·'; }
+                    else { cell.classList.add('wall'); cell.textContent = '█'; }
+                    mapDisplay.appendChild(cell);
+                }
+            }
+            enableMovementButtons();
+        }
+
+        // 清空地图并显示提示：重置 gridTemplateColumns（防止竖排）
+        function clearMapWithTip(tip) {
+            const mapDisplay = $('#mapDisplay');
+            // 1) 重置列设置，确保提示不是被限制在小列宽里
+            mapDisplay.style.gridTemplateColumns = '';
+            mapDisplay.style.gridAutoRows = '';
+            mapDisplay.innerHTML = `<div class="msg info">${tip}</div>`;
+        }
+
+        function enableMovementButtons() { $('#btnUp').disabled = false; $('#btnDown').disabled = false; $('#btnLeft').disabled = false; $('#btnRight').disabled = false; }
+        function disableMovementButtons() { $('#btnUp').disabled = true; $('#btnDown').disabled = true; $('#btnLeft').disabled = true; $('#btnRight').disabled = true; }
+
+        // ====== 移动 ======
+        async function movePlayer(direction) {
+            if (!gameState.isActive || !gameState.playerPos || gameState.completing) return;
+            const { x, y } = gameState.playerPos;
+            let nx = x, ny = y;
+            if (direction === 'up') nx = x - 1;
+            if (direction === 'down') nx = x + 1;
+            if (direction === 'left') ny = y - 1;
+            if (direction === 'right') ny = y + 1;
+            if (nx < 0 || nx >= gameState.size || ny < 0 || ny >= gameState.size) return;
+            const ch = gameState.mapData[nx][ny];
+            const isEnd = (nx === gameState.endPoint.x && ny === gameState.endPoint.y);
+            const isStartNew = (nx === gameState.startPoint.x && ny === gameState.startPoint.y);
+            if (ch !== 'o' && ch !== 'x' && !isStartNew && !isEnd) return;
+
+            const old = document.querySelector(`[data-row="${x}"][data-col="${y}"]`);
+            const wasStart = (x === gameState.startPoint.x && y === gameState.startPoint.y);
+            if (old) {
+                old.classList.remove('player');
+                if (!wasStart) { old.classList.add('visited'); old.textContent = '·'; }
+                else { old.textContent = '+'; }
+                gameState.visitedCells.add(`${x},${y}`);
+            }
+
+            gameState.playerPos = { x: nx, y: ny };
+            const now = document.querySelector(`[data-row="${nx}"][data-col="${ny}"]`);
+            if (now) { now.classList.add('player'); now.textContent = '🔵'; }
+
+            if (isEnd) {
+                gameState.isActive = false; gameState.completing = true;
+                disableMovementButtons();
+                $('#feedback').className = 'msg success';
+                $('#feedback').textContent = '到达终点，正在记录成绩…';
+                try { await completeRound(); } finally { gameState.completing = false; }
+            }
+        }
+
+        function setupKeyboardControls() {
+            const handler = (e) => {
+                if (!gameState.isActive || gameState.completing) return;
+                switch (e.key) {
+                    case 'ArrowUp': e.preventDefault(); movePlayer('up'); break;
+                    case 'ArrowDown': e.preventDefault(); movePlayer('down'); break;
+                    case 'ArrowLeft': e.preventDefault(); movePlayer('left'); break;
+                    case 'ArrowRight': e.preventDefault(); movePlayer('right'); break;
+                }
+            };
+            document.addEventListener('keydown', handler, { passive: false });
+        }
+
+        // ====== 流程（与后端交互保持不变） ======
+        async function startGame() {
+            try {
+                $('#btnStart').disabled = true;
+                $('#feedback').className = 'msg info'; $('#feedback').textContent = '正在生成地图…';
+                const r = await authFetch(API_MAP_START, { method: 'POST' });
+                const d = await r.json();
+
+                gameState.round = d.round; gameState.difficulty = d.difficulty; gameState.size = d.size;
+                gameState.isActive = true; gameState.completing = false;
+
+                $('#roundText').textContent = d.round;
+                $('#difficultyText').textContent = getDifficultyName(d.difficulty);
+                $('#sizeText').textContent = `${d.size}×${d.size}`;
+                $('#distanceText').textContent = d.currentDistance;
+                $('#totalTime').textContent = formatTime(d.totalTime);
+
+                renderMap(d.mapData, d.startPoint, d.endPoint);
+
+                const progress = (d.round / 3) * 100;
+                $('#bar').style.width = progress + '%';
+                startTimer();
+
+                $('#feedback').className = 'msg info';
+                $('#feedback').textContent = (d.message || '地图已生成。') + ' 使用方向键或按钮移动，抵达终点自动完成本轮。';
+            } catch (e) {
+                $('#feedback').className = 'msg'; $('#feedback').textContent = '开始游戏失败：' + (e?.message || '请稍后再试');
+            } finally { $('#btnStart').disabled = false; }
+        }
+
+        async function completeRound() {
+            try {
+                stopTimer();
+                const r = await authFetch(API_MAP_COMPLETE, { method: 'POST' });
+                const d = await r.json().catch(() => ({}));
+                if (!r.ok) throw new Error(d?.error || d?.message || ('HTTP ' + r.status));
+
+                gameState.totalTime = d.totalTime;
+                $('#totalTime').textContent = formatTime(d.totalTime);
+                $('#currentTime').textContent = formatTime(d.roundTime);
+
+                let suffix = '';
+                if (d.gameComplete) suffix = d.saved ? '（已保存到排行榜）' : '（未能保存到排行榜，请查看后端日志）';
+                else suffix = '（已完成本轮）';
+
+                $('#feedback').className = 'msg success';
+                $('#feedback').textContent = (d.message || '本轮完成。') + suffix;
+
+                // 清空地图并提示（现在会完整横向显示，不会竖排）
+                clearMapWithTip(d.gameComplete ? '游戏已完成，点击“开始游戏”开启新一局' : '本轮已完成，点击“开始游戏”进入下一轮');
+
+                disableMovementButtons();
+                gameState.isActive = false;
+
+                if (d.gameComplete) {
+                    gameState.round = 0;
+                    $('#roundText').textContent = '—';
+                    $('#difficultyText').textContent = '—';
+                    $('#sizeText').textContent = '—';
+                    $('#distanceText').textContent = '—';
+                    $('#bar').style.width = '0%';
+                    await loadMyBest();
+                }
+            } catch (e) {
+                $('#feedback').className = 'msg'; $('#feedback').textContent = '记录成绩失败：' + (e?.message || '请稍后再试');
+                gameState.isActive = true; enableMovementButtons();
+            }
+        }
+
+        async function resetGame() {
+            try {
+                stopTimer();
+                $('#btnReset').disabled = true;
+                const r = await authFetch(API_MAP_RESET, { method: 'POST' });
+                let d = {}; try { d = await r.json(); } catch { }
+                if (!r.ok) throw new Error(d?.error || d?.message || ('HTTP ' + r.status));
+
+                gameState.isActive = false; gameState.completing = false; gameState.round = 0; gameState.totalTime = 0;
+                gameState.mapData = null; gameState.startPoint = null; gameState.endPoint = null; gameState.playerPos = null; gameState.visitedCells.clear();
+
+                $('#roundText').textContent = '—'; $('#difficultyText').textContent = '—'; $('#sizeText').textContent = '—'; $('#distanceText').textContent = '—';
+                $('#currentTime').textContent = '00:00'; $('#totalTime').textContent = '00:00'; $('#bar').style.width = '0%';
+                clearMapWithTip('游戏已重置，点击“开始游戏”重新开始');
+
+                $('#feedback').className = 'msg info'; $('#feedback').textContent = d?.message || '当前用户的地图游戏状态已重置，可以重新开始游戏';
+                disableMovementButtons();
+            } catch (e) { $('#feedback').className = 'msg'; $('#feedback').textContent = '重置游戏失败：' + (e?.message || '请稍后再试'); }
+            finally { $('#btnReset').disabled = false; }
+        }
+
+        function getDifficultyName(d) { return d === 0 ? '简单' : d === 1 ? '中等' : d === 2 ? '困难' : '—'; }
+
+        async function loadMyBest() {
+            try {
+                const r = await authFetch(API_MYBEST);
+                const d = await r.json().catch(() => ({}));
+                if (!r.ok) throw new Error(d?.error || d?.message || ('HTTP ' + r.status));
+                const best = Number(d.best ?? d.score ?? 0);
+                const rank = Number(d.rank ?? 0);
+                $('#myBest').textContent = (isFinite(best) && best > 0) ? formatTime(best) : '—';
+                $('#myRank').textContent = (rank > 0) ? ('#' + rank) : '未上榜';
+            } catch (e) {
+                $('#myBest').textContent = '—'; $('#myRank').textContent = '—';
+            }
+        }
+
+        // 事件绑定
+        $('#btnStart').onclick = startGame;
+        $('#btnReset').onclick = resetGame;
+        $('#btnUp').onclick = () => movePlayer('up');
+        $('#btnDown').onclick = () => movePlayer('down');
+        $('#btnLeft').onclick = () => movePlayer('left');
+        $('#btnRight').onclick = () => movePlayer('right');
+        $('#backHome').onclick = () => location.href = '/page/shell';
+        $('#viewRanks').onclick = () => location.href = '/page/game/leaderboards';
+        $('#gotoRanks').onclick = () => location.href = '/page/game/leaderboards';
+
+        (async function init() {
+            await loadMe();
+            await loadMyBest();
+            setupKeyboardControls();
+            disableMovementButtons();
+        })();
+    </script>
+</body>
+
+</html>

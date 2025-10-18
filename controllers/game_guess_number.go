@@ -21,7 +21,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-const users_number = 5
+const users_number = 10
 
 type GamePlayer struct {
 	Round      int // 1..3
@@ -262,7 +262,7 @@ func GameGuess_Reset(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "游戏已重置（清空所有玩家进行中的三轮局）。"})
 }
 
-/********* DB 辅助 *********/
+/********* DB 保存数据 *********/
 
 // 统一的保存函数：写入 MySQL（表 models.Game_Guess_Score），并在成功后更新 Redis 排行榜
 func saveGameScore(uid uint, username string, score int) (err error) {
@@ -306,7 +306,7 @@ func saveGameScore(uid uint, username string, score int) (err error) {
 		return
 	}
 
-	// 3) 达上限：锁定“最低分且最早”的记录并更新（就地复用）
+	// 3) 达上限：锁定且最早的记录并更新（就地复用）
 	var oldest models.Game_Guess_Score
 	if err = tx.
 		Clauses(clause.Locking{Strength: "UPDATE"}).

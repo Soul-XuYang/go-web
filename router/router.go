@@ -33,7 +33,11 @@ func SetupRouter() *gin.Engine {
 		page.GET("/rmb-top10", func(c *gin.Context) { c.HTML(200, "rmb_top10.html", nil) })
 		//文章界面
 		page.GET("/articles", func(c *gin.Context) { c.HTML(200, "articles_pages.html", nil) })
+		// 游戏相关界面
+		page.GET("/game/selection", func(c *gin.Context) { c.HTML(200, "game_selection.html", nil) })
+		// 游戏界面
 		page.GET("/game/guess", func(c *gin.Context) { c.HTML(200, "game_guess_number.html", nil) })
+		page.GET("/game/map", func(c *gin.Context) { c.HTML(200, "game_map_time.html", nil) })
 		// game排行榜界面
 		page.GET("/game/leaderboards", func(c *gin.Context) { c.HTML(200, "game_leaderboards.html", nil) })
 	}
@@ -51,11 +55,15 @@ func SetupRouter() *gin.Engine {
 		api.POST("/rmb-top10/refresh", controllers.RefreshRmbTop10) // 手动刷新
 		api.GET("/rmb-top10", controllers.GetRmbTop10)              // 读取快照
 
-		//游戏模块
+		//游戏猜数字模块
 		api.POST("/game/guess", controllers.GameGuess)
 		api.POST("/game/reset", controllers.GameGuess_Reset)
 		api.GET("/game/leaderboards", controllers.GameLeaderboards)
 		api.GET("/game/leaderboard/me", controllers.GameLeaderboardMe) //获取个人排名和成绩-可以针对任何游戏
+		// 地图游戏模块
+		api.POST("/game/map/start", controllers.GameMapStart)       // 开始地图游戏
+		api.POST("/game/map/complete", controllers.GameMapComplete) // 完成地图游戏
+		api.POST("/game/map/reset", controllers.GameMapReset)       // 重置地图游戏
 		//文章操作模块
 		api.GET("/articles", controllers.Get_All_Articles)
 

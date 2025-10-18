@@ -5,6 +5,7 @@ import (
     
     "net/http"
     "github.com/gin-gonic/gin"
+    "github.com/go-redis/redis"
     "project/log"
     "go.uber.org/zap"
 )
@@ -21,7 +22,9 @@ func GameLeaderboards(c *gin.Context) {
 	errors := make(map[string]string) // 可选：某个榜读取失败也不影响其他榜
 
 	for gameCode, zkey := range boards {  //这里只有一个面板
-		items, err := readTopNBest(topK,zkey)  // items返回的是LBEntry的切片数据
+		// 判断是否是"越低越好"的游戏
+		isLowerBetter := lowerIsBetter[gameCode]
+		items, err := readTopN(topK, zkey, isLowerBetter)  // items返回的是LBEntry的切片数据
 		if err != nil {
 			errors[gameCode] = err.Error() // 对应游戏的名称错误
 			continue
@@ -40,7 +43,8 @@ func GameLeaderboards(c *gin.Context) {
 }
 
 // 这里默认取10条-输入数据-可以针对任何表格
-func readTopNBest(limit int,zest_collection string) ([]LBEntry, error) {
+// isLowerBetter: true表示分数越低越好（如用时），false表示分数越高越好（如得分）
+func readTopN(limit int, zest_collection string, isLowerBetter bool) ([]LBEntry, error) {
     if global.RedisDB == nil {
         return nil, nil
     }
@@ -48,8 +52,18 @@ func readTopNBest(limit int,zest_collection string) ([]LBEntry, error) {
         limit = 10
     }
 
-    // 高分在前取 0..limit-1
-    zs, err := global.RedisDB.ZRevRangeWithScores(zest_collection, 0, int64(limit-1)).Result()  // 给出集合key的名称
+    var zs []redis.Z
+    var err error
+    
+    // 根据游戏类型选择排序方式
+    if isLowerBetter {
+        // 分数越低越好（用时越短）：从低到高排序
+        zs, err = global.RedisDB.ZRangeWithScores(zest_collection, 0, int64(limit-1)).Result()
+    } else {
+        // 分数越高越好（得分越高）：从高到低排序
+        zs, err = global.RedisDB.ZRevRangeWithScores(zest_collection, 0, int64(limit-1)).Result()
+    }
+    
     if err != nil {
         return nil, err
     }

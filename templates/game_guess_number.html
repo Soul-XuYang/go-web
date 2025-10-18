@@ -17,7 +17,7 @@
 
         /* 顶部 */
         .top {
-            max-width: 1360px;
+            max-width: 1280px;
             margin: 24px auto 8px;
             padding: 0 16px;
             display: flex;
@@ -61,12 +61,12 @@
 
         /* 主体两列卡片（减小间距） */
         .wrap {
-            max-width: 1360px;
+            max-width: 1280px;
             margin: 16px auto 8px;
             padding: 0 16px;
             display: grid;
             grid-template-columns: 1.35fr 1fr;
-            gap: 12px;
+            gap: 16px;
             align-items: stretch;
         }
 
@@ -85,8 +85,8 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
-            min-height: 400px;
-            /* 如果 base.css 对 .card 有更强的尺寸限制，需要去 base.css 调整 */
+            min-height: 420px;
+            max-width: none;
         }
 
         .card h2 {
@@ -201,7 +201,7 @@
 
         /* 卡片下方按钮条：同一行左右两侧（不换行） */
         .below {
-            max-width: 1360px;
+            max-width: 1280px;
             margin: 8px auto 24px;
             padding: 0 16px;
             display: flex;

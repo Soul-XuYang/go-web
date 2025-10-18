@@ -62,7 +62,7 @@
 
         /* 中心卡片区：自适应列（>=3张也能排版好看） */
         :root {
-            --card-min: 360px;
+            --card-min: 420px;
             /* 每张卡最小宽度（越大=卡越大，一行越少） */
             --card-gap: 20px;
             /* 卡片间距 */
@@ -168,17 +168,17 @@
 
         <section class="card">
             <h2>汇率表</h2>
-            <p class="sub">公共数据入口，用户可进入汇率表工作区进行查看与新增。</p>
+            <p class="sub">公共数据入口，用户可进入汇率表工作区进行查看汇率与新增汇率数据。</p>
             <div class="actions">
                 <button id="goRates" class="btn-primary">进入公共汇率页</button>
             </div>
         </section>
 
         <section class="card">
-            <h2>数字猜猜乐</h2>
-            <p class="sub">三轮闯关，轮次越靠后可用次数越少，支持排行榜存档。</p>
+            <h2>应用程序功能中心</h2>
+            <p class="sub">多种应用程序以及小游戏等你来挑战！猜数字、地图寻路等精彩游戏，支持排行榜竞技。</p>
             <div class="actions">
-                <button id="goGame" class="btn-primary">进入游戏</button>
+                <button id="goGameCenter" class="btn-primary">选择游戏</button>
             </div>
         </section>
 
@@ -256,7 +256,7 @@
             // 绑定路由按钮（若元素缺失不会中断脚本）
             bind('goArticles', () => location.href = '/page/articles');
             bind('goRates', () => location.href = '/page/rates');
-            bind('goGame', () => location.href = '/page/game/guess');      // 若实际为 /page/game/guess，改这里
+            bind('goGameCenter', () => location.href = '/page/game/selection');  // 游戏选择中心
             bind('goFile', () => location.href = '/page/file');
 
             // 退出登录：服务端清 Cookie + 本地清 token

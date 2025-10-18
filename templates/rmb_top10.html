@@ -17,8 +17,8 @@
 
         /* 主卡片更宽，适合表格 */
         .card.wide {
-            max-width: 860px;
             padding: 24px;
+            max-width: 1080px;
         }
 
         /* 工具栏：标题在左，按钮在右（横向紧挨） */
@@ -96,7 +96,7 @@
 </head>
 
 <body>
-    <div class="card wide fx-card">
+    <div class="card card-xl wide fx-card">
         <div class="toolbar">
             <div>
                 <h1 style="margin:0;">RMB 汇率 Top10地区</h1>
@@ -113,10 +113,10 @@
             <table class="table-centered" id="tbl">
                 <thead>
                     <tr>
-                        <th style="width:25%;">正向含义（CNY → 外币）</th>
-                        <th style="width:25%;">正向汇率（外币）</th>
-                        <th style="width:25%;">反向含义（外币 → CNY）</th>
-                        <th style="width:25%;">反向汇率（CNY）</th>
+                        <th style="width:30%;">正向含义（CNY → 外币）</th>
+                        <th style="width:20%;">正向汇率（外币）</th>
+                        <th style="width:30%;">反向含义（外币 → CNY）</th>
+                        <th style="width:20%;">反向汇率（CNY）</th>
                     </tr>
                 </thead>
                 <tbody id="tbody">

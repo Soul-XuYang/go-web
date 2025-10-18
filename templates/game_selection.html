@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>游戏选择中心</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        :root {
+            --muted: #94a3b8;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        /* 顶部：标题 + 用户展示 */
+        .top {
+            max-width: 960px;
+            margin: 20px auto 12px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.75rem;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .04);
+        }
+
+        .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .8rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+        }
+
+        .uname {
+            color: var(--muted);
+            font-size: .95rem;
+        }
+
+        /* 游戏卡片区 */
+        .wrap {
+            max-width: 960px;
+            padding: 0 16px;
+            margin: 28px auto;
+            display: grid;
+            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            align-items: stretch;
+        }
+
+        .game-card {
+            padding: 32px;
+            min-height: 280px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, .03);
+            box-shadow: 0 10px 30px rgba(2, 6, 23, .16);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), #10b981);
+        }
+
+        .game-card h2 {
+            margin: 0 0 8px;
+            font-size: 1.4rem;
+            color: var(--text);
+        }
+
+        .game-description {
+            margin: 0 0 12px;
+            color: var(--muted);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .game-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .game-features li {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .game-features li::before {
+            content: '✨';
+            font-size: 0.8rem;
+        }
+
+        .game-actions {
+            margin-top: auto;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn-game {
+            height: 48px;
+            min-width: 140px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .btn-play {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #ffffff;
+        }
+
+        .btn-play:hover {
+            background: rgba(70, 201, 10, 0.05);
+            color: var(--text);
+        }
+
+        .btn-ranks {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #ffffff;
+        }
+
+        .btn-ranks:hover {
+            background: rgba(209, 137, 4, 0.05);
+            color: var(--text);
+        }
+
+        /* 专门的地图游戏卡片样式 */
+        .map-game-card::before {
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+        }
+
+        /* 底部按钮区 */
+        .footer {
+            max-width: 960px;
+            margin: 6px auto 24px;
+            padding: 0 16px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* 响应式 */
+        @media (max-width: 900px) {
+            .wrap {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .game-card {
+                padding: 24px;
+                min-height: 220px;
+            }
+
+            .game-actions {
+                flex-direction: column;
+            }
+
+            .btn-game {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 顶部：标题 + 用户信息 -->
+    <header class="top">
+        <div class="brand">
+            <h1>游戏选择中心</h1>
+        </div>
+        <div class="userbox">
+            <div class="avatar" id="avatar">U</div>
+            <span class="uname" id="username">加载中…</span>
+        </div>
+    </header>
+
+    <!-- 游戏选择卡片 -->
+    <main class="wrap">
+        <!-- 数字猜猜乐 -->
+        <section class="game-card">
+            <h2>🎯 数字猜猜乐</h2>
+            <p class="game-description">
+                经典的猜数字游戏，考验你的逻辑推理能力！
+            </p>
+            <ul class="game-features">
+                <li>三轮闯关挑战</li>
+                <li>难度递增设计</li>
+                <li>分数排行榜竞技</li>
+                <li>策略与运气并存</li>
+            </ul>
+            <div class="game-actions">
+                <button id="playGuessGame" class="btn-game btn-play">开始游戏</button>
+                <button id="guessRanks" class="btn-game btn-ranks">查看排行</button>
+            </div>
+        </section>
+
+        <!-- 地图寻路游戏 -->
+        <section class="game-card map-game-card">
+            <h2>🗺️ 地图寻路挑战</h2>
+            <p class="game-description">
+                在迷宫中寻找最佳路径，挑战你的空间思维！
+            </p>
+            <ul class="game-features">
+                <li>三轮地图挑战</li>
+                <li>8×8 → 12×12 → 16×16</li>
+                <li>用时排行榜竞速</li>
+                <li>键盘控制移动</li>
+            </ul>
+            <div class="game-actions">
+                <button id="playMapGame" class="btn-game btn-play">开始游戏</button>
+                <button id="mapRanks" class="btn-game btn-ranks">查看排行</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部按钮 -->
+    <div class="footer">
+        <button id="backHome" class="btn-game btn-play">返回主菜单</button>
+    </div>
+
+    <script>
+        (function () {
+            const $ = s => document.querySelector(s);
+
+            // 只在元素存在时绑定
+            function bind(id, handler) {
+                const el = document.getElementById(id);
+                if (!el) { console.warn('未找到元素 #' + id); return; }
+                el.addEventListener('click', handler);
+            }
+
+            // token 处理
+            function getStoredToken() {
+                const t = localStorage.getItem('token');
+                if (!t) return null;
+                return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t);
+            }
+
+            async function authFetch(url, opts = {}) {
+                const token = getStoredToken();
+                const headers = Object.assign(
+                    { 'Content-Type': 'application/json' },
+                    token ? { 'Authorization': token } : {},
+                    opts.headers || {}
+                );
+                const r = await fetch(url, {
+                    credentials: 'include',
+                    ...opts, headers
+                });
+                if (r.status === 401) {
+                    localStorage.removeItem('token');
+                    location.href = '/auth/login';
+                    throw new Error('Unauthorized');
+                }
+                return r;
+            }
+
+            function initialOf(name) {
+                if (!name) return 'U';
+                const s = String(name).trim();
+                return s ? s[0].toUpperCase() : 'U';
+            }
+
+            async function loadMe() {
+                try {
+                    const r = await authFetch('/api/me');
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    const d = await r.json().catch(() => ({}));
+                    const uname = d.username || d.name || 'unknown';
+                    $('#username').textContent = uname;
+                    $('#avatar').textContent = initialOf(uname);
+                } catch (err) {
+                    console.error('加载用户信息失败：', err);
+                }
+            }
+
+            // 绑定游戏入口
+            bind('playGuessGame', () => location.href = '/page/game/guess');
+            bind('playMapGame', () => location.href = '/page/game/map');
+
+            // 绑定排行榜入口（可以带参数跳转到具体游戏排行）
+            bind('guessRanks', () => location.href = '/page/game/leaderboards#guess_game');
+            bind('mapRanks', () => location.href = '/page/game/leaderboards#map_game');
+
+            // 底部按钮
+            bind('backHome', () => location.href = '/page/shell');
+            bind('viewAllRanks', () => location.href = '/page/game/leaderboards');
+
+            // 首屏
+            loadMe();
+        })();
+    </script>
+</body>
+
+</html>

@@ -107,6 +107,23 @@ body {
     animation: pop .25s ease-out;
 }
 
+/* 语义化卡片尺寸 */
+.card-sm {
+    max-width: 480px;
+}
+
+.card-md {
+    max-width: 860px;
+}
+
+.card-lg {
+    max-width: 1080px;
+}
+
+.card-xl {
+    max-width: 1280px;
+}
+
 .ap-link {
     color: var(--primary);
     font-weight: 600;
@@ -249,4 +266,47 @@ button[disabled] {
 .small {
     font-size: .85rem;
     color: var(--muted)
+}
+
+/* === 大号地图卡片 === */
+.card--mapXL {
+    /* 地图卡片特殊样式 */
+    padding: 20px;
+}
+
+.card--mapXL h2 {
+    font-size: 1.15rem;
+    margin-bottom: 4px;
+}
+
+.card--mapXL .sub {
+    font-size: .86rem;
+    margin-bottom: 10px;
+}
+
+/* 地图容器 - 移除过高的vh设置 */
+.card--mapXL .map-container {
+    min-height: 500px;
+    max-height: 75vh;
+    width: 100%;
+}
+
+/* 大屏优化 */
+@media (min-width: 1280px) {
+    .card--mapXL {
+        padding: 22px;
+    }
+
+    .card--mapXL .map-container {
+        min-height: 550px;
+        max-height: 70vh;
+    }
+}
+
+/* 超大屏优化 */
+@media (min-width: 1600px) {
+    .card--mapXL .map-container {
+        min-height: 600px;
+        max-height: 72vh;
+    }
 }

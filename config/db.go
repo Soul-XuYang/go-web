@@ -37,7 +37,9 @@ func runMigrations() {
 		&models.Article{},
 		&models.ExchangeRate{},
 		&models.RmbTop10S{}, // ← 新增,
-	    &models.Game_Guess_Score{}, // 新增表
+		// 新增游戏数据表
+	    &models.Game_Guess_Score{}, 
+		&models.Game_Map_Time{},
 	); err != nil {
 		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
 	}

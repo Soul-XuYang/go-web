@@ -11,9 +11,11 @@ import (
 
 // 设置redis表的key
 const (
+	// redis的用户表名
 	RedisKeyUsernames = "game:usernames"
 	//这里是redis中各个游戏的表名
-	RedisKeyTop10Best = "game:guess:top10:best"
+	RedisKeyTop10Best       = "game:guess:top10:best"  // 猜数字的游戏排行榜
+	RedisKeyTop10FastestMap = "game:map:top10:fastest" // 地图游戏排行榜（用时最短）
 )
 
 func initRedis() {

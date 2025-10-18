@@ -36,6 +36,9 @@ type Config struct { //标明这个配置文件是可以全局使用的
 		Username string
 		Password string
 	}
+	Api struct{
+		loc_key string
+	}
 }
 
 var AppConfig *Config //创建配置文件-指针全局可以修改并且避免拷贝-配置句柄
