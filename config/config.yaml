@@ -6,11 +6,15 @@ database: # 数据库的配置
   # 通过 TCP 连接本地 MySQL 的 3306 端口 root 是本地数据库的密码  - @tcp(127.0.0.1:3306) - 通过 TCP 连接本地 MySQL 的 3306 端口
   #  使用 UTF-8 字符集（支持表情符号）  parseTime=True将数据库时间类型解析为 Go 的 time.Time loc=Local - 使用本地时区
   dsn: root:123456@tcp(127.0.0.1:13306)/test?charset=utf8mb4&parseTime=True&loc=Local
-  MaxIdleConns: 11  # 最初的空闲数是11
-  MaxOpenConns: 114  # 最大的打开的链接数是114
-  ConnMaxLifetimeHours: 1   # 持续时间
+  MaxIdleConns: 11 # 最初的空闲数是11
+  MaxOpenConns: 114 # 最大的打开的链接数是114
+  ConnMaxLifetimeHours: 1 # 持续时间
 
 redis:
-  addr: localhost:6379  # redis服务器的地址和端口
-  DB: 0  # 数据库编号
-  Password: ""  # 访问密码
+  addr: localhost:6379 # redis服务器的地址和端口
+  DB: 0 # 数据库编号
+  Password: "" # 访问密码
+
+superadmin: # 超级管理员账号
+  username: superadmin
+  password: admin123456

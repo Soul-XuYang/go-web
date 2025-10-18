@@ -9,6 +9,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// 设置redis表的key
+const (
+	RedisKeyUsernames = "game:usernames"
+	//这里是redis中各个游戏的表名
+	RedisKeyTop10Best = "game:guess:top10:best"
+)
+
 func initRedis() {
 	RedisClient := redis.NewClient(&redis.Options{ //配置选项Options是结构体
 		Addr:     AppConfig.Redis.Addr,

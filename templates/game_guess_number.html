@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=2" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>数字猜猜乐小游戏</title>
     <link rel="stylesheet" href="/static/base.css" />
     <style>
@@ -17,8 +17,8 @@
 
         /* 顶部 */
         .top {
-            max-width: 960px;
-            margin: 20px auto 12px;
+            max-width: 1360px;
+            margin: 24px auto 8px;
             padding: 0 16px;
             display: flex;
             align-items: center;
@@ -27,7 +27,7 @@
 
         .brand h1 {
             margin: 0;
-            font-size: 1.25rem;
+            font-size: 1.35rem;
         }
 
         .userbox {
@@ -59,18 +59,18 @@
             font-size: .95rem;
         }
 
-        /* 主体两列卡片 */
+        /* 主体两列卡片（减小间距） */
         .wrap {
-            max-width: 960px;
-            margin: 28px auto;
+            max-width: 1360px;
+            margin: 16px auto 8px;
             padding: 0 16px;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            grid-template-columns: 1.35fr 1fr;
+            gap: 12px;
             align-items: stretch;
         }
 
-        @media (max-width:860px) {
+        @media (max-width:1080px) {
             .wrap {
                 grid-template-columns: 1fr;
             }
@@ -80,16 +80,18 @@
             border: 1px solid rgba(255, 255, 255, .12);
             border-radius: 16px;
             background: rgba(255, 255, 255, .03);
-            padding: 24px 20px;
+            padding: 32px 26px;
             box-shadow: 0 10px 30px rgba(2, 6, 23, .16);
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
+            min-height: 400px;
+            /* 如果 base.css 对 .card 有更强的尺寸限制，需要去 base.css 调整 */
         }
 
         .card h2 {
             margin: 0 0 6px;
-            font-size: 1.18rem;
+            font-size: 1.22rem;
         }
 
         .sub {
@@ -99,7 +101,7 @@
 
         .row {
             display: flex;
-            gap: 8px;
+            gap: 12px;
             align-items: center;
         }
 
@@ -110,39 +112,39 @@
 
         /* 大号输入与按钮 */
         #guessInput {
-            height: 56px;
-            font-size: 1.1rem;
+            height: 64px;
+            font-size: 1.15rem;
             padding: 0 16px;
             border-radius: 12px;
         }
 
         #btnGuess {
-            height: 56px;
-            min-width: 160px;
+            height: 64px;
+            min-width: 184px;
             border-radius: 12px;
         }
 
         .stat {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             flex-wrap: wrap;
         }
 
         .chip {
             border: 1px solid rgba(255, 255, 255, .12);
             background: rgba(255, 255, 255, .05);
-            padding: 6px 10px;
+            padding: 6px 12px;
             border-radius: 999px;
-            font-size: .92rem;
+            font-size: .94rem;
         }
 
         .msg {
-            padding: 10px 12px;
+            padding: 14px 16px;
             border-radius: 12px;
-            line-height: 1.5;
+            line-height: 1.6;
             background: rgba(255, 255, 255, .04);
             border: 1px solid rgba(255, 255, 255, .1);
-            min-height: 44px;
+            min-height: 52px;
         }
 
         .msg.low {
@@ -159,7 +161,7 @@
         }
 
         .progress {
-            height: 10px;
+            height: 12px;
             border-radius: 999px;
             overflow: hidden;
             background: rgba(255, 255, 255, .06);
@@ -197,20 +199,23 @@
             font-weight: 700;
         }
 
-        .footer {
-            max-width: 960px;
-            margin: 6px auto 24px;
+        /* 卡片下方按钮条：同一行左右两侧（不换行） */
+        .below {
+            max-width: 1360px;
+            margin: 8px auto 24px;
             padding: 0 16px;
             display: flex;
-            gap: 8px;
-            justify-content: center;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: nowrap;
+            /* 关键：不换行，保证同一行 */
         }
 
-        .footer button {
-            height: 40px;
-            border-radius: 999px;
-            padding: 0 14px;
+        .below .btn-primary {
+            height: 48px;
+            min-width: 180px;
+            border-radius: 12px;
         }
     </style>
 </head>
@@ -236,19 +241,19 @@
             <p class="sub">系统会生成 1–100 的整数。共三轮，轮次越靠后可用次数越少。</p>
 
             <div class="row">
-                <input id="guessInput" class="grow" type="number" min="1" max="100" placeholder="输入1-100的整数" />
+                <input id="guessInput" class="grow" type="number" min="1" max="100" placeholder="输入 1-100 的整数" />
                 <button id="btnGuess" class="btn-primary">提交</button>
             </div>
 
-            <div id="feedback" class="msg">在上方输入1-100的整数数字并提交。</div>
+            <div id="feedback" class="msg">在上方输入 1–100 的整数并提交。</div>
 
             <div class="actions">
-                <button id="btnQuick" class="btn-ghost">随机试一个</button>
-                <button id="btnClear" class="btn-ghost">清空</button>
+                <button id="btnQuick" class="btn-primary">随机试一个</button>
+                <button id="btnClear" class="btn-primary">清空</button>
             </div>
         </section>
 
-        <!-- 右：进度与分数 -->
+        <!-- 右：进度与分数 + 历史最佳 -->
         <section class="card">
             <h2>本局进度 & 分数</h2>
 
@@ -257,6 +262,8 @@
                 <span class="chip">本轮已用：<b id="attemptsUsed">0</b></span>
                 <span class="chip">本轮可用：<b id="attemptsAllowed">—</b></span>
                 <span class="chip">本轮剩余：<b id="attemptsRemain">—</b></span>
+                <span class="chip">历史最佳：<b id="myBest">—</b></span>
+                <span class="chip">当前排名：<b id="myRank">—</b></span>
             </div>
 
             <div class="progress">
@@ -269,11 +276,11 @@
             <div class="row">
                 <div class="grow">
                     <div>当前总分（进行中）</div>
-                    <div class="score-strong" style="font-size:1.6rem" id="scoreCurrent">0</div>
+                    <div class="score-strong" style="font-size:1.8rem" id="scoreCurrent">0</div>
                 </div>
                 <div>
                     <div>本局最终分（三轮后）</div>
-                    <div class="score-strong" style="font-size:1.6rem" id="scoreFinal">—</div>
+                    <div class="score-strong" style="font-size:1.8rem" id="scoreFinal">—</div>
                 </div>
             </div>
 
@@ -283,9 +290,10 @@
         </section>
     </main>
 
-    <!-- 底部：返回主页面 & 退出 -->
-    <div class="footer">
-        <button id="backHome" class="btn-primary">返回主页面</button>
+    <!-- 紧贴卡片下方：同一行左右按钮 -->
+    <div class="below">
+        <button id="backHome" class="btn-primary">返回主菜单</button>
+        <button id="gotoRanks" class="btn-primary">查看游戏排行榜</button>
     </div>
 
     <script>
@@ -293,6 +301,7 @@
         const $ = s => document.querySelector(s);
         const API_ME = '/api/me';
         const API_GUESS = '/api/game/guess';
+        const API_MYBEST = '/api/game/leaderboard/me?game=guess_game';
 
         function getStoredToken() {
             const t = localStorage.getItem('token');
@@ -306,10 +315,9 @@
                 token ? { 'Authorization': token } : {},
                 opts.headers || {}
             );
-            const r = await fetch(url, { ...opts, headers });
+            const r = await fetch(url, { credentials: 'include', ...opts, headers });
             if (r.status === 401) {
-                localStorage.removeItem('token');
-                location.href = '/auth/login';
+                localStorage.removeItem('token'); location.href = '/auth/login';
                 throw new Error('Unauthorized');
             }
             return r;
@@ -325,10 +333,11 @@
             try {
                 const r = await authFetch(API_ME);
                 const d = await r.json().catch(() => ({}));
-                const uname = d.username || 'unknown';
+                const uname = d.username || d.name || 'unknown';
                 $('#username').textContent = uname;
                 $('#avatar').textContent = initialOf(uname);
-            } catch { }
+                return { id: d.user_id || d.id || 0, name: uname };
+            } catch { return { id: 0, name: '' }; }
         }
 
         // ====== 前端状态 ======
@@ -340,24 +349,20 @@
             scoreFinal: null
         };
 
-        // 兜底：从 message 解析“第 X 轮”
         function parseRoundFromMessage(msg) {
             const m = String(msg || '').match(/第\s*(\d+)\s*轮/);
             return m ? parseInt(m[1], 10) : null;
         }
 
-        // 渲染函数：当 status === "correct" 时，立即切入下一轮/新一局（仅前端改动）
         function applyAndRender(d) {
             const { message, status } = d || {};
             let { attempts, remaining, totalScore, round } = d || {};
-
             const currentRound = (typeof round === 'number' ? round : parseRoundFromMessage(message)) || state.round || 1;
 
-            const attemptsNum = typeof attempts === 'number' ? attempts : 0;
-            const remainingNum = typeof remaining === 'number' ? remaining : 0;
-            const allowedThisRound = attemptsNum + remainingNum;
+            const a = Number.isFinite(attempts) ? attempts : 0;
+            const r = Number.isFinite(remaining) ? remaining : 0;
+            const allowed = a + r;
 
-            // 1) 先按“当前轮原样数据”渲染
             $('#feedback').className = 'msg ' + (d?.status || '');
             $('#feedback').textContent = message || '——';
 
@@ -365,86 +370,59 @@
             $('#scoreCurrent').textContent = state.scoreCurrent;
 
             state.round = currentRound;
-            state.attemptsUsed = attemptsNum || state.attemptsUsed || 0;
-            if (allowedThisRound > 0) state.attemptsAllowed = allowedThisRound;
+            state.attemptsUsed = a || state.attemptsUsed || 0;
+            if (allowed > 0) state.attemptsAllowed = allowed;
 
             $('#roundText').textContent = state.round;
             $('#attemptsUsed').textContent = state.attemptsUsed;
-            $('#attemptsRemain').textContent = (typeof remaining === 'number') ? remaining : '—';
+            $('#attemptsRemain').textContent = Number.isFinite(remaining) ? remaining : '—';
             $('#attemptsAllowed').textContent = state.attemptsAllowed ?? '—';
 
-            // 当前轮进度条
-            {
-                const denom = state.attemptsAllowed || 1;
-                const pct = Math.max(0, Math.min(100, (state.attemptsUsed / denom) * 100));
-                $('#bar').style.width = pct + '%';
-            }
+            const denom = state.attemptsAllowed || 1;
+            const pct = Math.max(0, Math.min(100, (state.attemptsUsed / denom) * 100));
+            $('#bar').style.width = pct + '%';
 
-            // 2) 若本次猜中，立刻转入下一轮 / 新一局
             if (status === 'correct') {
                 if (currentRound < 3) {
                     const nextRound = currentRound + 1;
-                    const nextAllowed = Math.max(1, (allowedThisRound || 0) - 1);
-
-                    state.round = nextRound;
-                    state.attemptsUsed = 0;
-                    state.attemptsAllowed = nextAllowed;
-
+                    const nextAllowed = Math.max(1, (allowed || 0) - 1);
+                    state.round = nextRound; state.attemptsUsed = 0; state.attemptsAllowed = nextAllowed;
                     $('#roundText').textContent = nextRound;
                     $('#attemptsUsed').textContent = 0;
                     $('#attemptsRemain').textContent = nextAllowed;
                     $('#attemptsAllowed').textContent = nextAllowed;
                     $('#bar').style.width = '0%';
                 } else {
-                    // 第三轮猜中：显示最终分，复位为新一局界面（等待下一次请求覆盖）
                     const m = String(message || '').match(/三轮总分[:：]\s*(\d+)/);
-                    if (m) {
-                        state.scoreFinal = Number(m[1]);
-                    } else {
-                        state.scoreFinal = state.scoreCurrent;
-                    }
+                    state.scoreFinal = m ? Number(m[1]) : state.scoreCurrent;
                     $('#scoreFinal').textContent = state.scoreFinal;
 
-                    state.round = 1;
-                    state.attemptsUsed = 0;
-                    state.attemptsAllowed = null;
-                    $('#roundText').textContent = 1;
-                    $('#attemptsUsed').textContent = 0;
-                    $('#attemptsRemain').textContent = '—';
-                    $('#attemptsAllowed').textContent = '—';
+                    state.round = 1; state.attemptsUsed = 0; state.attemptsAllowed = null;
+                    $('#roundText').textContent = 1; $('#attemptsUsed').textContent = 0;
+                    $('#attemptsRemain').textContent = '—'; $('#attemptsAllowed').textContent = '—';
                     $('#bar').style.width = '0%';
-
-                    state.scoreCurrent = 0;
-                    $('#scoreCurrent').textContent = 0;
+                    state.scoreCurrent = 0; $('#scoreCurrent').textContent = 0;
 
                     const el = $('#scoreFinal');
-                    el.style.transition = 'transform .2s ease';
-                    el.style.transform = 'scale(1.15)';
+                    el.style.transition = 'transform .2s ease'; el.style.transform = 'scale(1.15)';
                     setTimeout(() => { el.style.transform = 'scale(1)'; }, 240);
+
+                    loadMyBest();
                 }
             }
 
-            // 3) 若文案直接提示“已开启新一局”，也做复位（兼容非 correct 的结束）
             if (/三轮结束|已开启新一局|已为你开启新的一局/.test(String(message || ''))) {
                 const m2 = String(message || '').match(/三轮总分[:：]\s*(\d+)/);
-                if (m2) {
-                    state.scoreFinal = Number(m2[1]);
-                    $('#scoreFinal').textContent = state.scoreFinal;
-                }
-                state.round = 1;
-                state.attemptsUsed = 0;
-                state.attemptsAllowed = null;
-                $('#roundText').textContent = 1;
-                $('#attemptsUsed').textContent = 0;
-                $('#attemptsRemain').textContent = '—';
-                $('#attemptsAllowed').textContent = '—';
+                if (m2) { state.scoreFinal = Number(m2[1]); $('#scoreFinal').textContent = state.scoreFinal; }
+                state.round = 1; state.attemptsUsed = 0; state.attemptsAllowed = null;
+                $('#roundText').textContent = 1; $('#attemptsUsed').textContent = 0;
+                $('#attemptsRemain').textContent = '—'; $('#attemptsAllowed').textContent = '—';
                 $('#bar').style.width = '0%';
-                state.scoreCurrent = 0;
-                $('#scoreCurrent').textContent = 0;
+                state.scoreCurrent = 0; $('#scoreCurrent').textContent = 0;
+                loadMyBest();
             }
         }
 
-        // ====== 交互 ======
         async function submitGuess(num) {
             if (isNaN(num) || num < 1 || num > 100) {
                 $('#feedback').className = 'msg';
@@ -453,10 +431,7 @@
             }
             try {
                 $('#btnGuess').disabled = true;
-                const r = await authFetch(API_GUESS, {
-                    method: 'POST',
-                    body: JSON.stringify({ number: Number(num) })
-                });
+                const r = await authFetch(API_GUESS, { method: 'POST', body: JSON.stringify({ number: Number(num) }) });
                 const d = await r.json();
                 applyAndRender(d);
             } catch (e) {
@@ -467,21 +442,36 @@
             }
         }
 
+        async function loadMyBest() {
+            try {
+                const r = await authFetch(API_MYBEST);
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const d = await r.json().catch(() => ({}));
+                const best = Number(d.best ?? d.score ?? 0);
+                const rank = Number(d.rank ?? 0);
+                $('#myBest').textContent = isFinite(best) && best > 0 ? best : '—';
+                $('#myRank').textContent = (rank > 0) ? ('#' + rank) : '未上榜';
+            } catch (e) {
+                $('#myBest').textContent = '—';
+                $('#myRank').textContent = '—';
+            }
+        }
+
+        // 事件绑定
         $('#btnGuess').onclick = () => submitGuess($('#guessInput').value);
-        $('#guessInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') submitGuess($('#guessInput').value);
-        });
-        $('#btnQuick').onclick = () => {
-            const v = Math.floor(Math.random() * 100) + 1;
-            $('#guessInput').value = v;
-            submitGuess(v);
-        };
+        $('#guessInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitGuess($('#guessInput').value); });
+        $('#btnQuick').onclick = () => { const v = Math.floor(Math.random() * 100) + 1; $('#guessInput').value = v; submitGuess(v); };
         $('#btnClear').onclick = () => { $('#guessInput').value = ''; $('#guessInput').focus(); };
 
-        // 底部按钮
+        // 下方按钮
         $('#backHome').onclick = () => location.href = '/page/shell';
+        $('#gotoRanks').onclick = () => location.href = '/page/game/leaderboards'; /* 或你实际的榜单页 */
+
         // 首屏
-        loadMe();
+        (async function init() {
+            await loadMe();
+            await loadMyBest();
+        })();
     </script>
 </body>
 

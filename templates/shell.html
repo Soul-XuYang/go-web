@@ -256,7 +256,7 @@
             // 绑定路由按钮（若元素缺失不会中断脚本）
             bind('goArticles', () => location.href = '/page/articles');
             bind('goRates', () => location.href = '/page/rates');
-            bind('goGame', () => location.href = '/page/game');      // 若实际为 /page/game/guess，改这里
+            bind('goGame', () => location.href = '/page/game/guess');      // 若实际为 /page/game/guess，改这里
             bind('goFile', () => location.href = '/page/file');
 
             // 退出登录：服务端清 Cookie + 本地清 token

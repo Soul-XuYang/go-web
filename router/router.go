@@ -34,6 +34,8 @@ func SetupRouter() *gin.Engine {
 		//文章界面
 		page.GET("/articles", func(c *gin.Context) { c.HTML(200, "articles_pages.html", nil) })
 		page.GET("/game/guess", func(c *gin.Context) { c.HTML(200, "game_guess_number.html", nil) })
+		// game排行榜界面
+		page.GET("/game/leaderboards", func(c *gin.Context) { c.HTML(200, "game_leaderboards.html", nil) })
 	}
 
 	// 受保护的 API（数据接口，需要登录）
@@ -52,12 +54,14 @@ func SetupRouter() *gin.Engine {
 		//游戏模块
 		api.POST("/game/guess", controllers.GameGuess)
 		api.POST("/game/reset", controllers.GameGuess_Reset)
+		api.GET("/game/leaderboards", controllers.GameLeaderboards)
+		api.GET("/game/leaderboard/me", controllers.GameLeaderboardMe) //获取个人排名和成绩-可以针对任何游戏
 		//文章操作模块
 		api.GET("/articles", controllers.Get_All_Articles)
 
 	}
-    // 超级管理员系统
-    admin := r.Group("/admin", middlewares.RolePermission("admin","superadmin")) //给定用户的身份登记
+	// 超级管理员系统
+	admin := r.Group("/admin", middlewares.RolePermission("admin", "superadmin")) //给定用户的身份登记
 	{
 		admin.GET("/dashboard", func(c *gin.Context) { c.HTML(200, "dashboard.html", nil) })
 	}
