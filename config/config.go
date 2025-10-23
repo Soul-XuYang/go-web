@@ -38,6 +38,7 @@ type Config struct { //标明这个配置文件是可以全局使用的
 	}
 	Api struct{
 		LocalKey string
+		LocationDailyLimit int
 	}
 }
 

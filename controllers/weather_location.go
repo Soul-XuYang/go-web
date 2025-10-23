@@ -17,6 +17,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const location_ttl = 2 * time.Hour
+
 // 硬编码
 var (
 	Accurate_District = [10][2]string{
@@ -64,7 +66,7 @@ func GetUser_Info(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(base, global.Timeout)
 	defer cancel()
 
-	loc, err := getLocalLocation()
+	loc, err := getLocalLocation(ctx, uid, false)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get user's location", "detail": err.Error()})
 		return
@@ -159,7 +161,6 @@ func GetWeatherData_top10(c *gin.Context) {
 }
 
 // 生成对应的城市的redis缓存-key
-
 func fetchWithCache_Weather(ctx context.Context, prov, city, county string, force bool) (CitySummary, error) {
 	key := cacheKey(prov, city, county)
 
@@ -218,50 +219,158 @@ type LocationInfo struct {
 	District string `json:"district"`
 }
 
-func getLocationByIP() (LocationInfo, error) {
-	ipUrl := fmt.Sprintf("https://restapi.amap.com/v3/ip?key=%s", config.LocalAPIKey) //提前创造好的
-	client := &http.Client{Timeout: 10 * time.Second}  // 创建一个客户端的结构体实例并赋值
+// 两个表
+func getLocationByIP(ctx context.Context, uid uint, force bool) (LocationInfo, error) {
+	var key string
+	if uid == 0 {
+		return LocationInfo{}, fmt.Errorf("unauthorized user")
+	} else {
+		key = fmt.Sprintf("location:%d", uid)
+	}
+	if !force {
+		if b, err := global.RedisDB.Get(key).Bytes(); err == nil {
+			var cached LocationInfo
+			if json.Unmarshal(b, &cached) == nil {
+				//调试-fmt.Println("已使用缓存数据!")
+				return cached, nil
+			}
+			// 若解析失败，则继续去实际请求-往下走
+		}
+	}
+	today := time.Now().Format("2006-01-02")
+	quotaKey := fmt.Sprintf("location_time:%s:user:%d", today, uid)
+	dailyLimit := int64(0)
 
-	// IP定位获取城市信息
-	resp, err := client.Get(ipUrl) //依据Url获取定位
+	// 尝试从配置中读取（你项目里可能有 config 或 global 常量）
+	if cfgLimit := config.AppConfig.Api.LocationDailyLimit; cfgLimit > 0 {
+		dailyLimit = int64(cfgLimit)
+	} else {
+		dailyLimit = 100 //硬编码默认为100
+	}
+	// 并发合并为一
+	v, err, _ := global.FetchGroup.Do(key, func() (interface{}, error) {
+		cnt, incrErr := global.RedisDB.Incr(quotaKey).Result() // 对Redis中名为quotaKey的键值执行自增操作（INCR命令）-获取自增后的结果和可能的错误
+		if incrErr != nil {
+			// Redis 操作失败：为了鲁棒性，尝试返回旧缓存（如果有）
+			if b, ge := global.RedisDB.Get(key).Bytes(); ge == nil {
+				var stale LocationInfo
+				if json.Unmarshal(b, &stale) == nil {
+					return stale, nil
+				}
+			}
+			return LocationInfo{}, fmt.Errorf("api quota check failed: %v", incrErr)
+		}
+		// 如果是第一次创建计数，设置当天到期（确保以天为单位计数）
+		if cnt == 1 {
+			// 设置到当天 23:59:59 或简单设置 24h 也可以
+			// 这里用 24 小时 TTL 更简单；若要到当天 23:59:59，需要计算剩余秒数
+			_ = global.RedisDB.Expire(quotaKey, 24*time.Hour).Err() // 设计redis的到期时间
+			// 调试fmt.Println("头一次创建！")
+		}
+
+		// 超额判断
+		if cnt > dailyLimit {
+			// 超配额：优先返回旧缓存（降级），没有缓存则返回配额超限错误
+			if b, ge := global.RedisDB.Get(key).Bytes(); ge == nil { // 如果缓存不存在直接报错
+				var stale LocationInfo
+				if json.Unmarshal(b, &stale) == nil {
+					return stale, nil
+				}
+			}
+			return LocationInfo{}, fmt.Errorf("daily quota exceeded for user %d (limit=%d) and cached data did not exist", uid, dailyLimit)
+		}
+
+		// 正式开始api查询
+		reqCtx, cancel := context.WithTimeout(ctx, global.FetchTimeout)
+		defer cancel()
+
+		ipUrl := fmt.Sprintf("https://restapi.amap.com/v3/ip?key=%s", config.LocalAPIKey)
+		client := &http.Client{Timeout: 10 * time.Second}
+		req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, ipUrl, nil)
+		if err != nil {
+			// 降级：尝试旧缓存
+			if b, ge := global.RedisDB.Get(key).Bytes(); ge == nil {
+				var stale LocationInfo
+				if json.Unmarshal(b, &stale) == nil {
+					return stale, nil
+				}
+			}
+			return LocationInfo{}, err
+		}
+		resp, err := client.Do(req) // 进行请求操作
+		if err != nil {
+			if b, ge := global.RedisDB.Get(key).Bytes(); ge == nil { // 读取缓存
+				var stale LocationInfo
+				if json.Unmarshal(b, &stale) == nil {
+					return stale, nil
+				}
+			}
+			return LocationInfo{}, fmt.Errorf("IP location request failed: %v", err)
+		}
+		defer resp.Body.Close()               // 关闭响应体，释放网络链接
+		if resp.StatusCode != http.StatusOK { //状态码错误
+			body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096)) //限制字数
+			errMsg := fmt.Sprintf("http %d: %s", resp.StatusCode, string(body))
+			//继续尝试读取缓存
+			if b, ge := global.RedisDB.Get(key).Bytes(); ge == nil {
+				var stale LocationInfo
+				if json.Unmarshal(b, &stale) == nil {
+					return stale, nil
+				}
+			}
+			return LocationInfo{}, fmt.Errorf("%s", errMsg)
+		}
+		body, _ := io.ReadAll(resp.Body) // 读取整个响应体到内存
+		var ipResult struct {
+			Status   string      `json:"status"`
+			Info     string      `json:"info"`
+			Province string      `json:"province"`
+			City     string      `json:"city"`
+			District interface{} `json:"district"`
+			Adcode   string      `json:"adcode"` // 可以保留adcode字段，有时它可能包含有用的区域编码信息
+		}
+		if err := json.Unmarshal(body, &ipResult); err != nil {
+			return LocationInfo{}, fmt.Errorf("failed to resolve IP location response: %v", err)
+		}
+		if ipResult.Status != "1" { // 依据api手册上的信息判断
+			return LocationInfo{}, fmt.Errorf("IP location failure: %s", ipResult.Info)
+		}
+		var district string
+		switch ipResult.District.(type) {
+		case nil:
+			district = ""
+		case string:
+			district = ipResult.District.(string)
+		}
+		locInfo := LocationInfo{
+			Status:   ipResult.Status,
+			Province: ipResult.Province,
+			City:     ipResult.City,
+			District: district,
+		}
+		if jb, e2 := json.Marshal(locInfo); e2 == nil {
+			_ = global.RedisDB.Set(key, jb, location_ttl).Err() //自定义设置
+		}
+		return locInfo, nil
+	}) // 并发操作完成
+
 	if err != nil {
-		return LocationInfo{}, fmt.Errorf("IP定位请求失败: %v", err)
+		if v != nil { //报错但是有数据
+			if li, ok := v.(LocationInfo); ok {
+				return li, nil
+			}
+		}
+		return LocationInfo{}, err
 	}
-	defer resp.Body.Close()          // 关闭响应体，释放网络链接
-	body, _ := io.ReadAll(resp.Body) // 读取整个响应体到内存
-	var ipResult struct {
-		Status   string      `json:"status"`
-		Info     string      `json:"info"`
-		Province string      `json:"province"`
-		City     string      `json:"city"`
-		District interface{} `json:"district"`
-		Adcode   string      `json:"adcode"` // 可以保留adcode字段，有时它可能包含有用的区域编码信息
+	if li, ok := v.(LocationInfo); ok { //如果这个数据存在
+		return li, nil
 	}
-	if err := json.Unmarshal(body, &ipResult); err != nil {
-		return LocationInfo{}, fmt.Errorf("解析IP定位响应失败: %v", err)
-	}
-	if ipResult.Status != "1" {
-		return LocationInfo{}, fmt.Errorf("IP定位失败: %s", ipResult.Info)
-	}
-	var district string
-	switch ipResult.District.(type) {
-	case nil:
-		district = ""
-	case string:
-		district = ipResult.District.(string)
-	}
-
-	return LocationInfo{
-		Status:   ipResult.Status,
-		Province: ipResult.Province,
-		City:     ipResult.City,
-		District: district, // 一般来说不返回区县信息，因为IP定位无法准确获取
-	}, nil
+	return LocationInfo{}, fmt.Errorf("unknown result from fetch")
 }
 
-func getLocalLocation() ([]string, error) { //返回三个字符数组
+func getLocalLocation(ctx context.Context, uid uint, force bool) ([]string, error) { //返回三个字符数组
 	// 获取IP位置信息
-	location, err := getLocationByIP()
+	location, err := getLocationByIP(ctx, uid, false)
 	if err != nil {
 		return []string{}, err //报错
 	}

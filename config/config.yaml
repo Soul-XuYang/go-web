@@ -21,3 +21,4 @@ superadmin: # 超级管理员账号
 
 api:
   localKey: "0270ba7fa32241c95ff5446901b99f6b"
+  LocationDailyLimit: 100 # 单个用户的使用上限制，硬编码默认为100
