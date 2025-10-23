@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>中国大陆城市天气 · Top10</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        :root {
+            /* 次要动作/警示色（比如橙色按钮） */
+            --muted: #94a3b8;
+            /* 次级文字色 */
+            --card: rgba(255, 255, 255, 0.03);
+            /* 卡片背景（可按需调整） */
+            --text: #0f1724;
+            /* 页面文本色 */
+        }
+
+        body {
+            margin: 0;
+            font-family: Inter, Helvetica, Arial, sans-serif;
+        }
+
+        .card {
+            max-width: 1180px;
+            margin: 18px auto;
+            padding: 20px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            box-shadow: 0 8px 30px rgba(2, 6, 23, 0.06);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.6rem;
+            color: var(--text);
+        }
+
+        .meta {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .04);
+        }
+
+        .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .8rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+        }
+
+        .toolbar-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border-radius: 10px;
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            border-radius: 8px;
+            margin-top: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 980px;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: rgba(0, 0, 0, 0.06);
+            color: var(--muted);
+            padding: 14px 12px;
+            text-align: left;
+            font-weight: 700;
+        }
+
+        tbody td {
+            padding: 14px 12px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+            color: var(--text);
+            vertical-align: middle;
+        }
+
+        .col-center {
+            text-align: center;
+        }
+
+        .digits {
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+        }
+
+        .weather-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .weather-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            object-fit: contain;
+            background: transparent;
+            display: inline-block;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .badge-err {
+            color: #b91c1c;
+            font-weight: 700;
+        }
+
+        @media (max-width:900px) {
+            table {
+                min-width: 720px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="header">
+            <div>
+                <h1>中国大陆城市天气 · Top10</h1>
+                <div id="asof" class="meta muted">数据获取时间：—</div>
+            </div>
+
+            <div class="userbox">
+                <div class="avatar" id="avatar">U</div>
+                <div style="text-align:right;">
+                    <div id="username" style="font-weight:700">加载中…</div>
+                    <div id="userLocal" class="meta">用户本地位置：— · 本地：—</div>
+                </div>
+
+                <div class="toolbar-buttons" style="margin-left:12px;">
+                    <button id="btnHome" class="btn">返回主菜单页面</button>
+                    <button id="btnManage" class="btn">刷新天气数据</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table id="tbl">
+                <thead>
+                    <tr>
+                        <th style="width:20%;">地区</th>
+                        <th style="width:18%;">天气</th>
+                        <th style="width:8%;" class="col-center">温度</th>
+                        <th style="width:8%;" class="col-center">空气质量AQI</th>
+                        <th style="width:14%;" class="col-center">明日温度:最低 / 最高</th>
+                        <th style="width:18%;">更新时间</th>
+                        <th style="width:12%;">备注 / 错误</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody">
+                    <tr>
+                        <td colspan="7" class="muted">正在加载中…</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        /* ====== 配置 ====== */
+        const API_USER_INFO = '/api/weather/info';
+        const API_LIST = '/api/weather/top10';
+        const PROXY_IMAGE = '/api/proxy/image?url='; // 后端代理接口
+        const URL_HOME = '/page/shell';
+        const URL_MANAGE = '/page/weather';
+
+        /* ====== 工具 ====== */
+        const $ = s => document.querySelector(s);
+
+        function buildAuthHeader() {
+            const raw = localStorage.getItem('token');
+            if (!raw) return {};
+            const token = raw.toLowerCase().startsWith('bearer ') ? raw : ('Bearer ' + raw);
+            return { Authorization: token, 'Content-Type': 'application/json' };
+        }
+
+        async function authFetch(url, opts = {}) {
+            const headers = Object.assign({}, buildAuthHeader(), opts.headers || {});
+            const res = await fetch(url, { ...opts, headers, credentials: 'include' });
+            if (res.status === 401) { localStorage.removeItem('token'); location.href = '/auth/login'; throw new Error('Unauthorized'); }
+            return res;
+        }
+
+        function pad(n) { return String(n).padStart(2, '0'); }
+
+        function formatTimeFlexible(raw) {
+            if (raw === null || raw === undefined || raw === '') return '—';
+            const s = String(raw).trim();
+            if (/^\d{12}$/.test(s)) {
+                const y = s.slice(0, 4), m = s.slice(4, 6), d = s.slice(6, 8), hh = s.slice(8, 10), mm = s.slice(10, 12);
+                return `${y}-${m}-${d} ${hh}:${mm}`;
+            }
+            if (/^\d{14}$/.test(s)) {
+                const y = s.slice(0, 4), m = s.slice(4, 6), d = s.slice(6, 8), hh = s.slice(8, 10), mm = s.slice(10, 12), ss = s.slice(12, 14);
+                return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+            }
+            if (/^\d+$/.test(s)) {
+                const n = Number(s);
+                if (n > 1e12) {
+                    const dt = new Date(n);
+                    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+                }
+                const dt = new Date(n * 1000);
+                return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+            }
+            const parsed = Date.parse(s);
+            if (!isNaN(parsed)) {
+                const dt = new Date(parsed);
+                return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+            }
+            return s;
+        }
+
+        function escapeHtml(s) {
+            if (s === null || s === undefined) return '';
+            return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+        }
+
+        function normalizeListResponse(json) {
+            if (Array.isArray(json)) return json;
+            if (json && Array.isArray(json.data)) return json.data;
+            if (json && Array.isArray(json.result)) return json.result;
+            return [];
+        }
+
+        function normalizeUrl(raw) {
+            if (!raw) return '';
+            try {
+                const s = String(raw).trim();
+                if (s.startsWith('//')) return (location.protocol === 'https:' ? 'https:' : 'http:') + s;
+                if (/^http:\/\//.test(s) && location.protocol === 'https:') {
+                    return s.replace(/^http:/, 'https:');
+                }
+                return s;
+            } catch (e) { return String(raw); }
+        }
+
+        const PLACEHOLDER_SVG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="%236b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M20 16.58A5 5 0 0018 7h-1.26A8 8 0 104 15.25"></path>' +
+            '<path d="M20 16.58a3 3 0 00-2 2.42"></path></svg>'
+        );
+
+        /* 强制走代理的域名（避免反盗链） */
+        const FORCE_PROXY_HOSTS = new Set(['mat1.gtimg.com']);
+
+        /* 给定原始 URL，返回用于 img.src 的最终 URL（可能是代理） */
+        function imgSrcFor(origUrl) {
+            if (!origUrl) return '';
+            try {
+                const u = new URL(origUrl);
+                if (FORCE_PROXY_HOSTS.has(u.hostname)) {
+                    return PROXY_IMAGE + encodeURIComponent(origUrl);
+                }
+                // 默认先直接请求（若失败会回退到代理）
+                return normalizeUrl(origUrl);
+            } catch (e) {
+                return PROXY_IMAGE + encodeURIComponent(origUrl);
+            }
+        }
+
+        /* Create weather <img> with fallback to proxy then placeholder */
+        function createWeatherImg(origUrlRaw, altText) {
+            const img = document.createElement('img');
+            img.className = 'weather-icon';
+            img.alt = altText || '';
+            img.loading = 'lazy';
+            img.src = PLACEHOLDER_SVG;
+
+            const normalized = normalizeUrl(origUrlRaw);
+            // if host is forced to proxy, use proxy immediately
+            try {
+                const u = normalized ? new URL(normalized) : null;
+                if (u && FORCE_PROXY_HOSTS.has(u.hostname)) {
+                    img.src = PROXY_IMAGE + encodeURIComponent(origUrlRaw);
+                    img.onerror = () => { img.onerror = null; img.src = PLACEHOLDER_SVG; };
+                    return img;
+                }
+            } catch (e) { /* ignore */ }
+
+            // Try direct first (better performance when allowed)
+            if (normalized) img.src = normalized;
+
+            let triedProxy = false;
+            img.onerror = function () {
+                if (!triedProxy) {
+                    triedProxy = true;
+                    try {
+                        img.onerror = function () { img.onerror = null; img.src = PLACEHOLDER_SVG; };
+                        img.src = PROXY_IMAGE + encodeURIComponent(origUrlRaw);
+                    } catch (e) {
+                        img.onerror = null;
+                        img.src = PLACEHOLDER_SVG;
+                    }
+                } else {
+                    img.onerror = null;
+                    img.src = PLACEHOLDER_SVG;
+                }
+            };
+
+            return img;
+        }
+
+        /* ===== rendering rows ===== */
+        function renderRowToTbody(tbody, item) {
+            const prov = item.province || item.Province || '';
+            const city = item.city || item.City || '';
+            const county = item.county || item.County || '';
+            const locationText = (prov ? prov : '') + (city ? (' / ' + city) : '') + (county ? (' / ' + county) : '');
+
+            const weather = item.weather || item.Weather || '';
+            const weather_url = item.weather_url || item.WeatherUrl || item.weatherUrl || '';
+            const degree = item.degree || item.Degree || item.temp || '';
+            const aqi = (item.aqi !== undefined && item.aqi !== null) ? item.aqi : (item.AQI !== undefined ? item.AQI : null);
+            const aqiName = item.aqi_name || item.AQIName || item.aqiName || '';
+            const tmin = item.tomorrow_min || item.TomorrowMin || '';
+            const tmax = item.tomorrow_max || item.TomorrowMax || '';
+            const updated = item.updated_at || item.UpdatedAt || item.as_of || item.AsOf || '';
+            const err = item.error || item.Error || '';
+
+            const tr = document.createElement('tr');
+
+            const tdLoc = document.createElement('td');
+            tdLoc.innerHTML = escapeHtml(locationText || '—');
+            tr.appendChild(tdLoc);
+
+            const tdWeather = document.createElement('td');
+            const weatherCell = document.createElement('div');
+            weatherCell.className = 'weather-cell';
+            const img = createWeatherImg(weather_url, weather);
+            weatherCell.appendChild(img);
+            const spanText = document.createElement('span');
+            spanText.textContent = weather || '—';
+            weatherCell.appendChild(spanText);
+            tdWeather.appendChild(weatherCell);
+            tr.appendChild(tdWeather);
+
+            const tdDeg = document.createElement('td');
+            tdDeg.className = 'col-center digits';
+            tdDeg.textContent = degree ? String(degree) : '—';
+            tr.appendChild(tdDeg);
+
+            const tdAqi = document.createElement('td');
+            tdAqi.className = 'col-center';
+            tdAqi.innerHTML = (aqi !== null && aqi !== undefined)
+                ? `<div class="digits">${escapeHtml(String(aqi))}</div><div class="muted" style="font-size:0.8rem;">${escapeHtml(aqiName)}</div>`
+                : '—';
+            tr.appendChild(tdAqi);
+
+            const tdRange = document.createElement('td');
+            tdRange.className = 'col-center';
+            tdRange.textContent = (tmin || tmax) ? `${tmin || '—'} / ${tmax || '—'}` : '—';
+            tr.appendChild(tdRange);
+
+            const tdUpdated = document.createElement('td');
+            tdUpdated.textContent = updated ? formatTimeFlexible(updated) : '—';
+            tr.appendChild(tdUpdated);
+
+            const tdErr = document.createElement('td');
+            tdErr.innerHTML = err ? `<span class="badge-err">${escapeHtml(err)}</span>` : '';
+            tr.appendChild(tdErr);
+
+            tbody.appendChild(tr);
+        }
+
+        /* ===== load list ===== */
+        async function loadList() {
+            const tbodyEl = $('#tbody');
+            tbodyEl.innerHTML = '<tr><td colspan="7" class="muted">加载中…</td></tr>';
+            try {
+                const res = await authFetch(API_LIST);
+                if (!res.ok) throw new Error('加载失败: HTTP ' + res.status);
+                const json = await res.json().catch(() => ({}));
+                const arr = normalizeListResponse(json);
+                if (!Array.isArray(arr) || arr.length === 0) {
+                    tbodyEl.innerHTML = '<tr><td colspan="7" class="muted">暂无数据</td></tr>';
+                    $('#asof').textContent = '数据时间：—';
+                    return;
+                }
+                const asof = arr[0]?.updated_at || arr[0]?.UpdatedAt || arr[0]?.as_of || arr[0]?.AsOf || '';
+                $('#asof').textContent = asof ? ('数据时间：' + formatTimeFlexible(asof)) : '数据时间：—';
+
+                tbodyEl.innerHTML = '';
+                for (const it of arr) renderRowToTbody(tbodyEl, it);
+            } catch (e) {
+                console.error('loadList error', e);
+                $('#tbody').innerHTML = '<tr><td colspan="7" class="badge-err">加载失败</td></tr>';
+            }
+        }
+
+        /* ===== load user info ===== */
+        async function loadUserInfo() {
+            try {
+                const res = await authFetch(API_USER_INFO);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const d = await res.json().catch(() => ({}));
+                const name = d?.name || d?.username || d?.user_name || 'unknown';
+                $('#username').textContent = name;
+                $('#avatar').textContent = name ? String(name)[0].toUpperCase() : 'U';
+
+                const loc = d?.user_loc || d?.userLoc || d?.userLocation || null;
+                const uw = d?.user_weather || d?.userWeather || null;
+
+                let locText = '';
+                if (loc) locText = (loc.province || loc.Province || '') + (loc.city ? (' / ' + (loc.city || loc.City)) : '');
+                let localTxt = '本地：—';
+                if (uw) {
+                    const w = uw.weather || uw.Weather || '';
+                    const deg = uw.degree || uw.Degree || uw.temp || '';
+                    // 不再显示更新时间
+                    localTxt = `${w}${deg ? ' · ' + deg : ''}`;
+                }
+                $('#userLocal').textContent = `位置：${locText || '—'} · ${localTxt}`;
+            } catch (e) {
+                console.warn('loadUserInfo failed, fallback to /api/me', e);
+                try {
+                    const r2 = await authFetch('/api/me');
+                    if (r2.ok) {
+                        const d2 = await r2.json().catch(() => ({}));
+                        const name2 = d2?.name || d2?.username || 'unknown';
+                        $('#username').textContent = name2;
+                        $('#avatar').textContent = name2 ? String(name2)[0].toUpperCase() : 'U';
+                    } else {
+                        $('#username').textContent = '未登录';
+                        $('#avatar').textContent = 'U';
+                    }
+                } catch (e2) {
+                    $('#username').textContent = '未登录';
+                    $('#avatar').textContent = 'U';
+                }
+            }
+        }
+
+        /* ===== bindings ===== */
+        $('#btnHome').addEventListener('click', () => location.href = URL_HOME);
+        $('#btnManage').addEventListener('click', () => location.href = URL_MANAGE);
+
+        /* ===== init ===== */
+        (async function init() {
+            await loadUserInfo();
+            await loadList();
+        })();
+    </script>
+</body>
+
+</html>

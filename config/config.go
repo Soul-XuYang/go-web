@@ -37,12 +37,12 @@ type Config struct { //标明这个配置文件是可以全局使用的
 		Password string
 	}
 	Api struct{
-		loc_key string
+		LocalKey string
 	}
 }
 
 var AppConfig *Config //创建配置文件-指针全局可以修改并且避免拷贝-配置句柄
-
+var LocalAPIKey string
 // 使用viper读取配置文件
 func InitConfig() {
 	viper.SetConfigName("config") //无extension
@@ -57,6 +57,7 @@ func InitConfig() {
 	if err := viper.Unmarshal(AppConfig); err != nil { //将配置文件中的内容解析到结构体中
 		log.Fatalf("Error unmarshalling config file: %v", err)
 	}
+	LocalAPIKey = AppConfig.Api.LocalKey
 	initDB()
 	initRedis()
 	runMigrations()

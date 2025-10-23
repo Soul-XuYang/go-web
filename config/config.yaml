@@ -20,4 +20,4 @@ superadmin: # 超级管理员账号
   password: admin123456
 
 api:
-  local_key:
+  localKey: "0270ba7fa32241c95ff5446901b99f6b"

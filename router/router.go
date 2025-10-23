@@ -19,7 +19,6 @@ func SetupRouter() *gin.Engine {
 	//页面（公开）
 	r.GET("/auth/login", func(c *gin.Context) { c.HTML(200, "login.html", nil) })
 	r.GET("/auth/register", func(c *gin.Context) { c.HTML(200, "register.html", nil) })
-	// r.GET("/dashboard", func(c *gin.Context) { c.HTML(200, "dashboard.html", nil) })
 	auth := r.Group("/api/auth") //给出路由组的路径
 	auth.POST("/login", controllers.Login)
 	auth.POST("/register", controllers.Register)
@@ -40,13 +39,17 @@ func SetupRouter() *gin.Engine {
 		page.GET("/game/map", func(c *gin.Context) { c.HTML(200, "game_map_time.html", nil) })
 		// game排行榜界面
 		page.GET("/game/leaderboards", func(c *gin.Context) { c.HTML(200, "game_leaderboards.html", nil) })
+		// 天气界面
+		page.GET("/weather", func(c *gin.Context) { c.HTML(200, "weather.html", nil) })
 	}
 
 	// 受保护的 API（数据接口，需要登录）
 	api := r.Group("/api", middlewares.AuthMiddleWare())
 	{
+		api.GET("/proxy/image", controllers.ProxyImage)
+
 		// 基本信息获取模块
-		api.GET("/me", controllers.GetUserName)
+		api.GET("/me", controllers.GetUserName) //用户名称
 		api.GET("/ad", controllers.Get_advertisement)
 
 		// 汇率模块
@@ -54,6 +57,11 @@ func SetupRouter() *gin.Engine {
 		api.POST("/exchangeRates", controllers.CreateExchangeRate)
 		api.POST("/rmb-top10/refresh", controllers.RefreshRmbTop10) // 手动刷新
 		api.GET("/rmb-top10", controllers.GetRmbTop10)              // 读取快照
+
+		// 天气信息模块
+		weather := api.Group("/weather")
+		weather.GET("/info", controllers.GetUser_Info)
+		weather.GET("/top10", controllers.GetWeatherData_top10) // 获取 Top10 城市天气（返回数组）
 
 		//游戏猜数字模块
 		api.POST("/game/guess", controllers.GameGuess)

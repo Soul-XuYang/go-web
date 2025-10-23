@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 	"project/global"
 	"project/log"
 
@@ -23,6 +24,11 @@ func initRedis() {
 		Addr:     AppConfig.Redis.Addr,
 		DB:       AppConfig.Redis.DB,
 		Password: AppConfig.Redis.Password,
+		DialTimeout:  2 * time.Second,
+        ReadTimeout:  800 * time.Millisecond,  // 读超时
+        WriteTimeout: 800 * time.Millisecond,  // 写超时
+        PoolSize:     20,
+        MinIdleConns: 5,
 	}) //返回一个客户端
 	_, err := RedisClient.Ping().Result()
 	if err != nil {
