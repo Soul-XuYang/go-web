@@ -63,7 +63,7 @@ func GetUser_Info(c *gin.Context) {
 	}
 
 	base := c.Request.Context()
-	ctx, cancel := context.WithTimeout(base, global.Timeout)
+	ctx, cancel := context.WithTimeout(base, global.FetchTimeout)
 	defer cancel()
 
 	loc, err := getLocalLocation(ctx, uid, false)
@@ -102,7 +102,7 @@ func GetWeatherData_top10(c *gin.Context) {
 	}
 
 	base := c.Request.Context()
-	ctx, cancel := context.WithTimeout(base, global.Timeout)
+	ctx, cancel := context.WithTimeout(base, global.FetchTimeout*2)
 	defer cancel()
 
 	type district struct{ Prov, City, County string }
@@ -191,7 +191,7 @@ func fetchWithCache_Weather(ctx context.Context, prov, city, county string, forc
 
 		cs := summaryFromWeatherData(prov, city, county, wd)
 		if jb, e2 := json.Marshal(cs); e2 == nil {
-			_ = global.RedisDB.Set(key, jb, global.CacheTTL).Err()
+			_ = global.RedisDB.Set(key, jb, config.CacheTTL).Err()
 		}
 		return cs, nil
 	})
@@ -281,7 +281,7 @@ func getLocationByIP(ctx context.Context, uid uint, force bool) (LocationInfo, e
 		}
 
 		// 正式开始api查询
-		reqCtx, cancel := context.WithTimeout(ctx, global.FetchTimeout)
+		reqCtx, cancel := context.WithTimeout(ctx, global.FetchTimeout) //FetchTimeout取消请求
 		defer cancel()
 
 		ipUrl := fmt.Sprintf("https://restapi.amap.com/v3/ip?key=%s", config.LocalAPIKey)
@@ -525,7 +525,7 @@ func getWeatherData(ctx context.Context, province, city, county string) ([]byte,
 
 	// 创建带超时的HTTP客户端用户-借它来发送请求
 	client := &http.Client{
-		Timeout: global.Timeout,
+		Timeout: 10*time.Second,
 	}
 	// 创建请求
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)

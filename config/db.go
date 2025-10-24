@@ -36,7 +36,6 @@ func runMigrations() {
 		&models.Users{},
 		&models.Article{},
 		&models.ExchangeRate{},
-		&models.RmbTop10S{}, // ← 新增,
 		// 新增游戏数据表
 	    &models.Game_Guess_Score{}, 
 		&models.Game_Map_Time{},

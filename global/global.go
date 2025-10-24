@@ -12,10 +12,9 @@ import (
 var (
 	DB           *gorm.DB // 数据库连接
 	RedisDB      *redis.Client
-	// redis的统一全局参数
-	CacheTTL     = 60 * time.Minute // 缓存时间
-	FetchTimeout = 3500 * time.Millisecond
+	// 并行组
 	FetchGroup   singleflight.Group
-	// 请求的超时时间
-	Timeout = 4*time.Second
+	// 单个请求的超时时间
+	FetchTimeout = 3*time.Second 
 )
+

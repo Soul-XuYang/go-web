@@ -2,21 +2,22 @@
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
-	"project/global"
-	"project/models"
+	"project/config"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
+// RmbTop10S
 var top10Symbols = []string{"USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "HKD", "SGD", "KRW"}
 
-type frankResp struct { //接受数据
+type frankResp struct { //响应数据的结构
 	Base  string             `json:"base"` // 有些版本字段为 "base"；若实际为 "from"，见下方容错
 	From  string             `json:"from"` // 兼容 Frankfurter 新老字段
 	Date  string             `json:"date"` // "YYYY-MM-DD"
@@ -34,122 +35,150 @@ func roundN(x float64, n int) float64 { // 浮点数四舍五入到指定小数�
 	return math.Round(x*p) / p //先放大再舍去小数部分最后缩小
 }
 
-// RefreshRmbTop10 godoc
-// @Summary     手动刷新人民币 Top10 汇率
-// @Tags        Exchange
-// @Security    Bearer
-// @Produce     json
-// @Success     200   {object}  map[string]string
-// @Router      /rmb-top10/refresh [post]
+const (
+	lock_Ratekey = "lock:rmb_top10:cny"
+)
+
+// API view model
+type rmbTop10View struct {
+	Symbol string `json:"symbol"`
+	Rate   string `json:"rate"`
+	Invert string `json:"invert"`
+	AsOf   string `json:"as_of"`
+}
+
+type rmbTop10Cache struct {
+	Base string         `json:"base"`  // 这里的base指的就是CNY
+	AsOf string         `json:"as_of"` // YYYY-MM-DD
+	List []rmbTop10View `json:"list"`
+}
+
+// RefreshRmbTop10
+// @Summary 手动刷新人民币 Top10 汇率（写入 Redis，TTL=24h）
+// @Tags Exchange
+// @Security Bearer
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /rmb-top10/refresh [post]
 func RefreshRmbTop10(c *gin.Context) {
-	// Frankfurter 兼容两种写法：?base= / ?from=
-	// 建议优先使用 from/to
-	url := "https://api.frankfurter.dev/v1/latest?from=CNY&to=" + strings.Join(top10Symbols, ",") //查询
-	//https://api.frankfurter.dev/v1/latest?from=CNY&to=USD,EUR,JPY,GBP,AUD,CAD,CHF,HKD,SGD,KRW
-	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	req.Header.Set("User-Agent", "ExchangeApp/1.0")
-	resp, err := http.DefaultClient.Do(req)
+	ctx := c.Request.Context()
+	ok, err := acquireLock(ctx, lock_Ratekey, config.LockTTL)
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "fetch rates failed: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "lock error: " + err.Error()})
 		return
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		c.JSON(http.StatusBadGateway, gin.H{"error": fmt.Sprintf("upstream %d", resp.StatusCode)})
+	if !ok {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "another refresh in progress"})
 		return
 	}
+	defer releaseLock(ctx, lock_Ratekey) //释放锁
 
-	var fr frankResp
-	if err := json.NewDecoder(resp.Body).Decode(&fr); err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": "decode json failed: " + err.Error()})
+	cache, err := fetchAndBuild_top10rates(ctx)
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
 	}
-
-	// 解析日期
-	asOf, _ := time.Parse("2006-01-02", fr.Date)
-
-	tx := global.DB.Begin()
-
-	// ✅ 用 GORM 删除，避免表名大小写/复数化差异
-	if err := tx.Where("1=1").Delete(&models.RmbTop10S{}).Error; err != nil {
-		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// 写入
-	for sym, r := range fr.Rates {
-		rate := r
-		// 正向保留 6 位，反向同样 6 位（需要 4 位可把 roundN 的 n 改成 4）
-		rate = roundN(rate, vaild_number)
-
-		inv := 0.0
-		if rate > 0 {
-			inv = roundN(1.0/rate, vaild_number)
-		}
-
-		row := models.RmbTop10S{
-			Symbol: strings.ToUpper(sym),
-			Rate:   rate,
-			Invert: inv,
-			AsOf:   asOf,
-		}
-		if err := tx.Create(&row).Error; err != nil {
-			tx.Rollback()
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-	}
-	//提交数据
-	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := setCache(ctx, config.Cache_RateKey, cache); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "cache set failed: " + err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"ok":    true,
-		"base":  "CNY",
-		"as_of": fr.Date,
-		"count": len(fr.Rates),
+		"base":  cache.Base,
+		"as_of": cache.AsOf,
+		"count": len(cache.List),
 	})
 }
 
-type rmbTop10View struct {
-	Symbol string `json:"symbol"`
-	Rate   string `json:"rate"`   // 字符串化，避免前端精度/地区格式问题
-	Invert string `json:"invert"` // 同上
-	AsOf   string `json:"as_of"`  //地区国家
-}
-
-// GetRmbTop10 godoc
-// @Summary     读取当前人民币对Top10地区的汇率快照
-// @Tags        Exchange
-// @Security    Bearer
-// @Produce     json
-// @Success     200   {array}   map[string]interface{}
-// @Router      /api/rmb-top10 [get]
-// 读取当前快照（按符号排序）—— 返回字符串化数值，后台的数据类型转换
+// GetRmbTop10
+// @Summary 读取当前人民币对Top10地区的汇率快照（来自 Redis）
+// @Tags Exchange
+// @Security Bearer
+// @Produce json
+// @Success 200 {array} map[string]interface{}
+// @Router /api/rmb-top10 [get]
 func GetRmbTop10(c *gin.Context) {
-	var list []models.RmbTop10S
-	if err := global.DB.Order("symbol ASC").Find(&list).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	ctx := c.Request.Context() //获得当前请求的context以构建何时都可以退出的情况
+
+	if cache, err := getCache(ctx, config.Cache_RateKey); err == nil { // 获取缓存数据
+		c.JSON(http.StatusOK, cache.List)
 		return
 	}
 
-	out := make([]rmbTop10View, 0, len(list))
-	for _, it := range list {
-		// 保底：若历史数据 invert 为 0，但 rate>0，则动态补算一次
-		inv := it.Invert
-		if inv == 0 && it.Rate > 0 {
-			inv = roundN(1.0/it.Rate, 6)
+	// 缓存缺失：尝试成为唯一回源者
+	if ok, _ := acquireLock(ctx, lock_Ratekey, config.LockTTL); ok { //获取分布锁的函数，如果key不存在返回true这里之后可以并发锁住，在构建时锁住
+		defer releaseLock(ctx, lock_Ratekey)        // 最后释放锁
+		cache, err := fetchAndBuild_top10rates(ctx) //拿去以及创建
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+			return
 		}
-		out = append(out, rmbTop10View{
-			Symbol: it.Symbol,
-			Rate:   fmt.Sprintf("%.6f", it.Rate),
+		// 这里创建缓存-将数据存入redis表中
+		if err := setCache(ctx, config.Cache_RateKey, cache); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "cache set failed: " + err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, cache.List)
+		return
+	} //这里释放
+
+	// 获取锁失败时
+	// 其它实例正在刷新：短暂等待缓存被填充-轮询查询模式
+	deadline := time.Now().Add(config.WaitWarmup) //当前时间加上配置时间
+	for time.Now().Before(deadline) {
+		jitter := time.Duration(time.Now().UnixNano()%40) * time.Millisecond //使用当前纳秒时间对40取模，确保随机性
+		time.Sleep(config.PollInterval + jitter)                             //等待时间+随机时间
+		if cache, err := getCache(ctx, config.Cache_RateKey); err == nil {   //如果读取缓存可以的话就走
+			c.JSON(http.StatusOK, cache.List)
+			return
+		}
+	}
+
+	c.JSON(http.StatusServiceUnavailable, gin.H{"error": "cache warming, please retry"})
+}
+
+// 获取汇率函数
+func fetchAndBuild_top10rates(ctx context.Context) (*rmbTop10Cache, error) {
+	url := "https://api.frankfurter.dev/v1/latest?from=CNY&to=" + strings.Join(top10Symbols, ",")
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil) //后端设定请求
+	req.Header.Set("User-Agent", "ExchangeApp/1.0")                     //设置头以便更好获取数据
+
+	resp, err := http.DefaultClient.Do(req) //执行该请求
+	if err != nil {
+		return nil, fmt.Errorf("fetch rates failed: %w", err)
+	}
+	defer resp.Body.Close() //响应体关闭
+
+	if resp.StatusCode != http.StatusOK { //状态码报错
+		return nil, fmt.Errorf("upstream %d", resp.StatusCode)
+	}
+
+	var fr frankResp
+	if err := json.NewDecoder(resp.Body).Decode(&fr); err != nil { //解码其数据
+		return nil, fmt.Errorf("decode json failed: %w", err)
+	}
+
+	base := fr.From // 从查询
+	if base == "" { //从兑换结果找
+		base = fr.Base
+	}
+
+	asOfTime, _ := time.Parse("2006-01-02", fr.Date) //解码时间
+
+	list := make([]rmbTop10View, 0, len(fr.Rates)) //起始长度为0，容量为len
+	for sym, r := range fr.Rates {
+		rate := roundN(r, vaild_number)       //化为有效数据
+		inv := roundN(1.0/rate, vaild_number) //反数据
+		if inv <= 0 {
+			return nil, fmt.Errorf("invalid rate and inv data")
+		}
+		list = append(list, rmbTop10View{ //加入数据
+			Symbol: strings.ToUpper(sym),
+			Rate:   fmt.Sprintf("%.6f", rate),
 			Invert: fmt.Sprintf("%.6f", inv),
-			AsOf:   it.AsOf.Format("2006-01-02"),
+			AsOf:   asOfTime.Format("2006-01-02"),
 		})
 	}
-	c.JSON(http.StatusOK, out)
+	return &rmbTop10Cache{Base: base, AsOf: asOfTime.Format("2006-01-02"), List: list}, nil
 }

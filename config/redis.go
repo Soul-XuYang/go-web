@@ -17,8 +17,15 @@ const (
 	//这里是redis中各个游戏的表名
 	RedisKeyTop10Best       = "game:guess:top10:best"  // 猜数字的游戏排行榜
 	RedisKeyTop10FastestMap = "game:map:top10:fastest" // 地图游戏排行榜（用时最短）
+	Cache_RateKey = "rmb_top10:cny"
 )
-
+const (
+	CacheTTL     = 120 * time.Minute // 缓存时间
+	LockTTL       = 10 * time.Second  
+	WaitWarmup    = 5 * time.Second 
+	PollInterval  = 120 * time.Millisecond
+	Datasaved_TTL = 12*time.Hour
+)
 func initRedis() {
 	RedisClient := redis.NewClient(&redis.Options{ //配置选项Options是结构体
 		Addr:     AppConfig.Redis.Addr,
