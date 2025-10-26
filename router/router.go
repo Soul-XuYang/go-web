@@ -10,7 +10,7 @@ import (
 
 func SetupRouter() *gin.Engine {
 	r := gin.New()
-	r.Use(middlewares.GinLogger(), middlewares.GinRecovery())
+	r.Use(middlewares.GinLogger(), middlewares.GinRecovery()) //middlewares.GinLogger(),
 	mountSwagger(r)
 
 	//加载数据
@@ -27,7 +27,7 @@ func SetupRouter() *gin.Engine {
 	// 受保护的页面端
 	page := r.Group("/page", middlewares.AuthMiddleWare()) //也是需要登录
 	{
-		page.GET("/shell", controllers.ShellPage)
+		page.GET("/shell", controllers.ShellPage) //界面
 		page.GET("/rates", func(c *gin.Context) { c.HTML(200, "exchange_rates.html", nil) })
 		page.GET("/rmb-top10", func(c *gin.Context) { c.HTML(200, "rmb_top10.html", nil) })
 		//文章界面
@@ -37,6 +37,8 @@ func SetupRouter() *gin.Engine {
 		// 游戏界面
 		page.GET("/game/guess", func(c *gin.Context) { c.HTML(200, "game_guess_number.html", nil) })
 		page.GET("/game/map", func(c *gin.Context) { c.HTML(200, "game_map_time.html", nil) })
+		page.GET("/game/map/display", func(c *gin.Context) { c.HTML(200, "map_display.html", nil) }) //可视化显示
+
 		// game排行榜界面
 		page.GET("/game/leaderboards", func(c *gin.Context) { c.HTML(200, "game_leaderboards.html", nil) })
 		// 天气界面
@@ -72,6 +74,7 @@ func SetupRouter() *gin.Engine {
 		api.POST("/game/map/start", controllers.GameMapStart)       // 开始地图游戏
 		api.POST("/game/map/complete", controllers.GameMapComplete) // 完成地图游戏
 		api.POST("/game/map/reset", controllers.GameMapReset)       // 重置地图游戏
+		api.GET("/game/map/display", controllers.Display_Map)       // 地图可视化界面
 		//文章操作模块
 		api.GET("/articles", controllers.Get_All_Articles)
 

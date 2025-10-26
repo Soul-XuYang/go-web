@@ -7,7 +7,6 @@
     <title>汇率管理</title>
     <link rel="stylesheet" href="/static/base.css" />
     <style>
-        /* 只做轻布局与可读性增强，不改变 base.css 控件风格 */
         html {
             font-size: 18px;
         }
@@ -129,27 +128,12 @@
             cursor: pointer;
         }
 
-        /* 右上角固定“返回主菜单”按钮 —— 仅保留布局，色彩从“新增”同步 */
-        .back-home {
-            position: fixed;
-            right: 16px;
-            top: 16px;
-            z-index: 1000;
-            padding: 10px 16px;
-            border-radius: 999px;
-            cursor: pointer;
-            /* 不在此处设置 background / color / border，让脚本与“新增”按钮对齐 */
-        }
-
-        .back-home:active {
-            opacity: .9;
-        }
-
-        /* 底部按钮区域 */
+        /* 底部按钮区域（两颗按钮并排居中，不会拉满左右） */
         .bottom-actions {
             margin-top: 24px;
             display: flex;
             justify-content: center;
+            gap: 16px;
         }
 
         .bottom-actions button {
@@ -158,7 +142,6 @@
             font-weight: 700;
             min-width: 160px;
             cursor: pointer;
-            /* 不在此处设置 background / color / border，让脚本与“新增”按钮对齐 */
         }
 
         .bottom-actions button:active {
@@ -168,9 +151,6 @@
 </head>
 
 <body>
-    <!-- 返回主菜单（右上角固定） -->
-    <button class="back-home" id="backHome">返回主菜单</button>
-
     <div class="card card-lg wide">
         <div class="toolbar">
             <div>
@@ -178,10 +158,7 @@
                 <div class="sub">查看已有汇率、并新增一条记录</div>
             </div>
             <div class="actions">
-                <div class="user">
-                    <span class="dot"></span>
-                    <span id="username">加载中…</span>
-                </div>
+                <div class="user"><span class="dot"></span><span id="username">加载中…</span></div>
                 <button id="refresh" class="pill">刷新</button>
                 <button id="logout" class="pill">退出登录</button>
             </div>
@@ -230,8 +207,9 @@
             </table>
         </div>
 
-        <!-- 底部按钮区域 -->
+        <!-- 底部按钮：返回主菜单 + RMBTOP10 -->
         <div class="bottom-actions">
+            <button id="backHome">返回主菜单</button>
             <button id="rmbRates">跳转到RMBTOP10汇率页</button>
         </div>
     </div>
@@ -240,81 +218,56 @@
         const $ = s => document.querySelector(s);
         const tbody = $('#tbody'), msg = $('#msg'), btn = $('#btn'), usernameEl = $('#username');
 
-        // —— 双重保险：localStorage 的 token（若没有，仍可依赖 Cookie） ——
         function buildAuthHeader() {
             const raw = localStorage.getItem('token');
             if (!raw) return {};
             const token = raw.toLowerCase().startsWith('bearer ') ? raw : ('Bearer ' + raw);
             return { Authorization: token };
         }
-
         async function authFetch(url, opts = {}) {
             const headers = Object.assign({ 'Content-Type': 'application/json' }, buildAuthHeader(), opts.headers || {});
             const res = await fetch(url, { ...opts, headers });
-            if (res.status === 401) {
-                localStorage.removeItem('token');
-                location.href = '/auth/login';
-                throw new Error('Unauthorized');
-            }
+            if (res.status === 401) { localStorage.removeItem('token'); location.href = '/auth/login'; throw new Error('Unauthorized'); }
             return res;
         }
 
-        // 1) 用户名
         async function loadMe() {
             try {
                 const res = await authFetch('/api/me');
                 const data = await res.json().catch(() => ({}));
                 usernameEl.textContent = data.username || '未知用户';
-            } catch { /* 已在 authFetch 兜底 */ }
+            } catch { }
         }
 
-        // 2) 列表
         async function loadRates() {
             tbody.innerHTML = `<tr><td colspan="5" class="muted">加载中…</td></tr>`;
             try {
                 const res = await authFetch('/api/exchangeRates');
                 if (!res.ok) throw new Error('加载失败');
                 const list = await res.json();
-
                 if (!Array.isArray(list) || list.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="5" class="muted">暂无数据</td></tr>`;
                     return;
                 }
                 tbody.innerHTML = list.map((it, idx) => {
-                    // 兼容字段名（含历史拼写 FromCurreny/ToCurreny）
-                    const from =
-                        it.FromCurrency ?? it.from_currency ?? it.fromCurrency ?? it.from ??
-                        it.FromCurreny ?? it.fromCurreny ?? '';
-                    const to =
-                        it.ToCurrency ?? it.to_currency ?? it.toCurrency ?? it.to ??
-                        it.ToCurreny ?? it.toCurreny ?? '';
+                    const from = it.FromCurrency ?? it.from_currency ?? it.fromCurrency ?? it.from ?? it.FromCurreny ?? it.fromCurreny ?? '';
+                    const to = it.ToCurrency ?? it.to_currency ?? it.toCurrency ?? it.to ?? it.ToCurreny ?? it.toCurreny ?? '';
                     const rate = it.Rate ?? it.rate ?? '';
                     const rawDate = it.Date ?? it.date ?? '';
                     const dateStr = rawDate ? new Date(rawDate).toLocaleString() : '';
-
-                    return `
-            <tr>
-              <td>${idx + 1}</td>
-              <td>${from}</td>
-              <td>${to}</td>
-              <td>${rate}</td>
-              <td>${dateStr}</td>
-            </tr>`;
+                    return `<tr><td>${idx + 1}</td><td>${from}</td><td>${to}</td><td>${rate}</td><td>${dateStr}</td></tr>`;
                 }).join('');
             } catch {
                 tbody.innerHTML = `<tr><td colspan="5" class="badge-err">加载失败</td></tr>`;
             }
         }
 
-        // 3) 新增
         $('#form').addEventListener('submit', async (e) => {
             e.preventDefault();
             msg.className = 'msg'; msg.textContent = '';
-
             const from = $('#from').value.trim().toUpperCase();
             const to = $('#to').value.trim().toUpperCase();
             const rate = $('#rate').value;
-
             if (!from || !to) { msg.classList.add('error'); msg.textContent = '请输入 From/To'; return; }
             if (!rate || Number(rate) <= 0) { msg.classList.add('error'); msg.textContent = '汇率需为正数'; return; }
 
@@ -322,17 +275,12 @@
             try {
                 const res = await authFetch('/api/exchangeRates', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }, // Authorization 已在 authFetch 加
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ FromCurrency: from, ToCurrency: to, Rate: Number(rate) })
                 });
                 const data = await res.json().catch(() => ({}));
-
-                if (!res.ok) {
-                    msg.classList.add('error'); msg.textContent = data.error || '新增失败';
-                    return;
-                }
+                if (!res.ok) { msg.classList.add('error'); msg.textContent = data.error || '新增失败'; return; }
                 msg.classList.add('ok'); msg.textContent = '新增成功';
-                // ★ 提交成功后清空三个输入框，重新加载列表
                 $('#from').value = ''; $('#to').value = ''; $('#rate').value = '';
                 loadRates();
             } catch {
@@ -342,54 +290,27 @@
             }
         });
 
-        // 4) 刷新 / 退出 / 返回主菜单 / 跳转到RMB汇率页
         $('#refresh').onclick = () => loadRates();
         $('#logout').onclick = async () => {
-            await fetch('/api/auth/logout', { method: 'POST' }); // 服务端清 Cookie（若实现了）
-            localStorage.removeItem('token');
-            location.href = '/auth/login';
+            await fetch('/api/auth/logout', { method: 'POST' });
+            localStorage.removeItem('token'); location.href = '/auth/login';
         };
         $('#backHome').onclick = () => { location.href = '/page/shell'; };
         $('#rmbRates').onclick = () => { location.href = '/page/rmb-top10'; };
 
-        // 5) 将“返回主菜单 / 跳转到RMB汇率页”两颗按钮的视觉样式与“新增”按钮对齐
+        // 让底部两颗按钮的视觉风格与“新增”一致（不改大小，仅同步配色/圆角等）
         function alignButtonsWithPrimary() {
-            const src = document.getElementById('btn');
-            if (!src) return;
+            const src = document.getElementById('btn'); if (!src) return;
             const targets = [document.getElementById('backHome'), document.getElementById('rmbRates')].filter(Boolean);
-            if (targets.length === 0) return;
-
             const s = getComputedStyle(src);
-            const props = [
-                'background', 'backgroundColor', 'color',
-                'borderColor', 'borderStyle', 'borderWidth', 'borderRadius',
-                'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-                'fontWeight', 'fontSize', 'lineHeight', 'letterSpacing',
-                'boxShadow', 'textTransform', 'transition'
-            ];
-
-            for (const el of targets) {
-                for (const p of props) el.style[p] = s[p];
-                // 交互反馈，尽量贴近“新增”按钮
-                el.addEventListener('mouseenter', () => { el.style.filter = 'brightness(1.05)'; });
-                el.addEventListener('mouseleave', () => { el.style.filter = ''; });
-                el.addEventListener('mousedown', () => { el.style.opacity = '0.9'; });
-                el.addEventListener('mouseup', () => { el.style.opacity = ''; });
-            }
+            const props = ['background', 'backgroundColor', 'color', 'borderColor', 'borderStyle', 'borderWidth', 'borderRadius', 'fontWeight', 'fontSize', 'lineHeight', 'letterSpacing', 'boxShadow', 'textTransform', 'transition'];
+            for (const el of targets) { for (const p of props) { el.style[p] = s[p]; } }
         }
 
-        // 初始化
-        loadMe();
-        loadRates();
-
-        // 等待样式就绪后对齐（在 DOMContentLoaded 与 load 阶段各尝试一次）
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                requestAnimationFrame(alignButtonsWithPrimary);
-            });
-        } else {
-            requestAnimationFrame(alignButtonsWithPrimary);
-        }
+        // init
+        loadMe(); loadRates();
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', () => requestAnimationFrame(alignButtonsWithPrimary)); }
+        else { requestAnimationFrame(alignButtonsWithPrimary); }
         window.addEventListener('load', alignButtonsWithPrimary);
     </script>
 </body>

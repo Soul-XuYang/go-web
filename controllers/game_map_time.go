@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"container/heap"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -146,7 +147,7 @@ func GameMapStart(c *gin.Context) { //开始游戏
 	mapGame.mu.Unlock()                          // 解锁-以求用户进行按钮或者触发
 	// 生成地图
 	size := game_rounds[difficulty]
-	arr := array_init(size)
+	arr := array_init(size, size)
 
 	// 生成起点
 	startPoint := P{}
@@ -296,15 +297,128 @@ func GameMapReset(c *gin.Context) { // 重置按钮-清空当前用户的游戏�
 		"reset": true})
 }
 
-/********* 地图生成辅助函数 *********/
-// 初始化地图
-func array_init(size int) [][]byte {
-	arr := make([][]byte, size)
-	for i := 0; i < size; i++ {
-		arr[i] = make([]byte, size)
+const displayNum = 24
+
+type DisplayResp struct {
+	MapData    []string `json:"mapData"`
+	StartPoint P        `json:"startPoint"`
+	EndPoint   P        `json:"endPoint"`
+	Ok         bool     `json:"ok"`
+	Path       []P      `json:"path"`
+}
+
+func Display_Map(c *gin.Context) {
+	grid := array_init(displayNum, displayNum+8)
+	sx, sy := start_index(grid)
+	startPoint := P{X: sx, Y: sy}
+	grid[startPoint.X][startPoint.Y] = '+'
+	go_next(grid, startPoint, displayNum+8, 3)
+	endPoint, _ := end_index(grid, startPoint)
+	grid[endPoint.X][endPoint.Y] = 'x'
+	path, ok := AStar(grid, startPoint, endPoint)
+	//  输出 rows（每行一个 string）
+	rows := make([]string, displayNum)
+	for i := 0; i < displayNum; i++ {
+		rows[i] = string(grid[i])
 	}
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
+
+	c.JSON(http.StatusOK, DisplayResp{
+		MapData:    rows,
+		StartPoint: startPoint,
+		EndPoint:   endPoint,
+		Ok:         ok,
+		Path:       path, //保留首尾
+	})
+}
+
+/********* 地图生成辅助函数 *********/
+type item struct {
+	p    P
+	g, f int // g=已走代价,h是估计代价 f是总代价
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+func manhattan(a, b P) int { return abs(a.X-b.X) + abs(a.Y-b.Y) }
+
+type pq []*item //存有结构体地址
+// heap包的Push/Pop函数内部会：
+// 调用你实现的Push方法添加元素
+// 自动调用Up/Down操作来维护堆的性质
+// 在维护过程中会使用你实现的Less方法进行比较
+// 所以虽然你的Push方法只是简单地append，但通过heap包的Push函数调用时，会自动完成堆的维护。这就是为什么需要实现这些接口方法的原因 - 它们是heap包内部用来维护堆结构的基础。
+func (h pq) Len() int           { return len(h) }
+func (h pq) Less(i, j int) bool { return h[i].f < h[j].f || (h[i].f == h[j].f && h[i].g > h[j].g) } //首先按f值升序排序（f值越小优先级越高），选择g值更大的节点（即更接近目标的路径）
+func (h pq) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }                                         // 交换数据
+func (h *pq) Push(x any)        { *h = append(*h, x.(*item)) }                                      // 对这个切片加入，将x化为Item类型
+func (h *pq) Pop() any {
+	old := *h
+	x := old[len(old)-1]  // 获得其末尾元素
+	*h = old[:len(old)-1] //保留前面的尾巴元素
+	return x
+}
+
+func AStar(grid [][]byte, start, end P) ([]P, bool) {
+	row_length, col_length := len(grid), len(grid[0])
+	in := func(p P) bool { return p.X >= 0 && p.X < row_length && p.Y >= 0 && p.Y < col_length } // 这个是判断边界
+	block := func(p P) bool { return grid[p.X][p.Y] == '#' }
+
+	Priorqueue := &pq{}                                                    //创建一个pq队列-&赋值
+	heap.Init(Priorqueue)                                                  //初始化其优先级队列
+	heap.Push(Priorqueue, &item{p: start, g: 0, f: manhattan(start, end)}) // 放入初始化点
+
+	gScore := map[P]int{start: 0} //存储起点到每个点的代价
+	came := make(map[P]P)         // 存储前驱节点
+	closed := make(map[P]bool)    //闭集
+
+	for Priorqueue.Len() > 0 {
+		cur := heap.Pop(Priorqueue).(*item) //eap.Pop() 函数返回的是 interface{} 类型,需要返回指针类型即节点
+		u := cur.p
+
+		if closed[u] { //如果处理过则跳过-防止类似BFS的重叠
+			continue
+		}
+		if u == end { // 该点为最终点-开始记录路径
+			path := []P{u}   // 创建一个初始节点
+			for u != start { //开始遍历前驱节点
+				u = came[u] // 不是则添加
+				path = append(path, u)
+			}
+			for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 { // 反转这个节点
+				path[i], path[j] = path[j], path[i]
+			}
+			return path, true // 判断找到终点
+		}
+		closed[u] = true // 标明这个点被处理过
+
+		for _, d := range dir { //遍历四个方向
+			v := P{u.X + d[0], u.Y + d[1]} // 邻居点
+			if !in(v) || block(v) {        // 如果无效跳过
+				continue
+			}
+			ng := gScore[u] + 1                    //当前的代价
+			if g, ok := gScore[v]; !ok || ng < g { //！ok标明是第一次访问这个点或者值大于ng则需要更新了
+				gScore[v] = ng
+				came[v] = u                                                          //前驱节点,此刻v的前节点为u
+				heap.Push(Priorqueue, &item{p: v, g: ng, f: ng + manhattan(v, end)}) //加入到队列中
+			}
+		}
+	}
+	return nil, false
+}
+
+// 初始化地图
+func array_init(row int, col int) [][]byte {
+	arr := make([][]byte, row) //指定外层切片
+	for i := 0; i < row; i++ {
+		arr[i] = make([]byte, col) // 按列创建内层的切片大小
+	}
+	for i := 0; i < row; i++ {
+		for j := 0; j < col; j++ {
 			arr[i][j] = '#'
 		}
 	}
@@ -340,7 +454,7 @@ func go_next(arr [][]byte, start_point P, step int, step_rand int) {
 		newY := start_point.Y + dir[i][1]
 		if newX >= 0 && newX < len(arr) && newY >= 0 && newY < len(arr[0]) {
 			if arr[newX][newY] == '#' {
-				randnum := rand.Intn(2) //
+				randnum := rand.Intn(3) //
 				if randnum > 0 || step_rand > 0 {
 					arr[newX][newY] = 'o'
 					go_next(arr, P{newX, newY}, step-1, step_rand-1)

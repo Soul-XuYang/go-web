@@ -19,16 +19,15 @@ type Info struct {
 // @description 接口文档
 // @BasePath    /api
 func main() {
-	// 初始化日志
-	if err := log.Init(false); err != nil { // false 表示开发模式
+	if err := log.Init(false); err != nil {// 初始化日志-false 表示开发模式
 		panic(err)
 	}
 	defer log.Sync()
 	log.L().Info("The main app has runnned!")
 	//配置初始化
 	config.InitConfig()       // 初始化配置-只对包里的全局变量初始化
-	r := router.SetupRouter() // 单独的路由设置
-	//单独的方法
+	r := router.SetupRouter() // 路由设置
+	//单独的方法-打印
 	r.GET("/hello", func(c *gin.Context) { //设立请求路径和方法以及对应的函数
 		c.JSON(200, Info{Message: "Hello, World!"})
 	})

@@ -576,6 +576,8 @@
                 <div class="time-display current-time" id="currentTime">00:00</div>
                 <div class="time-label">三轮总用时</div>
                 <div class="time-display total-time" id="totalTime">00:00</div>
+                <button id="gotoDisplay" class="btn-primary"
+                    style="width:100%; height:42px; border-radius:10px; font-size:.9rem;">游戏地图的可视化展示</button>
             </div>
         </section>
 
@@ -596,14 +598,12 @@
             <div class="stat" style="margin-top:8px;">
                 <button id="gotoRanks" class="btn-primary"
                     style="width:100%; height:42px; border-radius:10px; font-size:.9rem;">查看排行榜</button>
+                <button id="backHome" class="btn-primary"
+                    style="width:100%; height:42px; border-radius:10px; font-size:.9rem;">返回主菜单</button>
             </div>
         </section>
     </main>
 
-    <div class="below">
-        <button id="backHome" class="btn-primary">返回主菜单</button>
-        <button id="viewRanks" class="btn-primary">地图游戏排行榜</button>
-    </div>
 
     <script>
         // ====== 基础封装 ======
@@ -864,7 +864,7 @@
         $('#btnLeft').onclick = () => movePlayer('left');
         $('#btnRight').onclick = () => movePlayer('right');
         $('#backHome').onclick = () => location.href = '/page/shell';
-        $('#viewRanks').onclick = () => location.href = '/page/game/leaderboards';
+        $('#gotoDisplay').onclick = () => location.href = '/page/game/map/display';
         $('#gotoRanks').onclick = () => location.href = '/page/game/leaderboards';
 
         (async function init() {
@@ -876,4 +876,4 @@
     </script>
 </body>
 
-</html>
+</html>1
