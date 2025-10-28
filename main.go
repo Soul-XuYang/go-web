@@ -19,21 +19,23 @@ type Info struct {
 // @description 接口文档
 // @BasePath    /api
 func main() {
-	if err := log.Init(false); err != nil {// 初始化日志-false 表示开发模式
+	if err := log.Init(false); err != nil { // 初始化日志-false 表示开发模式
 		panic(err)
 	}
 	defer log.Sync()
-	log.L().Info("The main app has runnned!")
+	Monitor := log.NewMonitor()
+	Monitor.StartMonitor()
+	defer Monitor.StopMonitor()
+
 	//配置初始化
 	gin.SetMode(gin.ReleaseMode) // 设置gin的模式
 	config.InitConfig()          // 初始化配置-只对包里的全局变量初始化
 	r := router.SetupRouter()    // 路由设置
-	//单独的方法-打印
-	r.GET("/hello", func(c *gin.Context) { //设立请求路径和方法以及对应的函数
-		c.JSON(200, Info{Message: "Hello, World!"})
-	})
-	port := config.GetPort() // 获取端口-这里config是包名
-	r.Run(port)              // 监听端口并启动服务
+	port := config.GetPort()     // 获取端口-这里config是包名
+
+	//运行程序并监听端口
+	log.L().Info("The main app has runnned!")
+	r.Run(port) // 监听端口并启动服务
 }
 
 //  开发测试的数据

@@ -2,85 +2,87 @@ package log
 
 import (
 	"os"
+	"sync"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	
 )
 
+var (
+	logger   *zap.Logger
+	initOnce sync.Once
+	initErr  error // 初始化错误
+)
 
+// Init 初始化 logger；多次调用是幂等的（只会第一次生效）
+func Init(prod bool) error {
+	initOnce.Do(func() {
+		// 基础配置（dev / prod）
+		var base zap.Config
+		if prod {
+			base = zap.NewProductionConfig()
+		} else {
+			base = zap.NewDevelopmentConfig()
+			base.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
+		}
 
-var logger *zap.Logger //建立一个公共的登录指针
+		// 复制一份 EncoderConfig，后续对其副本进行不同修改
+		enc := base.EncoderConfig
+		enc.TimeKey = "timestamp"
+		enc.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05")
+		enc.EncodeLevel = zapcore.CapitalLevelEncoder
 
-func Init(flag bool) error {
-	// 基础配置（沿用 dev/prod 的区别）
-	var base zap.Config
-	if flag {
-		base = zap.NewProductionConfig()
-	} else {
-		base = zap.NewDevelopmentConfig()
-		base.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
-	}
+		// 两个独立副本：一个不输出 caller，一个输出 caller
+		encNoCaller := enc
+		encNoCaller.CallerKey = ""
 
-	// ——时间与级别的统一格式——
-	enc := base.EncoderConfig
-	enc.TimeKey = "timestamp"
-	enc.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05") // 去掉 .毫秒 与 +0800
-	enc.EncodeLevel = zapcore.CapitalLevelEncoder                       // 无颜色
+		encWithCaller := enc
+		encWithCaller.CallerKey = "caller"
 
-	// 普通日志（< ERROR）：不输出 caller
-	encNoCaller := enc
-	encNoCaller.CallerKey = "" // 这一行关键：没有 caller 字段
+		var encA, encB zapcore.Encoder
+		if prod {
+			encA = zapcore.NewJSONEncoder(encNoCaller)
+			encB = zapcore.NewJSONEncoder(encWithCaller)
+		} else {
+			encA = zapcore.NewConsoleEncoder(encNoCaller)
+			encB = zapcore.NewConsoleEncoder(encWithCaller)
+		}
 
-	// 错误日志（>= ERROR）：输出 caller
-	encWithCaller := enc
-	encWithCaller.CallerKey = "caller"
+		// 输出到 stdout（需要时可替换为文件或滚动 writer）
+		ws := zapcore.Lock(zapcore.AddSync(os.Stdout))
 
-	var (
-		encA zapcore.Encoder
-		encB zapcore.Encoder
-	)
-	if flag {
-		encA = zapcore.NewJSONEncoder(encNoCaller)
-		encB = zapcore.NewJSONEncoder(encWithCaller)
-	} else {
-		encA = zapcore.NewConsoleEncoder(encNoCaller)
-		encB = zapcore.NewConsoleEncoder(encWithCaller)
-	}
+		coreNoCaller := zapcore.NewCore(encA, ws, zap.LevelEnablerFunc(func(l zapcore.Level) bool {
+			return l < zapcore.ErrorLevel
+		}))
+		coreWithCaller := zapcore.NewCore(encB, ws, zap.LevelEnablerFunc(func(l zapcore.Level) bool {
+			return l >= zapcore.ErrorLevel
+		}))
 
-	ws := zapcore.Lock(zapcore.AddSync(os.Stdout))
+		l := zap.New(
+			zapcore.NewTee(coreNoCaller, coreWithCaller),
+			zap.AddCaller(),      // 收集 caller 信息
+			zap.AddCallerSkip(1), // 因为我们通过 log.L() 返回 logger，跳过 1 帧以定位真实调用方
+			zap.AddStacktrace(zapcore.ErrorLevel),
+		)
 
-	// < ERROR 的日志（DEBUG/INFO/WARN）→ 不带 caller
-	coreNoCaller := zapcore.NewCore(
-		encA, ws,
-		zap.LevelEnablerFunc(func(lvl zapcore.Level) bool { return lvl < zapcore.ErrorLevel }),
-	)
+		logger = l
+	})
 
-	// ≥ ERROR 的日志（ERROR/DPANIC/PANIC/FATAL）→ 带 caller
-	coreWithCaller := zapcore.NewCore(
-		encB, ws,
-		zap.LevelEnablerFunc(func(lvl zapcore.Level) bool { return lvl >= zapcore.ErrorLevel }),
-	)
-
-	l := zap.New( //报错返回的设置
-		zapcore.NewTee(coreNoCaller, coreWithCaller),
-		zap.AddCaller(), // 计算 caller，但只有 encWithCaller 才会编码输出
-		zap.AddCallerSkip(1),
-		zap.AddStacktrace(zapcore.ErrorLevel), // 可选：仅错误及以上打印之后数据的错误堆栈
-	)
-
-	logger = l //返回所悟对象
-	return nil
+	return initErr
 }
 
-// 延迟初始化和防御性编程-很巧妙的思维，防止其为初始化
+// L 返回全局 logger（懒初始化：若未 Init，则以 dev 配置自动初始化）
 func L() *zap.Logger {
 	if logger == nil {
-		_ = Init(false) // L() 做了个防御：如果发现还是 nil，就自动用开发配置初始化（Init(false)），至少保证不会空指针。
+		_ = Init(false)
 	}
 	return logger
 }
-func Sync() { _ = L().Sync() } //确保所有日志都刷新到磁盘，保证缓存都除去了，错误忽略
 
-
-
+// Sync 刷新缓冲（若未初始化则啥也不做）-确保所有日志心如
+func Sync() error {
+	if logger == nil {
+		return nil
+	}
+	return logger.Sync() //logger.Sync() 的作用就是确保日志同步写入
+}
