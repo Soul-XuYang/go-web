@@ -1,0 +1,312 @@
+:root {
+    --bg: #0b1020;
+    --card: #111b2e;
+    --text: #e8eefc;
+    --muted: #9fb0d1;
+    --primary: #4da3ff;
+    --primary-strong: #2a7fe2;
+    --danger: #ff6b6b;
+    --ok: #3ddc97;
+    --ring: 0 0 0 3px rgba(77, 163, 255, .25);
+    --font-sans: "SF Pro Text", "Segoe UI", "Roboto", "PingFang SC", "Hiragino Sans GB",
+        "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei",
+        "WenQuanYi Micro Hei", Arial, Helvetica, sans-serif;
+}
+
+html {
+    font-size: 18px;
+}
+
+body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: .01em;
+}
+
+/* 表格整体居中：容器 + 单元格 */
+.table-centered {
+    margin: 0 auto;
+    /* 表格本身在父容器中居中 */
+    table-layout: auto;
+}
+
+.table-centered th,
+.table-centered td {
+    text-align: center;
+    /* 文本水平居中 */
+    vertical-align: middle;
+    /* 文本垂直居中 */
+    padding: 12px 14px;
+    /* 稍微增大可读性 */
+}
+
+/* 数字列：使用等宽数字（tabular-nums），字重略提升 */
+.digits {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    letter-spacing: .02em;
+    font-weight: 600;
+    /* 可按需调成 500/600 */
+}
+
+/* 可选：卡片视觉更清爽 */
+.fx-card {
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid rgba(255, 255, 255, .08);
+    overflow: hidden;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #f7f9fe;
+        --card: #ffffff;
+        --text: #14213d;
+        --muted: #6b7a99;
+        --primary: #1f7ae0;
+        --primary-strong: #1461b8;
+        --danger: #d64545;
+        --ok: #14b88a;
+        --ring: 0 0 0 3px rgba(31, 122, 224, .18);
+    }
+}
+
+* {
+    box-sizing: border-box
+}
+
+html,
+body {
+    height: 100%
+}
+
+body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
+    color: var(--text);
+    background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(77, 163, 255, .15), transparent 60%),
+        radial-gradient(900px 500px at 110% 10%, rgba(61, 220, 151, .12), transparent 55%),
+        var(--bg);
+    display: grid;
+    place-items: center;
+    padding: 6vh 16px;
+}
+
+.card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card);
+    border: 1px solid rgba(255, 255, 255, .06);
+    border-radius: 16px;
+    padding: 28px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .25);
+    animation: pop .25s ease-out;
+}
+
+/* 语义化卡片尺寸 */
+.card-sm {
+    max-width: 480px;
+}
+
+.card-md {
+    max-width: 860px;
+}
+
+.card-lg {
+    max-width: 1080px;
+}
+
+.card-xl {
+    max-width: 1280px;
+}
+
+.ap-link {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: none;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, .04);
+    border: 1px solid rgba(0, 0, 0, .08);
+}
+
+.ap-link:hover {
+    text-decoration: underline;
+}
+
+
+@keyframes pop {
+    from {
+        transform: translateY(6px);
+        opacity: .0
+    }
+
+    to {
+        transform: none;
+        opacity: 1
+    }
+}
+
+h1 {
+    margin: 0 0 6px;
+    font-size: 1.6rem
+}
+
+p.sub {
+    margin: 0 0 16px;
+    color: var(--muted);
+    font-size: .95rem
+}
+
+label {
+    display: block;
+    font-size: .9rem;
+    margin: 14px 0 6px
+}
+
+.input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.input:focus-within {
+    outline: none;
+    box-shadow: var(--ring);
+    border-color: transparent;
+}
+
+.input input {
+    flex: 1;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    color: var(--text);
+    font-size: 1rem;
+}
+
+a {
+    color: var(--primary);
+    text-decoration: none
+}
+
+a:hover {
+    text-decoration: underline
+}
+
+.actions {
+    margin-top: 16px
+}
+
+button {
+    width: 100%;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-weight: 600;
+    background: linear-gradient(180deg, var(--primary), var(--primary-strong));
+    color: white;
+    cursor: pointer;
+    transition: transform .03s ease;
+}
+
+button:active {
+    transform: translateY(1px)
+}
+
+button[disabled] {
+    opacity: .7;
+    cursor: not-allowed
+}
+
+.row {
+    display: flex;
+    gap: 10px
+}
+
+.row>* {
+    flex: 1
+}
+
+.msg {
+    margin-top: 10px;
+    font-size: .92rem
+}
+
+.msg.error {
+    color: var(--danger)
+}
+
+.msg.ok {
+    color: var(--ok)
+}
+
+.footer {
+    margin-top: 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: .92rem
+}
+
+.toggle {
+    font-size: .85rem;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+}
+
+.small {
+    font-size: .85rem;
+    color: var(--muted)
+}
+
+/* === 大号地图卡片 === */
+.card--mapXL {
+    /* 地图卡片特殊样式 */
+    padding: 20px;
+}
+
+.card--mapXL h2 {
+    font-size: 1.15rem;
+    margin-bottom: 4px;
+}
+
+.card--mapXL .sub {
+    font-size: .86rem;
+    margin-bottom: 10px;
+}
+
+/* 地图容器 - 移除过高的vh设置 */
+.card--mapXL .map-container {
+    min-height: 500px;
+    max-height: 75vh;
+    width: 100%;
+}
+
+/* 大屏优化 */
+@media (min-width: 1280px) {
+    .card--mapXL {
+        padding: 22px;
+    }
+
+    .card--mapXL .map-container {
+        min-height: 550px;
+        max-height: 70vh;
+    }
+}
+
+/* 超大屏优化 */
+@media (min-width: 1600px) {
+    .card--mapXL .map-container {
+        min-height: 600px;
+        max-height: 72vh;
+    }
+}

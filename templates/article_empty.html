@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>我的文章 · 首次使用</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        body {
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 0 16px;
+            font-family: system-ui
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer
+        }
+
+        .card {
+            border: 1px solid #eee;
+            padding: 16px;
+            border-radius: 14px;
+            margin: 10px 0
+        }
+
+        form input,
+        form textarea {
+            width: 100%;
+            margin: 6px 0;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 10px
+        }
+
+        .muted {
+            color: #888;
+            font-size: 13px
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div>
+            <div class="muted">已登录用户</div>
+            <h2 id="username">{{ .username }}</h2>
+        </div>
+        <div>
+            <a class="btn" href="/rates">去查询汇率</a>
+            <button class="btn" id="logout">退出</button>
+        </div>
+    </header>
+
+    <section class="card">
+        <h3>欢迎来到你的空间 👋</h3>
+        <p class="muted">你还没有任何文章，先创建第一篇吧～</p>
+        <form id="createForm">
+            <input name="title" placeholder="标题（必填）" required maxlength="200" />
+            <textarea name="preview" placeholder="摘要（必填）" required></textarea>
+            <textarea name="content" placeholder="正文（必填）" required></textarea>
+            <button class="btn" type="submit">发布首篇文章</button>
+            <span id="cmsg" class="muted"></span>
+        </form>
+    </section>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const token = localStorage.getItem('token');
+        if (!token) { location.href = '/auth/login'; }
+
+        function authFetch(url, opts = {}) {
+            const headers = Object.assign({ 'Content-Type': 'application/json', 'Authorization': token }, opts.headers || {});
+            return fetch(url, Object.assign(opts, { headers }));
+        }
+
+        $('#logout').onclick = () => { localStorage.removeItem('token'); location.href = '/auth/login'; };
+
+        $('#createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const f = e.target, msg = $('#cmsg');
+            const payload = {
+                title: f.title.value.trim(),
+                preview: f.preview.value.trim(),
+                content: f.content.value.trim(),
+            };
+            const r = await authFetch('/api/articles', { method: 'POST', body: JSON.stringify(payload) });
+            const d = await r.json().catch(() => ({}));
+            if (r.ok) {
+                msg.textContent = '发布成功，正在进入文章主页…';
+                // 重新打开 /articles，后端会渲染“老用户模板”
+                location.href = '/articles';
+            } else {
+                msg.textContent = d.error || '发布失败';
+            }
+        });
+    </script>
+</body>
+
+</html>

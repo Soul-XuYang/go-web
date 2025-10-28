@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>全部文章</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        /* 就地兜底：覆盖 base.css 的全局布局与按钮 100% 宽 */
+        body.ap-page {
+            display: block !important;
+            place-items: initial !important;
+            padding: 0 !important;
+        }
+
+        .ap-page .ap-btn {
+            width: auto !important;
+        }
+
+        :root {
+            --muted: #64748b;
+            --primary: #2563eb;
+            --secondary: #475569;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --page-max: 960px;
+            /* 标题/广告/按钮 的居中窄列 */
+            --edge-pad: 18px;
+            /* 表格全宽时的左右安全边距 */
+        }
+
+        /* 顶部：标题 + 用户名在同一行并整体居中 */
+        header.ap-top {
+            max-width: var(--page-max);
+            margin: 10px auto 0 !important;
+            padding: 0 var(--edge-pad) !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ap-titlebar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .ap-title {
+            margin: 0 !important;
+            line-height: 1.18;
+            font-size: 1.28rem;
+        }
+
+        /* 标题右侧用户胶囊 */
+        .ap-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, .06);
+            border: 1px solid rgba(0, 0, 0, .08);
+            vertical-align: middle;
+        }
+
+        .ap-chip-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            color: #fff;
+            font-size: .75rem;
+            font-weight: 700;
+        }
+
+        .ap-chip-name {
+            font-size: .98rem;
+            color: var(--muted);
+        }
+
+        /* 标题下：作者链接 + 四按钮（紧贴） */
+        .ap-stack {
+            max-width: var(--page-max);
+            margin: 6px auto 0 !important;
+            padding: 0 var(--edge-pad) !important;
+            display: grid;
+            justify-items: center;
+            row-gap: 8px;
+        }
+
+        .ap-ad {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 0 !important;
+            border: 1px dashed rgba(0, 0, 0, .15);
+            background: rgba(0, 0, 0, .03);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: .96rem;
+        }
+
+        .ap-ad strong {
+            color: var(--muted);
+        }
+
+        .ap-link {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, .04);
+            border: 1px solid rgba(0, 0, 0, .08);
+        }
+
+        .ap-link:hover {
+            text-decoration: underline;
+        }
+
+        .ap-toolbar {
+            margin: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .ap-btn {
+            height: 38px;
+            padding: 0 18px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            color: #fff;
+            font-weight: 600;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
+        }
+
+        .ap-btn:disabled {
+            opacity: .9;
+            cursor: not-allowed;
+        }
+
+        .ap-btn.back {
+            background: #475569;
+        }
+
+        .ap-btn.primary {
+            background: #2563eb;
+        }
+
+        .ap-btn.warn {
+            background: #f59e0b;
+            color: #111827;
+        }
+
+        .ap-btn.danger {
+            background: #ef4444;
+        }
+
+        /* 表格全宽铺开，与按钮仅 8px 间距 */
+        .ap-list {
+            width: calc(100vw - var(--edge-pad)*2);
+            margin: 8px auto 22px !important;
+            padding: 0;
+        }
+
+        .ap-card {
+            border: 1px solid rgba(0, 0, 0, .08);
+            border-radius: 14px;
+            background: rgba(0, 0, 0, .02);
+            padding: 12px 12px 6px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .08);
+            width: 100%;
+        }
+
+        .ap-card h2 {
+            margin: 0 0 8px !important;
+            font-size: 1.06rem;
+        }
+
+        .ap-table-wrap {
+            overflow-x: auto;
+        }
+
+        table.ap-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .ap-table thead th {
+            text-align: left;
+            font-weight: 700;
+            color: #475569;
+            border-bottom: 1px solid rgba(0, 0, 0, .1);
+            padding: 10px 8px;
+        }
+
+        .ap-table tbody td {
+            border-bottom: 1px solid rgba(0, 0, 0, .06);
+            padding: 10px 8px;
+            vertical-align: top;
+            word-break: break-word;
+        }
+
+        .ap-table tbody tr:hover {
+            background: rgba(0, 0, 0, .03);
+        }
+
+        .ap-id {
+            width: 110px;
+        }
+
+        .ap-check {
+            width: 46px;
+            text-align: center;
+        }
+
+        .ap-created {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body class="ap-page">
+    <!-- 标题 + 用户名在同一行 -->
+    <header class="ap-top">
+        <div class="ap-titlebar">
+            <h1 class="ap-title">本系统的全部文章</h1>
+            <span class="ap-chip">
+                <span class="ap-chip-avatar" id="avatar">U</span>
+                <span class="ap-chip-name" id="username">加载中…</span>
+            </span>
+        </div>
+    </header>
+
+    <!-- 作者链接 + 四个按钮 -->
+    <section class="ap-stack">
+        <div class="ap-ad" id="adbar" hidden>
+            <strong>作者博客：</strong>
+            <a id="adlink" class="ap-link" href="#" target="_blank" rel="noopener" title="">本本Soul-XuYang作者的的博客链接 ↗</a>
+        </div>
+
+        <div class="ap-toolbar">
+            <button id="btnBack" type="button" class="ap-btn back">返回页面主菜单</button>
+            <button id="btnRefresh" type="button" class="ap-btn primary">更新文章</button>
+            <button id="btnEdit" type="button" class="ap-btn warn" disabled>修改文章</button>
+            <button id="btnDelete" type="button" class="ap-btn danger" disabled>删除文章</button>
+        </div>
+    </section>
+
+    <!-- 全宽表格 -->
+    <section class="ap-list">
+        <div class="ap-card">
+            <h2>全部的文章列表</h2>
+            <div class="ap-table-wrap">
+                <table class="ap-table" id="tbl">
+                    <thead>
+                        <tr>
+                            <th class="ap-check"><input type="checkbox" id="checkAll"></th>
+                            <th class="ap-id">文章ID</th>
+                            <th>文章标题</th>
+                            <th>文章摘要</th>
+                            <th>点赞数</th>
+                            <th>文章的创建时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody">
+                        <tr>
+                            <td colspan="6" style="color:#64748b;">加载中…</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const $$ = s => Array.from(document.querySelectorAll(s));
+
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            return t ? (t.toLowerCase().startsWith('bearer ') ? t : 'Bearer ' + t) : null;
+        }
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign(
+                { 'Content-Type': 'application/json' },
+                token ? { 'Authorization': token } : {},
+                opts.headers || {}
+            );
+            const r = await fetch(url, { ...opts, headers });
+            if (r.status === 401) {
+                localStorage.removeItem('token'); location.href = '/auth/login';
+                throw new Error('Unauthorized');
+            }
+            return r;
+        }
+
+        async function loadMe() {
+            try {
+                const r = await authFetch('/api/me', { cache: 'no-store' });
+                const d = await r.json().catch(() => ({}));
+                const u = d.username || 'unknown';
+                $('#username').textContent = u;
+                $('#avatar').textContent = (u?.trim?.()[0] || 'U').toUpperCase();
+            } catch { }
+        }
+
+        // 把链接文字固定为“访问作者博客 ↗”，href/tooltip 用接口返回的 URL
+        async function loadAd() {
+            try {
+                const r = await authFetch('/api/ad', { cache: 'no-store' });
+                const d = await r.json().catch(() => ({}));
+                const url = d.author_url || d.authorurl;
+                if (url && typeof url === 'string') {
+                    const a = $('#adlink');
+                    a.href = url;
+                    a.title = url;
+                    a.textContent = '本作者的一个基于HEXO框架的博客';
+                    $('#adbar').hidden = false;
+                }
+            } catch { }
+        }
+
+        function escapeHTML(s) {
+            const div = document.createElement('div');
+            div.textContent = s ?? '';
+            return div.innerHTML;
+        }
+
+        function renderRows(list) {
+            const tb = $('#tbody');
+            if (!Array.isArray(list) || list.length === 0) {
+                tb.innerHTML = `<tr><td colspan="6" style="color:#64748b;">暂无数据</td></tr>`;
+                return;
+            }
+            tb.innerHTML = '';
+            for (const it of list) {
+                const tr = document.createElement('tr');
+                tr.dataset.id = it.id;
+                tr.innerHTML = `
+          <td class="ap-check"><input type="checkbox" class="rowSel"></td>
+          <td class="ap-id">${it.id}</td>
+          <td>${escapeHTML(it.title)}</td>
+          <td style="color:#64748b;">${escapeHTML(it.preview || '')}</td>
+          <td>${it.likes ?? 0}</td>
+          <td class="ap-created">${it.created ? new Date(it.created * 1000).toLocaleString('zh-CN') : '-'}</td>
+        `;
+                tr.ondblclick = () => alert('TODO: 编辑：ID=' + tr.dataset.id);
+                tb.appendChild(tr);
+            }
+            bindRowSelection();
+        }
+
+        async function loadArticles(force = false) {
+            const tb = $('#tbody');
+            tb.innerHTML = `<tr><td colspan="6" style="color:#64748b;">加载中…</td></tr>`;
+            try {
+                const url = '/api/articles' + (force ? ('?t=' + Date.now()) : '');
+                const r = await authFetch(url, { cache: 'no-store' });
+                renderRows(await r.json());
+            } catch (e) {
+                tb.innerHTML = `<tr><td colspan="6" style="color:#64748b;">加载失败：${e?.message || 'unknown'}</td></tr>`;
+            } finally {
+                updateToolbar();
+            }
+        }
+
+        function bindRowSelection() {
+            const all = $('#checkAll');
+            const rows = $$('.rowSel');
+            all.onchange = () => { rows.forEach(ch => ch.checked = all.checked); updateToolbar(); };
+            rows.forEach(ch => ch.onchange = () => {
+                const any = rows.some(x => x.checked), allck = rows.every(x => x.checked);
+                all.checked = allck && any; updateToolbar();
+            });
+        }
+        const getIds = () => $$('.rowSel').filter(ch => ch.checked).map(ch => ch.closest('tr').dataset.id);
+        function updateToolbar() {
+            const ids = getIds();
+            $('#btnEdit').disabled = (ids.length !== 1);
+            $('#btnDelete').disabled = (ids.length < 1);
+        }
+
+        $('#btnBack').onclick = () => location.href = '/page/shell';
+        $('#btnRefresh').onclick = () => loadArticles(true);
+        $('#btnEdit').onclick = () => { const ids = getIds(); if (ids.length !== 1) return; alert('TODO: 编辑ID=' + ids[0]); };
+        $('#btnDelete').onclick = () => { const ids = getIds(); if (!ids.length) return; alert('TODO: 删除ID=' + ids.join(',')); };
+
+        loadMe(); loadAd(); loadArticles();
+    </script>
+</body>
+
+</html>

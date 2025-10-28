@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>我的文章</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        body {
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 0 16px;
+            font-family: system-ui
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 8px;
+            align-items: center
+        }
+
+        .card {
+            border: 1px solid #eee;
+            padding: 16px;
+            border-radius: 14px;
+            margin: 10px 0
+        }
+
+        form.card input,
+        form.card textarea {
+            width: 100%;
+            margin: 6px 0;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 10px
+        }
+
+        .muted {
+            color: #888;
+            font-size: 13px
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div>
+            <div class="muted">已登录用户</div>
+            <h2 id="username">{{ .username }}</h2>
+        </div>
+        <div class="toolbar">
+            <a class="btn" href="/rates">去查询汇率</a>
+            <button class="btn" id="logout">退出</button>
+        </div>
+    </header>
+
+    <section>
+        <h3>新建文章</h3>
+        <form id="createForm" class="card">
+            <input name="title" placeholder="标题（必填）" required maxlength="200" />
+            <textarea name="preview" placeholder="摘要（必填）" required></textarea>
+            <textarea name="content" placeholder="正文（必填）" required></textarea>
+            <button class="btn" type="submit">发布</button>
+            <span id="cmsg" class="muted"></span>
+        </form>
+    </section>
+
+    <section>
+        <h3>我的文章</h3>
+        <div id="list"></div>
+        <div id="empty" class="card" style="display:none">
+            <p>你还没有文章～ 可以上面先创建一篇。</p>
+        </div>
+    </section>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const token = localStorage.getItem('token');
+        if (!token) { location.href = '/auth/login'; }
+
+        function authFetch(url, opts = {}) {
+            const headers = Object.assign({ 'Content-Type': 'application/json', 'Authorization': token }, opts.headers || {});
+            return fetch(url, Object.assign(opts, { headers }));
+        }
+
+        $('#logout').onclick = () => { localStorage.removeItem('token'); location.href = '/auth/login'; };
+
+        function escapeHtml(s) { return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+        async function loadList() {
+            const r = await authFetch('/api/articles');
+            const arr = await r.json().catch(() => []);
+            const box = $('#list'), empty = $('#empty');
+            box.innerHTML = '';
+            if (!Array.isArray(arr) || arr.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            empty.style.display = 'none';
+            arr.forEach(it => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `
+      <div class="row">
+        <div>
+          <div><strong>${escapeHtml(it.title || '')}</strong></div>
+          <div class="muted">${escapeHtml((it.preview || '').slice(0, 140))}</div>
+          <div class="muted">ID: ${it.id} · Likes: <span data-like="${it.id}">${it.likes || 0}</span></div>
+        </div>
+        <button class="btn" data-act="like" data-id="${it.id}">点赞</button>
+        <button class="btn" data-act="edit" data-id="${it.id}">编辑</button>
+      </div>
+    `;
+                box.appendChild(div);
+            });
+        }
+
+        $('#list').addEventListener('click', async (e) => {
+            const btn = e.target.closest('button'); if (!btn) return;
+            const id = btn.dataset.id;
+            const act = btn.dataset.act;
+
+            if (act === 'like') {
+                const r = await authFetch(`/api/articles/${id}/like`, { method: 'POST' });
+                const d = await r.json().catch(() => ({}));
+                if (r.ok) {
+                    const span = document.querySelector(`[data-like="${id}"]`);
+                    if (typeof d.likes === 'number') { span.textContent = d.likes; }
+                } else {
+                    alert(d.error || '点赞失败');
+                }
+            }
+
+            if (act === 'edit') {
+                const title = prompt('新标题（留空不改）');
+                const preview = prompt('新摘要（留空不改）');
+                const content = prompt('新正文（留空不改）');
+                const payload = {};
+                if (title) payload.title = title;
+                if (preview) payload.preview = preview;
+                if (content) payload.content = content;
+                if (Object.keys(payload).length === 0) return;
+
+                const r = await authFetch(`/api/articles/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(payload)
+                });
+                const d = await r.json().catch(() => ({}));
+                if (r.ok) { loadList(); } else { alert(d.error || '更新失败'); }
+            }
+        });
+
+        $('#createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const f = e.target, msg = $('#cmsg');
+            const payload = {
+                title: f.title.value.trim(),
+                preview: f.preview.value.trim(),
+                content: f.content.value.trim()
+            };
+            const r = await authFetch('/api/articles', { method: 'POST', body: JSON.stringify(payload) });
+            const d = await r.json().catch(() => ({}));
+            if (r.ok) { msg.textContent = '发布成功'; f.reset(); loadList(); }
+            else { msg.textContent = d.error || '发布失败'; }
+        });
+
+        loadList();
+    </script>
+</body>
+
+</html>

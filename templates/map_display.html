@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Display 地图寻路展示</title>
+    <style>
+        :root {
+            --muted: #7d9ac2;
+            --cell: 24px;
+            --primary: #3b82f6;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC";
+            background: #f5f7fb;
+            color: #0f172a
+        }
+
+        /* 顶部 */
+        .top {
+            max-width: 1200px;
+            margin: 16px auto 8px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 0, 0, .06);
+            background: #fff;
+        }
+
+        .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .uname {
+            color: var(--muted);
+            font-size: .95rem;
+        }
+
+        /* 主卡片 */
+        .wrap {
+            max-width: 1200px;
+            margin: 8px auto 20px;
+            padding: 0 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .card {
+            border: 1px solid rgba(0, 0, 0, .06);
+            border-radius: 16px;
+            background: #fff;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, .06)
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        /* 按钮 */
+        .btn {
+            height: 38px;
+            border: none;
+            border-radius: 8px;
+            padding: 0 14px;
+            font-weight: 600;
+            cursor: pointer
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+        }
+
+        .msg {
+            padding: 10px 12px;
+            border-radius: 10px;
+            line-height: 1.5;
+            background: rgba(0, 0, 0, .02);
+            border: 1px solid rgba(0, 0, 0, .06);
+            font-size: .9rem
+        }
+
+        .msg.info {
+            border-color: rgba(59, 130, 246, .18);
+            background: rgba(59, 130, 246, .04)
+        }
+
+        .map-legend {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, .02)
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .88rem;
+            color: var(--muted)
+        }
+
+        /* 地图容器与格子 */
+        .map-container {
+            position: relative;
+            background: rgba(0, 0, 0, .03);
+            border: 1px solid rgba(0, 0, 0, .04);
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 360px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto
+        }
+
+        .map-grid {
+            display: grid;
+            gap: 2px;
+            border-radius: 8px;
+            padding: 8px;
+            border: 1px solid rgba(0, 0, 0, .06);
+            width: max-content;
+            max-width: 100%
+        }
+
+        .map-grid>.msg {
+            grid-column: 1 / -1
+        }
+
+        .map-cell {
+            width: var(--cell);
+            height: var(--cell);
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            border: 1px solid rgba(0, 0, 0, .06);
+            background: #f8fafc
+        }
+
+        .map-cell.wall {
+            background: #1f2937;
+            border-color: #374151;
+            color: transparent
+        }
+
+        .map-cell.path {
+            background: #e6edf7;
+            border-color: #dbe6f6;
+            color: #6b7280
+        }
+
+        .map-cell.start {
+            background: #10b981;
+            color: #fff;
+            border-color: #059669
+        }
+
+        .map-cell.player {
+            background: #3b82f6;
+            color: #fff;
+            border-color: #2563eb
+        }
+
+        /* 终点单元格延用“可走路径”的底色，图标用🟢区分 */
+        .map-cell.visited {
+            background: #eef2ff;
+            border-color: #dbeafe;
+            color: #6b7280
+        }
+
+        /* 底部两个按钮 */
+        .below {
+            max-width: 1200px;
+            margin: 8px auto 24px;
+            padding: 0 16px;
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+        }
+
+        .below .btn {
+            height: 44px;
+            min-width: 160px;
+            border-radius: 10px;
+            font-size: .92rem;
+        }
+
+        /* 终点：用绿色点显示（🟢），与起点(🔵)区分 */
+        .map-cell.end {
+            background: #10b981;
+            color: #fff;
+            border-color: #059669
+        }
+
+        @media (max-width:600px) {
+            .map-cell {
+                width: 18px;
+                height: 18px;
+                font-size: 11px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 顶部 -->
+    <header class="top">
+        <div class="userbox">
+            <div class="avatar" id="avatar">U</div><span class="uname" id="username">加载中…</span>
+        </div>
+    </header>
+
+    <!-- 主体 -->
+    <main class="wrap">
+        <section class="card">
+            <h2 style="margin:0 0 8px;">地图寻路可视化展示</h2>
+            <div class="row">
+                <button id="btnLoad" class="btn btn-primary">加载地图并播放动画</button>
+            </div>
+
+            <div id="tip" class="msg info" style="margin-top:10px;">待加载…</div>
+
+            <div class="map-legend" style="margin-top:10px;">
+                规则：从起点到终点
+                <span class="legend-item"><b>█</b> 障碍物</span>
+                <span class="legend-item">· 可走路径</span>
+                <span class="legend-item">🔵 起点/玩家</span>
+                <span class="legend-item">🟢 终点</span>
+            </div>
+
+            <div class="map-container" style="margin-top:10px;">
+                <div id="map" class="map-grid">
+                    <div class="msg info">尚未加载地图</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部两个操作 -->
+    <div class="below">
+        <button id="backHome" class="btn btn-primary"
+            style="width:20%; height:42px; border-radius:10px; font-size:.9rem;">返回主菜单</button>
+        <button id="backGame" class="btn btn-primary"
+            style="width:20%; height:42px; border-radius:10px; font-size:.9rem;">返回地图游戏界面</button>
+    </div>
+
+    <!-- 逻辑封装：单文件即可运行 -->
+    <script>
+        (() => {
+            const CFG = { endpoint: '/api/game/map/display', stepMs: 200, apiMe: '/api/me' };
+            const $ = s => document.querySelector(s);
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+            const toPoint = p => (!p ? null :
+                (typeof p.x === 'number' && typeof p.y === 'number') ? { x: p.x | 0, y: p.y | 0 } :
+                    (typeof p.X === 'number' && typeof p.Y === 'number') ? { x: p.X | 0, y: p.Y | 0 } : null);
+
+            const state = { rows: 0, cols: 0 };
+
+            // ====== UI helpers ======
+            function initialOf(name) { if (!name) return 'U'; const s = String(name).trim(); return s ? s[0].toUpperCase() : 'U'; }
+            function getStoredToken() { const t = localStorage.getItem('token'); if (!t) return null; return t.toLowerCase().startsWith('bearer ') ? t : 'Bearer ' + t; }
+            async function authFetch(url, opts = {}) {
+                const token = getStoredToken();
+                const headers = Object.assign({ 'Content-Type': 'application/json' }, token ? { 'Authorization': token } : {}, opts.headers || {});
+                return fetch(url, { credentials: 'include', ...opts, headers });
+            }
+
+            // ====== layout sizing ======
+            function fitCellSize(rows, cols) {
+                const container = document.querySelector('.map-container') || document.body;
+                const inner = (container.clientWidth || 800) - 40;
+                const usable = inner - (16 + 2) - (cols - 1) * 2;
+                let cell = Math.floor(usable / cols);
+                cell = Math.max(18, Math.min(cell, 32));
+                document.documentElement.style.setProperty('--cell', cell + 'px');
+            }
+            function getCell(x, y) { return document.querySelector(`[data-row="${x}"][data-col="${y}"]`); }
+            function findChar(mapData, ch) { for (let i = 0; i < mapData.length; i++) { const j = (mapData[i] || '').indexOf(ch); if (j >= 0) return { x: i, y: j }; } return null; }
+
+            // ====== render (矩形) ======
+            function renderMapRect(mapData, sp, ep) {
+                const map = $('#map');
+                if (!Array.isArray(mapData) || !mapData.length) {
+                    map.innerHTML = '<div class="msg info">地图数据为空</div>';
+                    state.rows = state.cols = 0; return;
+                }
+                const rows = mapData.length;
+                const cols = Math.max(...mapData.map(r => (r ? r.length : 0)));
+                fitCellSize(rows, cols);
+                map.style.display = 'grid';
+                map.style.gridTemplateColumns = `repeat(${cols}, var(--cell))`;
+                map.style.gridAutoRows = 'var(--cell)';
+                map.innerHTML = '';
+
+                sp = toPoint(sp) || findChar(mapData, '+') || { x: 0, y: 0 };
+                ep = toPoint(ep) || findChar(mapData, 'x') || { x: 0, y: 0 };
+
+                for (let i = 0; i < rows; i++) {
+                    const line = mapData[i] || '';
+                    for (let j = 0; j < cols; j++) {
+                        const d = document.createElement('div');
+                        d.className = 'map-cell'; d.dataset.row = i; d.dataset.col = j;
+                        const ch = line.charAt(j) || '#';
+                        switch (ch) {
+                            case '#': d.className = 'map-cell wall'; d.textContent = '█'; break;
+                            case 'o': d.className = 'map-cell path'; d.textContent = '·'; break;
+                            case '+': d.className = 'map-cell start player'; d.textContent = '🔵'; break;
+                            case 'x': d.className = 'map-cell path end'; d.textContent = '🟢'; break;
+                            default: d.className = 'map-cell wall'; d.textContent = '█';
+                        }
+                        if (i === sp.x && j === sp.y) { d.className = 'map-cell start player'; d.textContent = '🔵'; }
+                        if (i === ep.x && j === ep.y) { d.className = 'map-cell path end'; d.textContent = '🟢'; }
+                        map.appendChild(d);
+                    }
+                }
+                state.rows = rows; state.cols = cols;
+            }
+
+            // ====== path helpers ======
+            function normalizeSteps(rawPath, sp, ep) {
+                const mid = Array.isArray(rawPath) ? rawPath.map(toPoint).filter(Boolean) : [];
+                const steps = [];
+                if (!mid.length || mid[0].x !== sp.x || mid[0].y !== sp.y) steps.push(sp);
+                steps.push(...mid);
+                if (steps.at(-1).x !== ep.x || steps.at(-1).y !== ep.y) steps.push(ep);
+                return steps;
+            }
+            function bfsPath(mapData, sp, ep) {
+                if (!sp || !ep) return null;
+                const rows = mapData.length;
+                const cols = Math.max(...mapData.map(r => (r ? r.length : 0)));
+                const inb = (x, y) => x >= 0 && x < rows && y >= 0 && y < cols;
+                const pass = (x, y) => { const ch = (mapData[x] || '').charAt(y) || '#'; return (ch === 'o' || ch === '+' || ch === 'x'); };
+                const prev = Array.from({ length: rows }, () => Array(cols).fill(null));
+                const seen = Array.from({ length: rows }, () => Array(cols).fill(false));
+                const q = [sp]; seen[sp.x][sp.y] = true; const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+                while (q.length) {
+                    const u = q.shift(); if (u.x === ep.x && u.y === ep.y) break;
+                    for (const [dx, dy] of dirs) {
+                        const nx = u.x + dx, ny = u.y + dy; if (!inb(nx, ny) || seen[nx][ny] || !pass(nx, ny)) continue;
+                        seen[nx][ny] = true; prev[nx][ny] = u; q.push({ x: nx, y: ny });
+                    }
+                }
+                if (!prev[ep.x]?.[ep.y] && !(sp.x === ep.x && sp.y === ep.y)) return null;
+                const path = []; let cur = ep; path.push(cur);
+                while (prev[cur.x]?.[cur.y]) { cur = prev[cur.x][cur.y]; path.push(cur); }
+                if (!(cur.x === sp.x && cur.y === sp.y)) { if (sp.x === ep.x && sp.y === ep.y) return [sp]; return null; }
+                path.reverse(); return path;
+            }
+
+            async function animatePath(steps) {
+                if (!steps || steps.length < 2) return;
+                const btn = $('#btnLoad'); btn.disabled = true;
+                const first = steps[0]; const c0 = getCell(first.x, first.y);
+                if (c0) { c0.className = 'map-cell start player'; c0.textContent = '🔵'; }
+                for (let i = 1; i < steps.length; i++) {
+                    const prev = steps[i - 1], cur = steps[i];
+                    const pc = getCell(prev.x, prev.y), cc = getCell(cur.x, cur.y);
+                    if (pc) {
+                        if (prev.x === first.x && prev.y === first.y) { pc.className = 'map-cell start'; pc.textContent = '+'; }
+                        else { pc.classList.remove('player'); pc.classList.add('visited'); pc.textContent = '·'; }
+                    }
+                    if (cc) {
+                        const isEnd = cc.className.includes('end') || cc.textContent === '🟢';
+                        if (isEnd) { cc.className = 'map-cell path end'; cc.textContent = '🟢'; }
+                        else { cc.className = 'map-cell player'; cc.textContent = '🔵'; }
+                    }
+                    await sleep(CFG.stepMs);
+                }
+                btn.disabled = false;
+            }
+
+            // ====== flow ======
+            async function loadAndPlay() {
+                const tip = $('#tip'); tip.className = 'msg info'; tip.textContent = '请求：' + CFG.endpoint;
+                try {
+                    const r = await fetch(CFG.endpoint, { credentials: 'include' });
+                    const d = await r.json();
+                    const mapData = d.mapData;
+                    const sp = toPoint(d.startPoint) || findChar(mapData || [], '+');
+                    const ep = toPoint(d.endPoint) || findChar(mapData || [], 'x');
+
+                    renderMapRect(mapData, sp, ep);
+
+                    let steps = null;
+                    if (d.ok && Array.isArray(d.path) && d.path.length) steps = normalizeSteps(d.path, sp, ep);
+                    else {
+                        const bfs = bfsPath(mapData, sp, ep);
+                        if (bfs && bfs.length > 1) steps = bfs;
+                    }
+
+                    if (steps && steps.length > 1) {
+                        tip.textContent = `地图已渲染，路径 ${steps.length} 步，开始播放…`;
+                        await animatePath(steps);
+                        tip.textContent = '播放完成。';
+                    } else {
+                        tip.textContent = '地图已渲染，但没有可播放的路径。';
+                    }
+                } catch (e) {
+                    tip.className = 'msg';
+                    tip.textContent = '加载失败：' + (e?.message || '未知错误');
+                    console.error(e);
+                }
+            }
+
+            // 顶部用户信息（可选，失败不影响页面）
+            async function loadMe() {
+                try {
+                    const r = await authFetch(CFG.apiMe);
+                    const d = await r.json().catch(() => ({}));
+                    const uname = d.username || d.name || 'unknown';
+                    $('#username').textContent = uname;
+                    $('#avatar').textContent = initialOf(uname);
+                } catch { }
+            }
+
+            // 事件
+            $('#btnLoad').onclick = loadAndPlay;
+            $('#backHome').onclick = () => location.href = '/page/shell';
+            $('#backGame').onclick = () => location.href = '/page/game/map';
+            window.addEventListener('resize', () => { if (state.cols) fitCellSize(state.rows, state.cols); });
+
+            // 初始化
+            loadMe();
+        })();
+    </script>
+</body>
+
+</html>

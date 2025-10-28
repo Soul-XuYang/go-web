@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>应用选择中心</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        :root {
+            --muted: #94a3b8;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        /* 顶部：标题 + 用户展示 */
+        .top {
+            max-width: 960px;
+            margin: 20px auto 12px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.75rem;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .04);
+        }
+
+        .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .8rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+        }
+
+        .uname {
+            color: var(--muted);
+            font-size: .95rem;
+        }
+
+        /* 游戏卡片区 */
+        .wrap {
+            max-width: 960px;
+            padding: 0 16px;
+            margin: 28px auto;
+            display: grid;
+            gap: 24px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            align-items: stretch;
+        }
+
+        .game-card {
+            padding: 28px;
+            min-height: 240px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, .03);
+            box-shadow: 0 10px 30px rgba(2, 6, 23, .12);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), #10b981);
+        }
+
+        .game-card h2 {
+            margin: 0 0 8px;
+            font-size: 1.25rem;
+            color: var(--text);
+        }
+
+        .game-description {
+            margin: 0 0 12px;
+            color: var(--muted);
+            font-size: 0.96rem;
+            line-height: 1.5;
+        }
+
+        .game-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .game-features li {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .game-features li::before {
+            content: '✨';
+            font-size: 0.8rem;
+        }
+
+        .game-actions {
+            margin-top: auto;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-game {
+            height: 44px;
+            min-width: 120px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.96rem;
+            cursor: pointer;
+        }
+
+        .btn-play {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #ffffff;
+        }
+
+        .btn-play:hover {
+            opacity: 0.95;
+        }
+
+        .btn-ranks {
+            background: #f59e0b;
+            border-color: #f59e0b;
+            color: #ffffff;
+        }
+
+        .map-game-card::before {
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+        }
+
+        /* 天气卡片特有样式 */
+        .weather-card .weather-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 6px;
+        }
+
+        .weather-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            display: inline-block;
+            object-fit: contain;
+            padding: 6px;
+        }
+
+        .weather-primary {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: var(--text);
+        }
+
+        .weather-sub {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .footer {
+            max-width: 960px;
+            margin: 6px auto 24px;
+            padding: 0 16px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width:900px) {
+            .wrap {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="top">
+        <div class="brand">
+            <h1>游戏选择中心</h1>
+        </div>
+        <div class="userbox">
+            <div class="avatar" id="avatar">U</div>
+            <span class="uname" id="username">加载中…</span>
+        </div>
+    </header>
+
+    <main class="wrap">
+        <!-- 数字猜猜乐 -->
+        <section class="game-card">
+            <h2>🎯 数字猜猜乐</h2>
+            <p class="game-description">经典的猜数字游戏，考验你的逻辑推理能力！</p>
+            <ul class="game-features">
+                <li>三轮闯关挑战</li>
+                <li>难度递增设计</li>
+                <li>分数排行榜竞技</li>
+                <li>策略与运气并存</li>
+            </ul>
+            <div class="game-actions">
+                <button id="playGuessGame" class="btn-game btn-play">开始游戏</button>
+                <button id="guessRanks" class="btn-game btn-ranks">查看排行</button>
+            </div>
+        </section>
+
+        <!-- 新增：天气查询卡片（图标使用代理回退逻辑） -->
+        <section class="game-card weather-card">
+            <h2>☁️ 天气查询</h2>
+            <p class="game-description">快速查看你当前位置的天气摘要，或进入完整 Top10 城市天气页面。</p>
+
+            <div id="weatherContent" style="min-height:84px;">
+                <div class="weather-row" id="weatherLoading">
+                    <div class="weather-sub">正在获取本地天气…</div>
+                </div>
+            </div>
+
+            <div style="margin-top:10px; display:flex; gap:10px; justify-content:center;">
+                <button id="btnWeatherRefresh" class="btn-game">刷新</button>
+                <button id="btnWeatherTop10" class="btn-game btn-ranks">查看天气 Top10</button>
+            </div>
+        </section>
+
+        <!-- 地图寻路游戏 -->
+        <section class="game-card map-game-card">
+            <h2>🗺️ 地图寻路挑战</h2>
+            <p class="game-description">在迷宫中寻找最佳路径，挑战你的空间思维！</p>
+            <ul class="game-features">
+                <li>三轮地图挑战</li>
+                <li>8×8 → 12×12 → 16×16</li>
+                <li>用时排行榜竞速</li>
+                <li>键盘控制移动</li>
+            </ul>
+            <div class="game-actions">
+                <button id="playMapGame" class="btn-game btn-play">开始游戏</button>
+                <button id="mapRanks" class="btn-game btn-ranks">查看排行</button>
+            </div>
+        </section>
+    </main>
+
+    <div class="footer">
+        <button id="backHome" class="btn-game btn-play">返回主菜单</button>
+    </div>
+
+    <script>
+        (function () {
+            const $ = s => document.querySelector(s);
+
+            function getStoredToken() {
+                const t = localStorage.getItem('token');
+                if (!t) return null;
+                return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t);
+            }
+
+            async function authFetch(url, opts = {}) {
+                const token = getStoredToken();
+                const headers = Object.assign(
+                    { 'Content-Type': 'application/json' },
+                    token ? { 'Authorization': token } : {},
+                    opts.headers || {}
+                );
+                const r = await fetch(url, { credentials: 'include', ...opts, headers });
+                if (r.status === 401) {
+                    localStorage.removeItem('token');
+                    location.href = '/auth/login';
+                    throw new Error('Unauthorized');
+                }
+                return r;
+            }
+
+            function initialOf(name) { if (!name) return 'U'; const s = String(name).trim(); return s ? s[0].toUpperCase() : 'U'; }
+            async function loadMe() {
+                try {
+                    const r = await authFetch('/api/me');
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    const d = await r.json().catch(() => ({}));
+                    const uname = d.username || d.name || 'unknown';
+                    $('#username').textContent = uname;
+                    $('#avatar').textContent = initialOf(uname);
+                } catch (err) { console.error('加载用户信息失败：', err); }
+            }
+
+            // ===== proxy config =====
+            const PROXY_IMAGE = '/api/proxy/image?url='; // 后端代理接口（请确保已注册）
+            const FORCE_PROXY_HOSTS = new Set(['mat1.gtimg.com']); // 对这些 host 强制走代理
+
+            function normalizeUrl(u) {
+                if (!u) return '';
+                try {
+                    const s = String(u).trim();
+                    if (s.startsWith('//')) return (location.protocol === 'https:' ? 'https:' : 'http:') + s;
+                    return s;
+                } catch (e) { return String(u); }
+            }
+
+            const PLACEHOLDER_SVG = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="%236b7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+                '<path d="M20 16.58A5 5 0 0018 7h-1.26A8 8 0 104 15.25"></path>' +
+                '<path d="M20 16.58a3 3 0 00-2 2.42"></path></svg>'
+            );
+
+            // 根据原始 URL 决定最终 img.src（直接或代理）
+            function imgSrcFor(origUrl) {
+                if (!origUrl) return '';
+                try {
+                    const normalized = normalizeUrl(origUrl);
+                    const u = new URL(normalized);
+                    if (FORCE_PROXY_HOSTS.has(u.hostname)) {
+                        return PROXY_IMAGE + encodeURIComponent(origUrl);
+                    }
+                    return normalized;
+                } catch (e) {
+                    return PROXY_IMAGE + encodeURIComponent(origUrl);
+                }
+            }
+
+            // 创建天气图标 <img>：先尝试直连（性能优先），若失败自动回退到代理，再失败回退到占位图
+            function createWeatherImg(origUrlRaw, altText) {
+                const img = document.createElement('img');
+                img.className = 'weather-icon';
+                img.alt = altText || '';
+                img.loading = 'lazy';
+                img.src = PLACEHOLDER_SVG;
+
+                const normalized = normalizeUrl(origUrlRaw);
+                if (!normalized) { img.src = PLACEHOLDER_SVG; return img; }
+
+                // 如果 host 在强制代理列表，直接用代理
+                try {
+                    const u = new URL(normalized);
+                    if (FORCE_PROXY_HOSTS.has(u.hostname)) {
+                        img.src = PROXY_IMAGE + encodeURIComponent(origUrlRaw);
+                        img.onerror = () => { img.onerror = null; img.src = PLACEHOLDER_SVG; };
+                        return img;
+                    }
+                } catch (e) { /* ignore */ }
+
+                // 否则先直连，失败后尝试代理
+                img.src = normalized;
+                let triedProxy = false;
+                img.onerror = function () {
+                    if (!triedProxy) {
+                        triedProxy = true;
+                        img.onerror = function () { img.onerror = null; img.src = PLACEHOLDER_SVG; };
+                        img.src = PROXY_IMAGE + encodeURIComponent(origUrlRaw);
+                    } else {
+                        img.onerror = null;
+                        img.src = PLACEHOLDER_SVG;
+                    }
+                };
+                return img;
+            }
+
+            function pad(n) { return String(n).padStart(2, '0'); }
+            function formatTimeFlexible(raw) {
+                if (raw === null || raw === undefined || raw === '') return '—';
+                const s = String(raw).trim();
+                if (/^\d{12}$/.test(s)) {
+                    const y = s.slice(0, 4), m = s.slice(4, 6), d = s.slice(6, 8), hh = s.slice(8, 10), mm = s.slice(10, 12);
+                    return `${y}-${m}-${d} ${hh}:${mm}`;
+                }
+                if (/^\d{14}$/.test(s)) {
+                    const y = s.slice(0, 4), m = s.slice(4, 6), d = s.slice(6, 8), hh = s.slice(8, 10), mm = s.slice(10, 12), ss = s.slice(12, 14);
+                    return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+                }
+                if (/^\d+$/.test(s)) {
+                    const n = Number(s);
+                    if (n > 1e12) {
+                        const dt = new Date(n);
+                        return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+                    }
+                    const dt = new Date(n * 1000);
+                    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+                }
+                const parsed = Date.parse(s);
+                if (!isNaN(parsed)) {
+                    const dt = new Date(parsed);
+                    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+                }
+                return s;
+            }
+
+            function escapeHtml(s) { if (s === null || s === undefined) return ''; return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
+
+            async function loadWeatherSummary() {
+                const container = $('#weatherContent');
+                container.innerHTML = `<div class="weather-row"><div class="weather-sub">正在获取本地天气…</div></div>`;
+                try {
+                    const r = await authFetch('/api/weather/info');
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    const d = await r.json().catch(() => ({}));
+                    const uw = d?.user_weather || d?.userWeather || null;
+                    const loc = d?.user_loc || d?.userLoc || null;
+
+                    let locationText = '';
+                    if (loc) {
+                        const prov = loc.province || loc.Province || '';
+                        const city = loc.city || loc.City || '';
+                        locationText = (prov ? prov : '') + (city ? (' / ' + city) : '');
+                    } else if (d?.city || d?.province) {
+                        locationText = `${d.province || d.Province || ''}${d.city ? ' / ' + (d.city || d.City) : ''}`;
+                    }
+
+                    if (!uw) {
+                        container.innerHTML = `<div class="weather-row"><div class="weather-sub">未获取到本地天气信息</div></div>`;
+                        return;
+                    }
+
+                    const weatherText = uw.weather || uw.Weather || uw.description || '';
+                    const degree = uw.degree || uw.Degree || uw.temp || '';
+                    const aqi = (uw.aqi !== undefined && uw.aqi !== null) ? uw.aqi : (uw.AQI !== undefined ? uw.AQI : null);
+                    const aqiName = uw.aqi_name || uw.AQIName || '';
+                    const updated = uw.updated_at || uw.UpdatedAt || uw.as_of || uw.AsOf || '';
+                    const weatherUrl = uw.weather_url || uw.WeatherUrl || uw.weatherIcon || '';
+
+                    // 用 createWeatherImg 构建 <img>（内部会回退到代理）
+                    const imgEl = createWeatherImg(weatherUrl, weatherText);
+
+                    // 清空并插入 DOM 节点（避免拼接字符串引起的 CSP/转义问题）
+                    container.innerHTML = '';
+                    const wrapper = document.createElement('div');
+                    wrapper.style.textAlign = 'center';
+                    const row = document.createElement('div');
+                    row.className = 'weather-row';
+
+                    const left = document.createElement('div');
+                    left.appendChild(imgEl);
+
+                    const right = document.createElement('div');
+                    right.style.textAlign = 'left';
+                    const primary = document.createElement('div');
+                    primary.className = 'weather-primary';
+                    primary.textContent = `${weatherText}${degree ? ' · ' + degree : ''}`;
+                    const sub = document.createElement('div');
+                    sub.className = 'weather-sub';
+                    sub.textContent = `${locationText}${aqi !== null ? (' · AQI ' + aqi + (aqiName ? (' ' + aqiName) : '')) : ''}`;
+                    const upd = document.createElement('div');
+                    upd.className = 'weather-sub';
+                    upd.textContent = updated ? ('更新时间：' + formatTimeFlexible(updated)) : '';
+
+                    right.appendChild(primary);
+                    right.appendChild(sub);
+                    right.appendChild(upd);
+
+                    row.appendChild(left);
+                    row.appendChild(right);
+                    wrapper.appendChild(row);
+                    container.appendChild(wrapper);
+                } catch (e) {
+                    console.error('加载本地天气失败：', e);
+                    const container = $('#weatherContent');
+                    container.innerHTML = `<div class="weather-row"><div class="weather-sub">加载本地天气失败</div></div>`;
+                }
+            }
+
+            function bind(id, handler) { const el = document.getElementById(id); if (el) el.addEventListener('click', handler); }
+
+            bind('playGuessGame', () => location.href = '/page/game/guess');
+            bind('playMapGame', () => location.href = '/page/game/map');
+            bind('guessRanks', () => location.href = '/page/game/leaderboards#guess_game');
+            bind('mapRanks', () => location.href = '/page/game/leaderboards#map_game');
+            bind('backHome', () => location.href = '/page/shell');
+
+            bind('btnWeatherTop10', () => location.href = '/page/weather');
+            bind('btnWeatherRefresh', loadWeatherSummary);
+
+            // init
+            (async function init() {
+                await loadMe();
+                await loadWeatherSummary();
+            })();
+        })();
+    </script>
+</body>
+
+</html>

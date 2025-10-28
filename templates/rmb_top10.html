@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>RMB汇率 Top10</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        /* 覆盖 base.css：让本页按钮不占满整行 */
+        .btn {
+            width: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: .5em;
+        }
+
+        /* 主卡片更宽，适合表格 */
+        .card.wide {
+            padding: 24px;
+            max-width: 1080px;
+        }
+
+        /* 工具栏：标题在左，按钮在右（横向紧挨） */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .toolbar .right {
+            display: flex;
+            gap: 8px;
+        }
+
+        .toolbar .right .btn {
+            border-radius: 999px;
+            padding: 10px 16px;
+        }
+
+        /* 表格与数字优化 */
+        .fx-card {
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(255, 255, 255, .08);
+            overflow: hidden;
+        }
+
+        .table-wrap {
+            overflow: auto;
+        }
+
+        table.table-centered {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        table.table-centered th,
+        table.table-centered td {
+            text-align: center;
+            vertical-align: middle;
+            padding: 12px 14px;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: rgba(0, 0, 0, .12);
+            color: var(--muted);
+            font-weight: 800;
+            backdrop-filter: blur(4px);
+        }
+
+        .digits {
+            font-variant-numeric: tabular-nums lining-nums;
+            font-feature-settings: "tnum" 1, "lnum" 1;
+            letter-spacing: .02em;
+            font-weight: 600;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        /* 底部返回主菜单 */
+        .bottom-actions {
+            margin-top: 16px;
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card card-xl wide fx-card">
+        <div class="toolbar">
+            <div>
+                <h1 style="margin:0;">RMB 汇率 Top10地区</h1>
+                <div id="asof" class="muted">数据时间：—</div>
+            </div>
+            <!-- 按钮在卡片内右上角，横向排列 -->
+            <div class="right">
+                <button class="btn" id="refresh">刷新数据</button>
+                <button class="btn" id="toRates">返回公共汇率数据库界面</button>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table class="table-centered" id="tbl">
+                <thead>
+                    <tr>
+                        <th style="width:30%;">正向含义（CNY → 外币）</th>
+                        <th style="width:20%;">正向汇率（外币）</th>
+                        <th style="width:30%;">反向含义（外币 → CNY）</th>
+                        <th style="width:20%;">反向汇率（CNY）</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody">
+                    <tr>
+                        <td colspan="4" class="muted">正在加载中…</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="msg" class="msg" style="margin-top:10px;"></div>
+
+        <!-- 底部：返回主菜单 -->
+        <div class="bottom-actions">
+            <button class="btn" id="toHome">返回主菜单</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== 配置接口路径 =====
+        const API_LIST = '/api/rmb-top10';          // GET
+        const API_REFRESH = '/api/rmb-top10/refresh';  // POST
+        const URL_HOME = '/page/shell';
+        const URL_RATES = '/page/rates';
+
+        // ===== 工具 =====
+        const $ = s => document.querySelector(s);
+        const tbody = $('#tbody'), msg = $('#msg');
+
+        function buildAuthHeader() {
+            const raw = localStorage.getItem('token');
+            if (!raw) return {};
+            const token = raw.toLowerCase().startsWith('bearer ') ? raw : ('Bearer ' + raw);
+            return { Authorization: token };
+        }
+        async function authFetch(url, opts = {}) {
+            const headers = Object.assign({ 'Content-Type': 'application/json' }, buildAuthHeader(), opts.headers || {});
+            const res = await fetch(url, { ...opts, headers });
+            if (res.status === 401) { localStorage.removeItem('token'); location.href = '/auth/login'; throw new Error('Unauthorized'); }
+            return res;
+        }
+        const fmt = (n, d = 4) => {
+            if (n == null || n === '') return '';
+            const x = Number(n);
+            if (!isFinite(x)) return '';
+            return x.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+        };
+
+        // ===== 业务 =====
+        async function refreshOnServer() {
+            msg.className = 'msg'; msg.textContent = '';
+            try {
+                const res = await authFetch(API_REFRESH, { method: 'POST' });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || '刷新失败');
+                msg.classList.add('ok'); msg.textContent = '刷新成功';
+                await loadList();
+            } catch (e) {
+                msg.classList.add('error'); msg.textContent = e.message || '网络错误';
+            }
+        }
+
+        async function loadList() {
+            tbody.innerHTML = `<tr><td colspan="4" class="muted">加载中…</td></tr>`;
+            try {
+                const res = await authFetch(API_LIST);
+                if (!res.ok) throw new Error('加载失败');
+                const arr = await res.json();
+
+                if (!Array.isArray(arr) || arr.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="muted">暂无数据</td></tr>`;
+                    $('#asof').textContent = '数据时间：—';
+                    return;
+                }
+
+                const asOfRaw = (arr[0].as_of || arr[0].AsOf || '').toString();
+                $('#asof').textContent = asOfRaw ? `数据时间：${asOfRaw}` : '数据时间：—';
+
+                tbody.innerHTML = arr.map(it => {
+                    const sym = it.symbol || it.Symbol || '';
+                    const rate = Number(it.rate ?? it.Rate ?? 0);
+                    let invert = Number(it.invert ?? it.Invert ?? 0);
+                    if (invert === 0 && rate > 0) invert = 1 / rate; // 兜底
+
+                    return `
+            <tr>
+              <td>1 CNY → ${sym}</td>
+              <td class="digits">${fmt(rate, 4)}</td>
+              <td>1 ${sym} → CNY</td>
+              <td class="digits">${fmt(invert, 4)}</td>
+            </tr>`;
+                }).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="4" class="badge-err">加载失败</td></tr>`;
+                msg.classList.add('error'); msg.textContent = e.message || '网络错误';
+            }
+        }
+
+        // ===== 交互 =====
+        $('#refresh').onclick = refreshOnServer;
+        $('#toRates').onclick = () => { location.href = URL_RATES; };
+        $('#toHome').onclick = () => { location.href = URL_HOME; };
+
+        // ===== 初始化 =====
+        loadList();
+    </script>
+</body>
+
+</html>

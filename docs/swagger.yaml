@@ -1,0 +1,316 @@
+basePath: /api
+definitions:
+  controllers.ArticleResp:
+    properties:
+      created:
+        type: integer
+      id:
+        type: integer
+      likes:
+        type: integer
+      preview:
+        type: string
+      title:
+        type: string
+    type: object
+  controllers.CreateArticleDTO:
+    properties:
+      content:
+        type: string
+      preview:
+        type: string
+      title:
+        maxLength: 200
+        minLength: 1
+        type: string
+    required:
+    - content
+    - preview
+    - title
+    type: object
+  controllers.LoginDTO:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  controllers.UpdateArticleDTO:
+    properties:
+      content:
+        type: string
+      preview:
+        type: string
+      title:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: 接口文档
+  title: Go_project API
+  version: 0.0.1
+paths:
+  /ad:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 示例：{\"author_url\":\"https://...\"}
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取作者博客广告
+      tags:
+      - Me
+  /api/articles:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controllers.ArticleResp'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取全部文章
+      tags:
+      - Articles
+  /api/create_articles:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 创建文章参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CreateArticleDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/controllers.ArticleResp'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 创建文章
+      tags:
+      - Articles
+  /api/rmb-top10:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      security:
+      - Bearer: []
+      summary: 读取当前人民币对Top10地区的汇率快照
+      tags:
+      - Exchange
+  /api/update_articles/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 文章ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新文章参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateArticleDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.ArticleResp'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 更新文章
+      tags:
+      - Articles
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 登录参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.LoginDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 用户登录
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 注册参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.LoginDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 用户注册
+      tags:
+      - Auth
+  /exchangeRates:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 示例：{\"username\":\"alice\"}
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取当前汇率数据
+      tags:
+      - Me
+  /me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 示例：{\"username\":\"alice\"}
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取当前用户名
+      tags:
+      - Me
+  /rmb-top10/refresh:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 手动刷新人民币 Top10 汇率
+      tags:
+      - Exchange
+swagger: "2.0"

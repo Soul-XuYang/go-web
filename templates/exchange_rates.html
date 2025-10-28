@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>汇率管理</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        html {
+            font-size: 18px;
+        }
+
+        body {
+            padding: 4vh 16px;
+        }
+
+        .card {
+            margin: 0 auto;
+            padding: 36px;
+        }
+
+        .card.wide {
+            max-width: 1080px;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+
+        .user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .08);
+        }
+
+        .user .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--ok);
+            display: inline-block;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+
+        @media (max-width:960px) {
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .input {
+            padding: 14px 16px;
+        }
+
+        .input input {
+            font-size: 1.05rem;
+        }
+
+        .msg {
+            margin-top: 10px;
+            min-height: 1.2em;
+        }
+
+        .table-wrap {
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 1.05rem;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: rgba(0, 0, 0, .15);
+            backdrop-filter: blur(4px);
+            color: var(--muted);
+            font-weight: 800;
+            text-align: left;
+            padding: 14px 16px;
+        }
+
+        tbody td {
+            padding: 14px 16px;
+            border-top: 1px solid rgba(255, 255, 255, .06);
+        }
+
+        tbody tr:nth-child(odd) {
+            background: rgba(255, 255, 255, .02);
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, .05);
+        }
+
+        .pill {
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .1);
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* 底部按钮区域（两颗按钮并排居中，不会拉满左右） */
+        .bottom-actions {
+            margin-top: 24px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .bottom-actions button {
+            padding: 10px 16px;
+            border-radius: 999px;
+            font-weight: 700;
+            min-width: 160px;
+            cursor: pointer;
+        }
+
+        .bottom-actions button:active {
+            opacity: .9;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card card-lg wide">
+        <div class="toolbar">
+            <div>
+                <h1 style="margin:0">汇率管理</h1>
+                <div class="sub">查看已有汇率、并新增一条记录</div>
+            </div>
+            <div class="actions">
+                <div class="user"><span class="dot"></span><span id="username">加载中…</span></div>
+                <button id="refresh" class="pill">刷新</button>
+                <button id="logout" class="pill">退出登录</button>
+            </div>
+        </div>
+
+        <!-- 新增表单 -->
+        <form id="form">
+            <div class="grid">
+                <div>
+                    <label>源货币（FromCurrency）</label>
+                    <div class="input"><input id="from" placeholder="如：USD" maxlength="10" required /></div>
+                </div>
+                <div>
+                    <label>目标货币（ToCurrency）</label>
+                    <div class="input"><input id="to" placeholder="如：CNY" maxlength="10" required /></div>
+                </div>
+                <div>
+                    <label>汇率（Rate）</label>
+                    <div class="input"><input id="rate" type="number" step="0.00000001" placeholder="如：7.1234"
+                            required /></div>
+                </div>
+                <div style="display:flex;align-items:flex-end">
+                    <button id="btn" type="submit">新增</button>
+                </div>
+            </div>
+            <div id="msg" class="msg"></div>
+        </form>
+
+        <!-- 列表 -->
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:80px">#</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Rate</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody">
+                    <tr>
+                        <td colspan="5" class="muted">加载中…</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 底部按钮：返回主菜单 + RMBTOP10 -->
+        <div class="bottom-actions">
+            <button id="backHome">返回主菜单</button>
+            <button id="rmbRates">跳转到RMBTOP10汇率页</button>
+        </div>
+    </div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const tbody = $('#tbody'), msg = $('#msg'), btn = $('#btn'), usernameEl = $('#username');
+
+        function buildAuthHeader() {
+            const raw = localStorage.getItem('token');
+            if (!raw) return {};
+            const token = raw.toLowerCase().startsWith('bearer ') ? raw : ('Bearer ' + raw);
+            return { Authorization: token };
+        }
+        async function authFetch(url, opts = {}) {
+            const headers = Object.assign({ 'Content-Type': 'application/json' }, buildAuthHeader(), opts.headers || {});
+            const res = await fetch(url, { ...opts, headers });
+            if (res.status === 401) { localStorage.removeItem('token'); location.href = '/auth/login'; throw new Error('Unauthorized'); }
+            return res;
+        }
+
+        async function loadMe() {
+            try {
+                const res = await authFetch('/api/me');
+                const data = await res.json().catch(() => ({}));
+                usernameEl.textContent = data.username || '未知用户';
+            } catch { }
+        }
+
+        async function loadRates() {
+            tbody.innerHTML = `<tr><td colspan="5" class="muted">加载中…</td></tr>`;
+            try {
+                const res = await authFetch('/api/exchangeRates');
+                if (!res.ok) throw new Error('加载失败');
+                const list = await res.json();
+                if (!Array.isArray(list) || list.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="muted">暂无数据</td></tr>`;
+                    return;
+                }
+                tbody.innerHTML = list.map((it, idx) => {
+                    const from = it.FromCurrency ?? it.from_currency ?? it.fromCurrency ?? it.from ?? it.FromCurreny ?? it.fromCurreny ?? '';
+                    const to = it.ToCurrency ?? it.to_currency ?? it.toCurrency ?? it.to ?? it.ToCurreny ?? it.toCurreny ?? '';
+                    const rate = it.Rate ?? it.rate ?? '';
+                    const rawDate = it.Date ?? it.date ?? '';
+                    const dateStr = rawDate ? new Date(rawDate).toLocaleString() : '';
+                    return `<tr><td>${idx + 1}</td><td>${from}</td><td>${to}</td><td>${rate}</td><td>${dateStr}</td></tr>`;
+                }).join('');
+            } catch {
+                tbody.innerHTML = `<tr><td colspan="5" class="badge-err">加载失败</td></tr>`;
+            }
+        }
+
+        $('#form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            msg.className = 'msg'; msg.textContent = '';
+            const from = $('#from').value.trim().toUpperCase();
+            const to = $('#to').value.trim().toUpperCase();
+            const rate = $('#rate').value;
+            if (!from || !to) { msg.classList.add('error'); msg.textContent = '请输入 From/To'; return; }
+            if (!rate || Number(rate) <= 0) { msg.classList.add('error'); msg.textContent = '汇率需为正数'; return; }
+
+            btn.disabled = true; btn.textContent = '提交中…';
+            try {
+                const res = await authFetch('/api/exchangeRates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ FromCurrency: from, ToCurrency: to, Rate: Number(rate) })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) { msg.classList.add('error'); msg.textContent = data.error || '新增失败'; return; }
+                msg.classList.add('ok'); msg.textContent = '新增成功';
+                $('#from').value = ''; $('#to').value = ''; $('#rate').value = '';
+                loadRates();
+            } catch {
+                msg.classList.add('error'); msg.textContent = '网络错误';
+            } finally {
+                btn.disabled = false; btn.textContent = '新增';
+            }
+        });
+
+        $('#refresh').onclick = () => loadRates();
+        $('#logout').onclick = async () => {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            localStorage.removeItem('token'); location.href = '/auth/login';
+        };
+        $('#backHome').onclick = () => { location.href = '/page/shell'; };
+        $('#rmbRates').onclick = () => { location.href = '/page/rmb-top10'; };
+
+        // 让底部两颗按钮的视觉风格与“新增”一致（不改大小，仅同步配色/圆角等）
+        function alignButtonsWithPrimary() {
+            const src = document.getElementById('btn'); if (!src) return;
+            const targets = [document.getElementById('backHome'), document.getElementById('rmbRates')].filter(Boolean);
+            const s = getComputedStyle(src);
+            const props = ['background', 'backgroundColor', 'color', 'borderColor', 'borderStyle', 'borderWidth', 'borderRadius', 'fontWeight', 'fontSize', 'lineHeight', 'letterSpacing', 'boxShadow', 'textTransform', 'transition'];
+            for (const el of targets) { for (const p of props) { el.style[p] = s[p]; } }
+        }
+
+        // init
+        loadMe(); loadRates();
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', () => requestAnimationFrame(alignButtonsWithPrimary)); }
+        else { requestAnimationFrame(alignButtonsWithPrimary); }
+        window.addEventListener('load', alignButtonsWithPrimary);
+    </script>
+</body>
+
+</html>

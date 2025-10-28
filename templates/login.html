@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>用户登录界面</title>
+    <link rel="stylesheet" href="/static/base.css" />
+</head>
+
+<body>
+    <div class="card">
+        <h1>登录账户</h1>
+        <p class="sub">请输入用户名与密码以登录</p>
+
+        <form id="form" autocomplete="on">
+            <label>用户名</label>
+            <div class="input">
+                <input id="username" name="username" autocomplete="username" required autofocus />
+            </div>
+
+            <label>密码</label>
+            <div class="input">
+                <input id="password" name="password" type="password" autocomplete="current-password" required />
+                <span class="toggle" id="togglePwd">显示</span>
+            </div>
+
+            <div class="actions">
+                <button id="btn" type="submit">登录</button>
+                <div class="msg" id="msg"></div>
+            </div>
+        </form>
+
+        <div class="footer">
+            还没有账号？<a href="/auth/register">去注册</a>
+        </div>
+    </div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const pwd = $('#password'), toggle = $('#togglePwd');
+        toggle.onclick = () => {
+            const t = pwd.type === 'password' ? 'text' : 'password';
+            pwd.type = t; toggle.textContent = t === 'password' ? '显示' : '隐藏';
+        };
+
+        const form = $('#form'), msg = $('#msg'), btn = $('#btn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            msg.className = 'msg'; msg.textContent = '';
+            btn.disabled = true; btn.textContent = '登录中...';
+
+            const payload = {
+                username: $('#username').value.trim(),
+                password: $('#password').value
+            };
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // 若后端通过 Set-Cookie 下发 HttpOnly 会话，这里确保携带/接收凭证
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    msg.classList.add('error');
+                    msg.textContent = data.error || '登录失败';
+                } else {
+                    // 可选：若后端也回传了 token，前端存一份（生产环境建议只用 HttpOnly Cookie）
+                    if (typeof data.token === 'string' && data.token.length > 0) {
+                        localStorage.setItem('token', data.token);
+                    }
+
+                    // 使用后端给出的 result_url 跳转
+                    let dest = (data.result_url || '').toString().trim();
+
+                    // 防御性处理：为空则回首页；也顺便纠正常见拼写
+                    if (!dest) dest = '/';
+                    if (dest === '/admin/dashborad') dest = '/admin/dashboard';
+
+                    msg.classList.add('ok');
+                    msg.textContent = '登录成功，正在跳转...';
+                    // 使用 assign 进行页面跳转
+                    location.assign(dest);
+                }
+            } catch {
+                msg.classList.add('error');
+                msg.textContent = '网络错误';
+            } finally {
+                btn.disabled = false; btn.textContent = '登录';
+            }
+        });
+    </script>
+</body>
+
+</html>
