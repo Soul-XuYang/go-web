@@ -1,8 +1,11 @@
 ## 配置信息
-
+程序的配置信息
 ### docker配置数据库系统
 系统为WSL2的Ubuntu20.04
-这里先用docker pull mysql:8.0镜像然后再拉取其对应的容器，这里docker run --name my-mysql -p 13306:3306 
+这里先用docker pull mysql:8.0镜像然后再拉取其对应的容器，这里docker run --name my-mysql -p 13306:3306
+
+当然这里的数据库系统推荐使用DBveaer去管理使用
+
 **实际的端口是13306,密码是123456，数据库名字是test**
 ```dockerfile
 -e MYSQL_ROOT_PASSWORD=123456 
