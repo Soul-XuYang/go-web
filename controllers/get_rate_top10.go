@@ -62,7 +62,8 @@ type rmbTop10Cache struct {
 // @Router /rmb-top10/refresh [post]
 func RefreshRmbTop10(c *gin.Context) {
 	ctx := c.Request.Context()
-	ok, err := acquireLock(ctx, lock_Ratekey, config.LockTTL)
+	// redis分布式锁
+	ok, err := acquireLock(ctx, lock_Ratekey, config.LockTTL) // 刷新保证每次加锁-防止用户修改时导致别的用户进入报错
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "lock error: " + err.Error()})
 		return
@@ -71,18 +72,22 @@ func RefreshRmbTop10(c *gin.Context) {
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": "another refresh in progress"})
 		return
 	}
-	defer releaseLock(ctx, lock_Ratekey) //释放锁
+	defer releaseLock(ctx, lock_Ratekey) //最后释放锁
 
-	cache, err := fetchAndBuild_top10rates(ctx)
+	cache, err := getCache_rate_top10(ctx, config.Cache_RateKey) // 获取缓存数据
+	// 获取失败则创建
 	if err != nil {
-		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
-		return
-	}
-	if err := setCache(ctx, config.Cache_RateKey, cache); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "cache set failed: " + err.Error()})
-		return
-	}
-
+		cache, err := fetchAndBuild_top10rates(ctx) // 获取汇率数据
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+			return
+		}
+		if err := setCache(ctx, config.Cache_RateKey, cache); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "cache set failed: " + err.Error()})
+			return
+		} // 这里创建缓存-将数据存入redis表中
+	} 
+	// 如果缓存数据存在，则直接返回
 	c.JSON(http.StatusOK, gin.H{
 		"ok":    true,
 		"base":  cache.Base,
@@ -101,7 +106,7 @@ func RefreshRmbTop10(c *gin.Context) {
 func GetRmbTop10(c *gin.Context) {
 	ctx := c.Request.Context() //获得当前请求的context以构建何时都可以退出的情况
 
-	if cache, err := getCache(ctx, config.Cache_RateKey); err == nil { // 获取缓存数据
+	if cache, err := getCache_rate_top10(ctx, config.Cache_RateKey); err == nil { // 获取缓存数据
 		c.JSON(http.StatusOK, cache.List)
 		return
 	}
@@ -129,7 +134,7 @@ func GetRmbTop10(c *gin.Context) {
 	for time.Now().Before(deadline) {
 		jitter := time.Duration(time.Now().UnixNano()%40) * time.Millisecond //使用当前纳秒时间对40取模，确保随机性
 		time.Sleep(config.PollInterval + jitter)                             //等待时间+随机时间
-		if cache, err := getCache(ctx, config.Cache_RateKey); err == nil {   //如果读取缓存可以的话就走
+		if cache, err := getCache_rate_top10(ctx, config.Cache_RateKey); err == nil {   //如果读取缓存可以的话就走
 			c.JSON(http.StatusOK, cache.List)
 			return
 		}

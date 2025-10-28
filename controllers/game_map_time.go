@@ -20,6 +20,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+// ***注意这里的后端程序在计算时或者耗时的程序时一定要加锁，否则会报错
 
 var game_rounds = [3]int{8, 12, 16}                   // 不同难度对应的大小
 var dir = [4][2]int{{0, 1}, {1, 0}, {0, -1}, {-1, 0}} // 四个方向
@@ -284,7 +285,7 @@ func GameMapComplete(c *gin.Context) {
 // @Produce     json
 // @Success     200   {object}  gin.H{"message": "当前用户的地图游戏状态已重置，可以重新开始游戏", "reset":true}  "响应数据"
 // @Router      /api/game/map/reset [post]
-func GameMapReset(c *gin.Context) { // 重置按钮-清空当前用户的游戏状态
+func GameMapReset(c *gin.Context) { // 重置按钮-清空当前用户的游戏状态-注意清空要一个个来
 	uid := c.GetUint("user_id")
 	if uid == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -307,6 +308,13 @@ type DisplayResp struct {
 	Path       []P      `json:"path"`
 }
 
+// Display_Map godoc
+// @Summary     地图游戏可视化展示
+// @Tags        Game
+// @Security    Bearer
+// @Produce     json
+// @Success     200   {object}  DisplayResp{ MapData:rows, StartPoint: startPoint,EndPoint:endPoint, Ok:ok,Path:path,}
+// @Router      /api/game/map/display [get]
 func Display_Map(c *gin.Context) {
 	grid := array_init(displayNum, displayNum+8)
 	sx, sy := start_index(grid)
@@ -344,7 +352,6 @@ func abs(x int) int {
 	return x
 }
 func manhattan(a, b P) int { return abs(a.X-b.X) + abs(a.Y-b.Y) }
-
 type pq []*item //存有结构体地址
 // heap包的Push/Pop函数内部会：
 // 调用你实现的Push方法添加元素

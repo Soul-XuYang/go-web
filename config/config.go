@@ -36,14 +36,15 @@ type Config struct { //标明这个配置文件是可以全局使用的
 		Username string
 		Password string
 	}
-	Api struct{
-		LocalKey string
+	Api struct {
+		LocalKey           string
 		LocationDailyLimit int
 	}
 }
 
 var AppConfig *Config //创建配置文件-指针全局可以修改并且避免拷贝-配置句柄
 var LocalAPIKey string
+
 // 使用viper读取配置文件
 func InitConfig() {
 	viper.SetConfigName("config") //无extension
@@ -78,7 +79,7 @@ func GetPort() string {
 	return port
 }
 func printURL() {
-	fmt.Printf("Login:http://localhost%s/auth/login\n", GetPort())
+	fmt.Printf("Login URL:http://localhost%s/auth/login\n", GetPort())
 }
 
 func superadmin_init() {
