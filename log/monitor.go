@@ -3,7 +3,10 @@ package log
 import (
 	"context"
 	"fmt"
+	"project/utils"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 const defaultInterval = 1 * time.Hour
@@ -27,10 +30,17 @@ func NewMonitor() *Monitor { //
 func (m *Monitor) StopMonitor() {
 	m.cancel() // 执行这个取消函数
 }
-func (m *Monitor) StartMonitor() {
-	go func() { // 开启一个新的线程
+func (m *Monitor) StartMonitor(path string) { // 开启一个新的线程
+	go func() { 
 		ticker := time.NewTicker(m.interval) // 创建定时计数器
 		defer ticker.Stop()                  // 最后程序要停止
+		code_counter := utils.NewCodeCounter()
+		if err := code_counter.Analyze(path); err != nil {
+			L().Error("Code files analysis failed", zap.Error(err))
+			return
+		}
+		time.Sleep(2*time.Second)
+		code_counter.PrintReport()
 
 		for {
 			select { //通过ctx控制何时停止

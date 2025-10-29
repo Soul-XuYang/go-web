@@ -1,30 +1,32 @@
 package main
 
 import (
+	"os"
 	"project/config"
+	_ "project/docs" // 👈 swag init 后会生成
 	"project/log"
 	"project/router"
 
-	_ "project/docs" // 👈 swag init 后会生成
-
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
-
-type Info struct {
-	Message string `json:"message"` // 编译时是字符串，运行是认为其是json-反射
-}
 
 // @title       Go_project API
 // @version     0.0.1
 // @description 接口文档
 // @BasePath    /api
 func main() {
+	//初始化日志以及监控代码程序
 	if err := log.Init(false); err != nil { // 初始化日志-false 表示开发模式
 		panic(err)
 	}
-	defer log.Sync()
+	defer log.Sync() //确保日志写入
 	Monitor := log.NewMonitor()
-	Monitor.StartMonitor()
+	dir, err := os.Getwd()
+	if err != nil {
+		log.L().Error("Failed to get Path", zap.Error(err))
+	}
+	Monitor.StartMonitor(dir)
 	defer Monitor.StopMonitor()
 
 	//配置初始化
