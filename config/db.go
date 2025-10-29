@@ -39,6 +39,8 @@ func runMigrations() {
 		// 新增游戏数据表
 	    &models.Game_Guess_Score{}, 
 		&models.Game_Map_Time{},
+		// 新增翻译历史记录表
+		&models.TranslationHistory{},
 	); err != nil {
 		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
 	}

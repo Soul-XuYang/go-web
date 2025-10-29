@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>翻译历史</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        :root {
+            --muted: #6b7a99;
+        }
+
+        body {
+            margin: 0;
+            display: block;
+            padding: 24px 16px;
+            background: #f7faff;
+        }
+
+        /* 容器放宽 */
+        .top,
+        .wrap,
+        .below {
+            max-width: 1440px;
+            width: min(96vw, 1440px);
+            margin: 0 auto;
+        }
+
+        .top {
+            margin: 8px auto;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.35rem;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(17, 40, 85, .10);
+            background: #eef5ff;
+        }
+
+        .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .uname {
+            color: #42608f;
+            font-size: .95rem;
+        }
+
+        .wrap {
+            padding: 0 16px;
+            margin-top: 8px;
+        }
+
+        /* 面板 */
+        .panel {
+            width: 100%;
+            max-width: 1440px;
+            margin: 0 auto;
+            background: #fff;
+            border: 1px solid rgba(17, 40, 85, .08);
+            border-radius: 16px;
+            padding: 32px 26px;
+            box-shadow: 0 8px 28px rgba(17, 40, 85, .10);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-height: 520px;
+        }
+
+        .panel h2 {
+            margin: 0 0 6px;
+            font-size: 1.22rem;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .msg {
+            padding: 14px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            background: #eef5ff;
+            border: 1px solid #cfe0ff;
+            color: #1f2a44;
+            min-height: 52px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .icon-btn {
+            height: 40px;
+            border-radius: 10px;
+            padding: 0 12px;
+        }
+
+        /* 柔和按钮体系（更契合淡蓝）*/
+        .btn-soft {
+            background: #eaf3ff;
+            border: 1px solid #cfe0ff;
+            color: #19427a;
+            font-weight: 600;
+            border-radius: 10px;
+            height: 40px;
+            padding: 10px 12px;
+        }
+
+        .btn-soft:hover {
+            background: #dcecff;
+        }
+
+        .btn-danger-soft {
+            background: #fff2f2;
+            border: 1px solid #ffd6d6;
+            color: #a72a2a;
+            font-weight: 600;
+            border-radius: 10px;
+            height: 40px;
+            padding: 10px 12px;
+        }
+
+        .btn-danger-soft:hover {
+            background: #ffe8e8;
+        }
+
+        /* 工具条：禁用“拉满” */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .toolbar .row>* {
+            flex: 0 0 auto !important;
+        }
+
+        .toolbar button {
+            width: auto !important;
+        }
+
+        .toolbar select {
+            width: auto;
+        }
+
+        .chip {
+            border: 1px solid #cfe0ff;
+            background: #eef5ff;
+            color: #1f2a44;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: .94rem;
+        }
+
+        /* 列表 */
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-height: 640px;
+            overflow: auto;
+            padding-right: 6px;
+        }
+
+        .item {
+            border: 1px solid rgba(17, 40, 85, .08);
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .item-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+        }
+
+        /* 文本块与折叠 */
+        .block {
+            background: #f3f7ff;
+            border: 1px solid #dbe6ff;
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .clamp {
+            max-height: 7.5em;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .clamp:after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 2.2em;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #ffffff);
+        }
+
+        /* 动作区域：网格 + 更大间距 */
+        .actions-grid {
+            display: grid;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .actions-grid.cols-3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .actions-grid.cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @media (max-width: 860px) {
+
+            .actions-grid.cols-3,
+            .actions-grid.cols-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 时间小标题 */
+        .label {
+            font-weight: 600;
+            color: #42608f;
+            margin-right: 6px;
+        }
+
+        /* 底部按钮：居中 */
+        .below {
+            margin: 16px auto 24px;
+            padding: 0 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .below button {
+            width: auto !important;
+            flex: 0 0 auto;
+            min-width: 220px;
+            border-radius: 12px;
+            height: 48px;
+        }
+
+        /* 滚动条（浅色） */
+        .list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .list::-webkit-scrollbar-thumb {
+            background: #cfe0ff;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 顶部 -->
+    <header class="top">
+        <div class="brand">
+            <h1>翻译历史</h1>
+        </div>
+        <div class="userbox">
+            <div class="avatar" id="avatar">U</div>
+            <span class="uname" id="username">加载中…</span>
+        </div>
+    </header>
+
+    <!-- 主体 -->
+    <main class="wrap">
+        <section class="panel">
+            <h2>历史记录</h2>
+
+            <!-- 工具条 -->
+            <div class="toolbar">
+                <div class="row">
+                    <span class="chip">分页：<b id="chipPage">1</b></span>
+                    <span class="chip">总数：<b id="chipTotal">—</b></span>
+                    <label class="chip" style="display:flex; align-items:center; gap:6px;">
+                        每页
+                        <select id="selPageSize" style="height:32px;border-radius:8px;padding:0 8px;">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="row">
+                    <button id="btnRefresh" class="btn-primary icon-btn">刷新历史数据</button>
+                    <button id="btnClear" class="btn-primary icon-btn">清空历史数据</button>
+                </div>
+            </div>
+
+            <div id="status" class="msg" style="display:none;"></div>
+            <div id="list" class="list"></div>
+
+            <div class="row" style="justify-content:space-between; margin-top:8px;">
+                <button id="btnPrev" class="btn-primary icon-btn" style="min-width:60px;">上一页</button>
+                <button id="btnNext" class="btn-primary icon-btn" style="min-width:60px;">下一页</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部互跳 -->
+    <div class="below">
+        <button id="backHome" class="btn-primary"
+            style="width:100%; height:42px; border-radius:10px; font-size:.9rem;">返回主菜单</button>
+        <button id="gotoTranslate" class="btn-primary"
+            style="width:100%; height:42px; border-radius:10px; font-size:.9rem;">返回翻译界面</button>
+    </div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const API_ME = '/api/me';
+        const API_HISTORY = '/api/translate/history';
+        const API_HISTORY_ID = id => `/api/translate/history/${id}`;
+        const NAV_TRANSLATE = '/page/translate';
+
+        // 语言中文名
+        const LANG_ZH_MAP = {
+            auto: "自动检测", en: "英语", zh: "简体中文", "zh-TW": "繁体中文", ja: "日语", ko: "韩语",
+            es: "西班牙语", fr: "法语", de: "德语", ru: "俄语", ar: "阿拉伯语", pt: "葡萄牙语",
+            it: "意大利语", nl: "荷兰语", sv: "瑞典语", da: "丹麦语", no: "挪威语", fi: "芬兰语",
+            pl: "波兰语", tr: "土耳其语", hi: "印地语", th: "泰语", vi: "越南语",
+        };
+        const langName = code => LANG_ZH_MAP[String(code || '').trim()] || String(code || '');
+
+        // 时间格式化：裁到 “YYYY-MM-DD HH:MM:SS”
+        function formatTs(ts) {
+            if (!ts) return '';
+            const s = String(ts);
+            const m = s.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})/);
+            if (m) return `${m[1]} ${m[2]}`;
+            const d = new Date(s);
+            if (isNaN(d)) return s;
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        function getStoredToken() { const t = localStorage.getItem('token'); if (!t) return null; return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t); }
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign(
+                { 'Content-Type': 'application/json' },
+                token ? { 'Authorization': token } : {},
+                opts.headers || {}
+            );
+            const r = await fetch(url, { credentials: 'include', ...opts, headers });
+            if (r.status === 401) { localStorage.removeItem('token'); location.href = '/auth/login'; throw new Error('Unauthorized'); }
+            return r;
+        }
+        function initialOf(name) { if (!name) return 'U'; const s = String(name).trim(); return s ? s[0].toUpperCase() : 'U'; }
+        async function loadMe() { try { const r = await authFetch(API_ME); const d = await r.json().catch(() => ({})); const uname = d.username || d.name || 'unknown'; $('#username').textContent = uname; $('#avatar').textContent = initialOf(uname); } catch { } }
+
+        let page = 1, pageSize = 10, total = 0;
+        const pick = (o, keys, fb) => { for (const k of keys) { if (o && o[k] != null) return o[k]; } return fb; };
+        function setStatus(text, ok) { const el = $('#status'); el.style.display = 'block'; el.textContent = text; el.className = 'msg' + (ok === true ? ' ok' : ok === false ? ' err' : ''); }
+
+        function renderList(list) {
+            const box = $('#list'); box.innerHTML = '';
+            if (!list || list.length === 0) { const d = document.createElement('div'); d.className = 'msg'; d.textContent = '暂无历史记录。'; box.appendChild(d); return; }
+
+            for (const it of list) {
+                const id = pick(it, ['id', 'ID'], 0);
+                const src = pick(it, ['source_text', 'SourceText'], '');
+                const dst = pick(it, ['translated_text', 'TranslatedText'], '');
+                const sl = pick(it, ['source_lang', 'SourceLang'], '');
+                const tl = pick(it, ['target_lang', 'TargetLang'], '');
+                const mdl = pick(it, ['llm', 'LLM', 'model', 'Model'], '');
+                const ts = pick(it, ['timestamp', 'created_at', 'CreatedAt'], '');
+
+                const sln = langName(sl), tln = langName(tl);
+
+                const wrap = document.createElement('div'); wrap.className = 'item';
+
+                // 头部：语言/模型 + 时间
+                const head = document.createElement('div'); head.className = 'item-head';
+                head.innerHTML = `
+          <div class="row" style="gap:8px;">
+            ${sln || '?'}
+            ——>
+            ${tln || '?'}
+            |大模型: ${mdl ? `${mdl}` : ''}
+          </div>
+          <div class="muted"><span class="label">记录时间：</span>${formatTs(ts)}</div>`;
+                wrap.appendChild(head);
+
+                // 原文/译文
+                const srcBlock = document.createElement('div'); srcBlock.className = 'block clamp'; srcBlock.textContent = src || '';
+                const dstBlock = document.createElement('div'); dstBlock.className = 'block clamp mono'; dstBlock.textContent = dst || '';
+                wrap.appendChild(srcBlock);
+                wrap.appendChild(dstBlock);
+
+                // 动作区域 — 第一行（3列）
+                const grid1 = document.createElement('div'); grid1.className = 'actions-grid cols-3';
+                const t1 = document.createElement('button'); t1.className = 'btn-soft'; t1.textContent = '展开原文';
+                const t2 = document.createElement('button'); t2.className = 'btn-soft'; t2.textContent = '展开译文';
+                const copyAll = document.createElement('button'); copyAll.className = 'btn-soft'; copyAll.textContent = '复制原文+译文';
+                t1.onclick = () => { const c = srcBlock.classList.toggle('clamp'); t1.textContent = c ? '展开原文' : '收起原文'; };
+                t2.onclick = () => { const c = dstBlock.classList.toggle('clamp'); t2.textContent = c ? '展开译文' : '收起译文'; };
+                copyAll.onclick = async () => { await navigator.clipboard.writeText(`原文:\n${src || ''}\n\n译文:\n${dst || ''}`); };
+                grid1.appendChild(t1); grid1.appendChild(t2); grid1.appendChild(copyAll);
+                wrap.appendChild(grid1);
+
+                // 动作区域 — 第二行（2列）
+                const grid2 = document.createElement('div'); grid2.className = 'actions-grid cols-2';
+                const btnCopy = document.createElement('button'); btnCopy.className = 'btn-soft'; btnCopy.textContent = '复制译文';
+                btnCopy.onclick = async () => { await navigator.clipboard.writeText(dst || ''); };
+                const btnDel = document.createElement('button'); btnDel.className = 'btn-danger-soft'; btnDel.textContent = '删除';
+                btnDel.onclick = async () => { if (!confirm('确定删除这条历史记录？')) return; await deleteHistory(id); await loadHistory(page); };
+                grid2.appendChild(btnCopy); grid2.appendChild(btnDel);
+                wrap.appendChild(grid2);
+
+                box.appendChild(wrap);
+            }
+        }
+
+        async function loadHistory(p = 1) {
+            page = Math.max(1, p);
+            setStatus('加载中…');
+            try {
+                const r = await authFetch(`${API_HISTORY}?page=${page}&page_size=${pageSize}`);
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const d = await r.json().catch(() => ({ histories: [], total: 0 }));
+                const list = d.histories || d.Histories || [];
+                total = Number(d.total ?? d.Total ?? 0) || 0;
+                const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                document.getElementById('chipPage').textContent = `${page} / ${totalPages}`;
+                document.getElementById('chipTotal').textContent = total;
+                renderList(list);
+                setStatus('加载完成。', true);
+            } catch (e) {
+                renderList([]); setStatus('加载失败：' + e.message, false);
+            }
+        }
+
+        async function deleteHistory(id) { if (!id) return; const r = await authFetch(API_HISTORY_ID(id), { method: 'DELETE' }); if (!r.ok) throw new Error('删除失败'); }
+        async function clearHistory() { if (!confirm('确定清空所有历史记录？')) return; const r = await authFetch(API_HISTORY, { method: 'DELETE' }); if (!r.ok) throw new Error('清空失败'); await loadHistory(1); }
+
+        // 事件
+        document.getElementById('selPageSize').onchange = () => { pageSize = parseInt(document.getElementById('selPageSize').value, 10) || 10; loadHistory(1); };
+        document.getElementById('btnPrev').onclick = () => { if (page > 1) loadHistory(page - 1); };
+        document.getElementById('btnNext').onclick = () => loadHistory(page + 1);
+        document.getElementById('btnRefresh').onclick = () => loadHistory(page);
+        document.getElementById('btnClear').onclick = () => clearHistory();
+
+        document.getElementById('gotoTranslate').onclick = () => location.href = NAV_TRANSLATE;
+        document.getElementById('backHome').onclick = () => location.href = '/page/shell';
+
+        (async function init() { await loadMe(); await loadHistory(1); })();
+    </script>
+</body>
+
+</html>

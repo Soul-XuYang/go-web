@@ -71,7 +71,7 @@ func Init(prod bool) error {
 	return initErr
 }
 
-// L 返回全局 logger（懒初始化：若未 Init，则以 dev 配置自动初始化）
+// L 返回全局 logger（初始化：若未 Init，则以 dev 配置自动初始化）
 func L() *zap.Logger {
 	if logger == nil {
 		_ = Init(false)

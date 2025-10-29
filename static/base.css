@@ -310,3 +310,66 @@ button[disabled] {
         max-height: 72vh;
     }
 }
+/* ---- App 布局覆盖：业务页不要全页居中网格 ---- */
+body.app {
+  display: block;           /* 覆盖原来的 display: grid */
+  padding: 24px 16px;       /* 顶部留白更小 */
+  min-height: 100%;
+}
+
+/* ---- 容器工具类：可选 ---- */
+.container      { max-width: 1280px; margin: 24px auto; padding: 0 16px; }
+.container-lg   { max-width: 1440px; margin: 24px auto; padding: 0 16px; }
+
+/* ---- 面板组件（替代 .card，不限制 420px） ---- */
+/* ===== 历史页浅色主题：淡蓝 + 白色 ===== */
+body { background: #f7faff; } /* 整体淡蓝底 */
+.panel {
+  background: #ffffff;
+  border: 1px solid rgba(17, 40, 85, .08);
+  box-shadow: 0 8px 28px rgba(17, 40, 85, .10);
+}
+.item {
+  background: #ffffff;
+  border: 1px solid rgba(17, 40, 85, .08);
+}
+.block {
+  background: #f3f7ff;                       /* 内容块淡蓝 */
+  border: 1px solid #dbe6ff;
+}
+.chip {
+  background: #eef5ff;                        /* 标签淡蓝 */
+  border: 1px solid #cfe0ff;
+  color: #1f2a44;
+}
+.msg {
+  background: #eef5ff;                        /* 提示淡蓝 */
+  border-color: #cfe0ff;
+  color: #1f2a44;
+}
+.muted { color: #6b7a99; }
+
+/* 折叠渐隐由白色过渡，更自然 */
+.clamp:after {
+  background: linear-gradient(to bottom, rgba(255,255,255,0), #ffffff);
+}
+
+/* 滚动条也更浅一点（可选） */
+.list::-webkit-scrollbar { width: 8px; }
+.list::-webkit-scrollbar-thumb {
+  background: #2b6add;
+  border-radius: 8px;
+}
+
+.below button{
+  width: auto !important;             /* 关键：取消全宽 */
+  flex: 0 0 auto;                     /* 不占满剩余空间 */
+  min-width: 220px;                   /* 两个按钮尺寸更均衡，可按需调整 */
+}
+.toolbar .row > * {
+  flex: 0 0 auto;
+}
+.top, .wrap, .below {                 /* 头部 / 主容器 / 底部按钮条 */
+  max-width: 1440px;                  /* 想更宽就调这里，比如 1680/1800 */
+  width: min(96vw, 1600px);
+}

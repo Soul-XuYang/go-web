@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>文本翻译</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        :root {
+            --muted: #7d9ac2;
+        }
+
+        /* 顶部 / 容器（方案B：不用 .card） */
+        .top {
+            max-width: 1600px;
+            width: min(96vw, 1600px);
+            margin: 0 auto 12px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.35rem;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .04);
+        }
+
+        .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .uname {
+            color: var(--muted);
+            font-size: .95rem;
+        }
+
+        /* 方案B：自定义面板，不受 .card 420px 限制 */
+        .panel {
+            width: 100%;
+            max-width: 1600px;
+            margin: 0 auto;
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, .20);
+        }
+
+        .container-wide {
+            max-width: 1440px;
+            width: min(96vw, 1440x);
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .select-lg {
+            height: 64px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            padding: 0 14px;
+            min-width: 240px;
+        }
+
+        .btn-lg {
+            height: 64px;
+            border-radius: 12px;
+            font-size: 1.05rem;
+        }
+
+        .btn-primary {
+            height: 44px;
+            min-width: 160px;
+            border-radius: 10px;
+            font-size: .92rem;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-ghost {
+            background: transparent;
+        }
+
+        .chip {
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .05);
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: .94rem;
+        }
+
+        .msg {
+            padding: 14px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(255, 255, 255, .1);
+            min-height: 52px;
+        }
+
+        .msg.ok {
+            border-color: rgba(34, 197, 94, .45);
+            background: rgba(34, 197, 94, .08);
+        }
+
+        .msg.err {
+            border-color: rgba(244, 63, 94, .45);
+            background: rgba(244, 63, 94, .08);
+        }
+
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+        }
+
+        /* 输入/输出两列（桌面并排，<=1080 折行） */
+        .io {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width:1080px) {
+            .io {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        textarea.textarea-lg {
+            min-height: 360px;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* 底部按钮条（修复 base.css 的 button:100%） */
+        .below {
+            margin: 16px auto 24px;
+            padding: 0 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .below button {
+            width: auto !important;
+            flex: 0 0 auto;
+            min-width: 220px;
+            border-radius: 12px;
+            height: 48px;
+        }
+    </style>
+</head>
+
+<body class="app"><!-- 重要：取消 base.css 的 body 居中网格 -->
+
+    <!-- 顶部：标题 + 用户信息 -->
+    <header class="top">
+        <div class="brand">
+            <h1>文本翻译</h1>
+        </div>
+        <div class="userbox">
+            <div class="avatar" id="avatar">U</div>
+            <span class="uname" id="username">加载中…</span>
+        </div>
+    </header>
+
+    <!-- 主体（更宽容器 + 面板） -->
+    <main class="container-wide">
+        <section class="panel">
+            <h2 style="margin:0 0 6px;font-size:1.22rem">翻译</h2>
+            <p class="sub" style="margin:0 0 12px;color:var(--muted)">
+                支持自动检测源语言，保持原有格式（Markdown / 代码块 / 换行）。
+            </p>
+
+            <!-- 语言选择 -->
+            <div class="row">
+                <select id="sourceLang" class="select-lg" style="flex:1"></select>
+                <button id="btnSwap" class="btn-ghost" style="height:48px;border-radius:10px;padding:0 12px"
+                    title="交换语言">↔</button>
+                <select id="targetLang" class="select-lg" style="flex:1"></select>
+            </div>
+
+            <!-- 输入 / 输出 -->
+            <div class="io">
+                <textarea id="srcText" class="textarea-lg" placeholder="在此粘贴/输入要翻译的文本…"></textarea>
+                <textarea id="dstText" class="textarea-lg mono" placeholder="译文将显示在这里" readonly></textarea>
+            </div>
+
+            <!-- 操作 -->
+            <div class="row">
+                <button id="btnTranslate" class="btn-primary btn-lg" style="flex:1">开始翻译</button>
+                <button id="btnClearSrc" class="btn-ghost btn-lg">清空</button>
+                <button id="btnCopyDst" class="btn-ghost btn-lg">复制译文</button>
+            </div>
+
+            <!-- 状态与元信息 -->
+            <div id="status" class="msg">请输入文本并点击“开始翻译”。</div>
+            <div class="row">
+                <span class="chip">源语言：<b id="chipSrc">—</b></span>
+                <span class="chip">目标语言：<b id="chipTgt">—</b></span>
+                <span class="chip">模型：<b id="chipModel">server-default</b></span>
+            </div>
+        </section>
+    </main>
+
+    <!-- 底部互跳 -->
+    <div class="below">
+        <button id="backHome" class="btn-primary"
+            style="width:100%; height:42px; border-radius:10px; font-size:.9rem;">返回主菜单</button>
+        <button id="gotoHistory" class="btn-primary"
+            style="width:100%; height:42px; border-radius:10px; font-size:.9rem;">查看翻译历史</button>
+    </div>
+
+    <script>
+        // ===== 常量 & 小工具 =====
+        const $ = s => document.querySelector(s);
+        const API_ME = '/api/me';
+        const API_TRANSLATE = '/api/translate';            // POST TranslationRequest
+        const API_LANGS = '/api/translate/languages';  // GET 语言映射
+        const NAV_HISTORY = '/page/translate/history';
+
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            if (!t) return null;
+            return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t);
+        }
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign(
+                { 'Content-Type': 'application/json' },
+                token ? { 'Authorization': token } : {},
+                opts.headers || {}
+            );
+            const r = await fetch(url, { credentials: 'include', ...opts, headers });
+            if (r.status === 401) { localStorage.removeItem('token'); location.href = '/auth/login'; throw new Error('Unauthorized'); }
+            return r;
+        }
+        function initialOf(name) { if (!name) return 'U'; const s = String(name).trim(); return s ? s[0].toUpperCase() : 'U'; }
+        async function loadMe() { try { const r = await authFetch(API_ME); const d = await r.json().catch(() => ({})); const uname = d.username || d.name || 'unknown'; $('#username').textContent = uname; $('#avatar').textContent = initialOf(uname); } catch { } }
+
+        // ===== 语言加载 =====
+        async function loadLanguages() {
+            try {
+                const r = await authFetch(API_LANGS);
+                const data = await r.json();
+                fillLangSelects(data);
+            } catch {
+                fillLangSelects({ auto: 'Auto Detect', en: 'English', zh: 'Chinese (Simplified)' });
+            }
+        }
+        function fillLangSelects(map) {
+            const srcSel = $('#sourceLang'), tgtSel = $('#targetLang');
+            srcSel.innerHTML = ''; tgtSel.innerHTML = '';
+            const entries = Object.entries(map);
+            entries.sort((a, b) => a[0] === 'auto' ? -1 : b[0] === 'auto' ? 1 : String(a[1]).localeCompare(String(b[1])));
+            for (const [code, name] of entries) {
+                const o1 = document.createElement('option'); o1.value = code; o1.textContent = `${name} (${code})`; srcSel.appendChild(o1);
+                const o2 = document.createElement('option'); o2.value = code; o2.textContent = `${name} (${code})`; tgtSel.appendChild(o2);
+            }
+            srcSel.value = 'auto';
+            tgtSel.value = map['zh'] ? 'zh' : (map['en'] ? 'en' : Object.keys(map).find(k => k !== 'auto'));
+        }
+
+        // ===== 翻译流程 =====
+        function setStatus(msg, ok) { const el = $('#status'); el.textContent = msg; el.className = 'msg' + (ok === true ? ' ok' : ok === false ? ' err' : ''); }
+
+        async function doTranslate() {
+            const text = $('#srcText').value.trim();
+            if (!text) { setStatus('请输入要翻译的文本。', false); return; }
+            const source_lang = $('#sourceLang').value || 'auto';
+            const target_lang = $('#targetLang').value || 'en';
+            setStatus('正在翻译…'); $('#btnTranslate').disabled = true;
+
+            try {
+                const r = await authFetch(API_TRANSLATE, { method: 'POST', body: JSON.stringify({ text, source_lang, target_lang }) });
+                if (!r.ok) { const t = await r.text(); throw new Error('HTTP ' + r.status + ' ' + t); }
+                const d = await r.json();
+                // 兼容不同大小写命名
+                const tt = d.translated_text ?? d.TranslatedText ?? '';
+                const sl = d.source_lang ?? d.SourceLang ?? source_lang;
+                const tl = d.target_lang ?? d.TargetLang ?? target_lang;
+                const m = d.model ?? d.Model ?? 'server-default';
+                $('#dstText').value = tt;
+                setStatus('翻译完成。', true);
+                $('#chipSrc').textContent = sl; $('#chipTgt').textContent = tl; $('#chipModel').textContent = m;
+            } catch (e) {
+                setStatus('翻译失败：' + e.message, false);
+            } finally {
+                $('#btnTranslate').disabled = false;
+            }
+        }
+
+        // ===== 事件绑定 =====
+        $('#btnTranslate').onclick = doTranslate;
+        $('#btnClearSrc').onclick = () => { $('#srcText').value = ''; $('#srcText').focus(); };
+        $('#btnCopyDst').onclick = async () => {
+            const v = $('#dstText').value; if (!v) { setStatus('没有可复制的译文。', false); return; }
+            await navigator.clipboard.writeText(v); setStatus('已复制译文到剪贴板。', true);
+        };
+        $('#btnSwap').onclick = () => {
+            const s = $('#sourceLang'), t = $('#targetLang'); const sv = s.value, tv = t.value;
+            if (sv === 'auto') { s.value = tv; t.value = sv; } else { s.value = tv; t.value = sv; }
+        };
+
+        $('#gotoHistory').onclick = () => location.href = NAV_HISTORY;
+        $('#backHome').onclick = () => location.href = '/page/shell';
+
+        // ===== 首屏 =====
+        (async function init() { await loadMe(); await loadLanguages(); })();
+    </script>
+</body>
+
+</html>
