@@ -36,14 +36,20 @@ type Config struct { //标明这个配置文件是可以全局使用的
 		Username string
 		Password string
 	}
-	Api struct {
-		LocalKey           string
+	Local_Api struct {
+		ApiKey             string
+		BaseURL  string
 		LocationDailyLimit int
+	}
+	Translation_Api struct {
+		Provider string
+		ApiKey   string
+		BaseURL  string
+		Model    string
 	}
 }
 
 var AppConfig *Config //创建配置文件-指针全局可以修改并且避免拷贝-配置句柄
-var LocalAPIKey string
 
 // 使用viper读取配置文件
 func InitConfig() {
@@ -59,7 +65,7 @@ func InitConfig() {
 	if err := viper.Unmarshal(AppConfig); err != nil { //将配置文件中的内容解析到结构体中
 		log.Fatalf("Error unmarshalling config file: %v", err)
 	}
-	LocalAPIKey = AppConfig.Api.LocalKey
+	// LocalAPIKey = AppConfig.Api.LocalKey //设置定位的api密钥
 	initDB()
 	initRedis()
 	runMigrations()
@@ -83,6 +89,7 @@ func printURL() {
 }
 
 func superadmin_init() {
+	//先判断
 	if AppConfig == nil || AppConfig.Superadmin.Username == "" || AppConfig.Superadmin.Password == "" {
 		log.Println("Warning: Superadmin credentials are not set in config file")
 		return
@@ -91,7 +98,7 @@ func superadmin_init() {
 	rawPass := AppConfig.Superadmin.Password
 
 	// 先计算哈希（不要先写明文再更新）
-	hashed, err := utils.HashPassword(rawPass)
+	hashed, err := utils.HashPassword(rawPass) // 加密密码
 	if err != nil {
 		log.Fatalf("hash superadmin password failed: %v", err)
 	}
@@ -99,7 +106,7 @@ func superadmin_init() {
 	var u models.Users
 
 	// 1) Unscoped 查询，能够看到软删除数据-这里是先看软数据
-	tx := global.DB.Unscoped().Where("username = ?", username).First(&u) //这里查询用户
+	tx := global.DB.Unscoped().Where("username = ?", username).First(&u) //这里查询超级管理员用户
 	switch {
 	case errors.Is(tx.Error, gorm.ErrRecordNotFound):
 		// 2) 确实不存在 → 直接用哈希创建

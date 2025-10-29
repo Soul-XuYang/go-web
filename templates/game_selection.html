@@ -243,6 +243,21 @@
             </div>
         </section>
 
+        <!-- 翻译 class是类型，id是逻辑 -->
+        <section class="game-card">
+            <h2>🎯 多语言翻译</h2>
+            <p class="game-description">经典的翻译功能(请在后台配置api和密钥)</p>
+            <ul class="game-features">
+                <li>ai模型翻译</li>
+                <li>多语言支持</li>
+                <li>支持自动检测源语言</li>
+            </ul>
+            <div class="game-actions">
+                <button id="translate" class="btn-game btn-play">翻译界面</button>
+                <button id="translate_history" class="btn-game btn-ranks">查看历史记录</button>
+            </div>
+        </section>
+
         <!-- 新增：天气查询卡片（图标使用代理回退逻辑） -->
         <section class="game-card weather-card">
             <h2>☁️ 天气查询</h2>
@@ -499,9 +514,11 @@
             bind('guessRanks', () => location.href = '/page/game/leaderboards#guess_game');
             bind('mapRanks', () => location.href = '/page/game/leaderboards#map_game');
             bind('backHome', () => location.href = '/page/shell');
-
             bind('btnWeatherTop10', () => location.href = '/page/weather');
             bind('btnWeatherRefresh', loadWeatherSummary);
+            bind('translate', () => location.href = '/page/translate');
+            bind('translate_history', () => location.href = '/page/translate/history');
+
 
             // init
             (async function init() {

@@ -2,103 +2,134 @@
 <html lang="zh-CN">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>用户注册界面</title>
-    <link rel="stylesheet" href="/static/base.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>go-app | 注册</title>
+  <link rel="stylesheet" href="/static/base.css" />
+  <style>
+    /* 与登录页保持同款版心与控件尺寸 */
+    :root { --control-h: 40px; }
+    body.auth-page { min-height: 100svh; margin: 0; display: grid; place-items: center; padding: 32px 16px; }
+
+    .auth-wrap { width: min(480px, 100%); margin: 0 auto; }
+
+    .page-header { margin: 0 auto 10px; text-align: center; }
+    .page-title { margin: 0; font-weight: 800; line-height: 1.2; font-size: clamp(20px, 4vw, 26px); }
+    .page-sub { margin: 6px 0 0; font-size: 13px; opacity: .85; }
+
+    .card.auth-card { width: 100%; margin: 0 auto; padding: 24px 22px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.15); }
+    .auth-card h2 { margin: 0 0 8px; font-size: 1rem; }
+
+    .input { position: relative; margin: 8px 0 12px; }
+    .input input { height: var(--control-h); line-height: var(--control-h); border-radius: 10px; padding: 0 44px 0 12px; }
+    .toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; cursor: pointer; user-select: none; }
+
+    .actions { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+    #btn { height: var(--control-h); border-radius: 10px; }
+    .msg { font-size: 12px; }
+    .msg.ok { color: #22c55e; }
+    .msg.error { color: #ef4444; }
+    .footer { margin-top: 12px; font-size: 12px; text-align: center; }
+  </style>
 </head>
 
-<body>
-    <div class="card">
-        <h1>创建账户</h1>
-        <p class="sub">请您填写以下信息以完成注册</p>
+<body class="auth-page">
+  <main class="auth-wrap">
+    <!-- 与卡片等宽且居中的页面标题 -->
+    <header class="page-header" aria-label="页面标题">
+      <h1 class="page-title">go-app 注册页面</h1>
+      <p class="page-sub">请您填写以下信息以完成注册</p>
+    </header>
 
-        <form id="form">
-            <label>用户名</label>
-            <div class="input">
-                <input id="username" autocomplete="username" required autofocus />
-            </div>
+    <div class="card auth-card" role="region" aria-labelledby="regTitle">
+      <h2 id="regTitle">创建账户</h2>
 
-            <!-- 先“密码”，再“确认密码” -->
-            <label>密码</label>
-            <div class="input">
-                <input id="password" type="password" autocomplete="new-password" required />
-                <span class="toggle" id="togglePwd">显示</span>
-            </div>
-
-            <label>确认密码</label>
-            <div class="input">
-                <input id="confirm" type="password" autocomplete="new-password" required />
-                <span class="toggle" id="toggleConfirm">显示</span>
-            </div>
-
-            <div class="actions">
-                <button id="btn" type="submit">创建账号</button>
-                <div class="msg" id="msg"></div>
-            </div>
-        </form>
-
-        <div class="footer">
-            已有账号？<a href="/auth/login">去登录</a>
+      <form id="form" autocomplete="on">
+        <label for="username">用户名</label>
+        <div class="input">
+          <input id="username" name="username" autocomplete="username" required autofocus />
         </div>
+
+        <label for="password">密码</label>
+        <div class="input">
+          <input id="password" name="password" type="password" autocomplete="new-password" minlength="6" required />
+          <span class="toggle" id="togglePwd">显示</span>
+        </div>
+
+        <label for="confirm">确认密码</label>
+        <div class="input">
+          <input id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="6" required />
+          <span class="toggle" id="toggleConfirm">显示</span>
+        </div>
+
+        <div class="actions">
+          <button id="btn" type="submit" class="btn-primary">创建账号</button>
+          <div class="msg" id="msg" role="status" aria-live="polite"></div>
+        </div>
+      </form>
+
+      <div class="footer">
+        已有账号？<a href="/auth/login" class="btn-ghost" style="padding:4px 8px; border-radius:999px;">去登录</a>
+      </div>
     </div>
+  </main>
 
-    <script>
-        const $ = s => document.querySelector(s);
-        const btn = $('#btn'), msg = $('#msg');
-        const username = $('#username'), password = $('#password'), confirm = $('#confirm');
+  <script>
+    const $ = s => document.querySelector(s);
+    const btn = $('#btn'), msg = $('#msg');
+    const username = $('#username'), password = $('#password'), confirm = $('#confirm');
 
-        // 显示/隐藏密码
-        const bindToggle = (inputEl, toggleEl) => {
-            toggleEl.onclick = () => {
-                const t = inputEl.type === 'password' ? 'text' : 'password';
-                inputEl.type = t;
-                toggleEl.textContent = t === 'password' ? '显示' : '隐藏';
-            };
-        };
-        bindToggle(password, $('#togglePwd'));
-        bindToggle(confirm, $('#toggleConfirm'));
+    // 显示/隐藏密码
+    const bindToggle = (inputEl, toggleEl) => {
+      toggleEl.onclick = () => {
+        const t = inputEl.type === 'password' ? 'text' : 'password';
+        inputEl.type = t;
+        toggleEl.textContent = t === 'password' ? '显示' : '隐藏';
+      };
+    };
+    bindToggle(password, $('#togglePwd'));
+    bindToggle(confirm, $('#toggleConfirm'));
 
-        document.getElementById('form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            msg.className = 'msg'; msg.textContent = '';
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.className = 'msg'; msg.textContent = '';
 
-            const u = username.value.trim();  //实际的密码
-            const p = password.value;
-            const c = confirm.value;  //确认密码
+      const u = username.value.trim();
+      const p = password.value;
+      const c = confirm.value;
 
-            if (!u) { msg.classList.add('error'); msg.textContent = '请输入用户名'; return; }
-            if (p.length < 6) { msg.classList.add('error'); msg.textContent = '密码至少 6 位字符'; return; }
-            if (p !== c) { msg.classList.add('error'); msg.textContent = '两次输入的密码不一致'; return; }
+      if (!u) { msg.classList.add('error'); msg.textContent = '请输入用户名'; return; }
+      if (p.length < 6) { msg.classList.add('error'); msg.textContent = '密码至少 6 位字符'; return; }
+      if (p !== c) { msg.classList.add('error'); msg.textContent = '两次输入的密码不一致'; return; }
 
-            btn.disabled = true; btn.textContent = '提交中...';
-            try {
-                const res = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    // 只发后端需要的两个字段
-                    body: JSON.stringify({ username: u, password: p })
-                });
-                const data = await res.json().catch(() => ({}));
-
-                if (!res.ok) {
-                    msg.classList.add('error');
-                    msg.textContent = data.error || '注册失败';
-                } else {
-                    // 你的后端会返回 {"token":"Bearer ..."}
-                    localStorage.setItem('token', data.token);
-                    msg.classList.add('ok');
-                    msg.textContent = '注册成功，正在跳转...';
-                    location.href = '/page/shell';
-                }
-            } catch (_) {
-                msg.classList.add('error');
-                msg.textContent = '网络错误';
-            } finally {
-                btn.disabled = false; btn.textContent = '创建账号';
-            }
+      btn.disabled = true; btn.textContent = '提交中...';
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u, password: p })
         });
-    </script>
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          msg.classList.add('error');
+          msg.textContent = data.error || '注册失败';
+        } else {
+          if (data && typeof data.token === 'string') {
+            localStorage.setItem('token', data.token);
+          }
+          msg.classList.add('ok');
+          msg.textContent = '注册成功，正在跳转...';
+          location.href = '/page/shell';
+        }
+      } catch (_) {
+        msg.classList.add('error');
+        msg.textContent = '网络错误';
+      } finally {
+        btn.disabled = false; btn.textContent = '创建账号';
+      }
+    });
+  </script>
 </body>
 
 </html>

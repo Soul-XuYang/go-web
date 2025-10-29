@@ -242,7 +242,7 @@ func getLocationByIP(ctx context.Context, uid uint, force bool) (LocationInfo, e
 	dailyLimit := int64(0)
 
 	// 尝试从配置中读取（你项目里可能有 config 或 global 常量）
-	if cfgLimit := config.AppConfig.Api.LocationDailyLimit; cfgLimit > 0 {
+	if cfgLimit := config.AppConfig.Local_Api.LocationDailyLimit; cfgLimit > 0 {
 		dailyLimit = int64(cfgLimit)
 	} else {
 		dailyLimit = 100 //硬编码默认为100
@@ -283,8 +283,8 @@ func getLocationByIP(ctx context.Context, uid uint, force bool) (LocationInfo, e
 		// 正式开始api查询
 		reqCtx, cancel := context.WithTimeout(ctx, global.FetchTimeout) //FetchTimeout取消请求
 		defer cancel()
-
-		ipUrl := fmt.Sprintf("https://restapi.amap.com/v3/ip?key=%s", config.LocalAPIKey)
+        ipUrl:= config.AppConfig.Local_Api.BaseURL+"?key=%s"
+		ipUrl = fmt.Sprintf(ipUrl, config.AppConfig.Local_Api.ApiKey)
 		client := &http.Client{Timeout: 10 * time.Second}
 		req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, ipUrl, nil)
 		if err != nil {
@@ -513,8 +513,7 @@ type WeatherData struct {
 	} `json:"data"`
 }
 
-// var url := "https://wis.qq.com/weather/common?source=pc&weather_type=observe|forecast_24h|air&province=" +   province + "&city=" + city
-
+// 天气接口-腾讯：var url := "https://wis.qq.com/weather/common?source=pc&weather_type=observe|forecast_24h|air&province=" +   province + "&city=" + city
 func getWeatherData(ctx context.Context, province, city, county string) ([]byte, error) {
 	// 构建URL
 	// 简化方案2：使用map和条件判断

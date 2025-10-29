@@ -43,6 +43,9 @@ func SetupRouter() *gin.Engine {
 		page.GET("/game/leaderboards", func(c *gin.Context) { c.HTML(200, "game_leaderboards.html", nil) })
 		// 天气界面
 		page.GET("/weather", func(c *gin.Context) { c.HTML(200, "weather.html", nil) })
+		// 翻译界面
+		page.GET("/translate", func(c *gin.Context) { c.HTML(200, "translator.html", nil) })
+		page.GET("/translate/history", func(c *gin.Context) { c.HTML(200, "translator_history.html", nil) })
 	}
 
 	// 受保护的 API（数据接口，需要登录）
@@ -77,6 +80,14 @@ func SetupRouter() *gin.Engine {
 		api.GET("/game/map/display", controllers.Display_Map)       // 地图可视化界面
 		//文章操作模块
 		api.GET("/articles", controllers.Get_All_Articles)
+
+		// 翻译功能模块
+		api.POST("/translate", controllers.TranslateText)
+		api.GET("/translate/languages", controllers.GetSupportedLanguages) //返给前端指定的翻译信息
+		// 翻译历史记录模块
+		api.GET("/translate/history", controllers.GetTranslationHistory)
+		api.DELETE("/translate/history/:id", controllers.DeleteTranslationHistory) //删除指定的记录
+		api.DELETE("/translate/history", controllers.ClearTranslationHistory)      //清空记录
 
 	}
 	// 超级管理员系统
