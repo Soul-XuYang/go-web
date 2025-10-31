@@ -1,3 +1,8 @@
+/* =========================
+   base.css  — 全站基础样式
+   ========================= */
+
+/* ---- 设计变量 ---- */
 :root {
     --bg: #0b1020;
     --card: #111b2e;
@@ -11,53 +16,12 @@
     --font-sans: "SF Pro Text", "Segoe UI", "Roboto", "PingFang SC", "Hiragino Sans GB",
         "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei",
         "WenQuanYi Micro Hei", Arial, Helvetica, sans-serif;
-}
 
-html {
-    font-size: 18px;
-}
-
-body {
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    letter-spacing: .01em;
-}
-
-/* 表格整体居中：容器 + 单元格 */
-.table-centered {
-    margin: 0 auto;
-    /* 表格本身在父容器中居中 */
-    table-layout: auto;
-}
-
-.table-centered th,
-.table-centered td {
-    text-align: center;
-    /* 文本水平居中 */
-    vertical-align: middle;
-    /* 文本垂直居中 */
-    padding: 12px 14px;
-    /* 稍微增大可读性 */
-}
-
-/* 数字列：使用等宽数字（tabular-nums），字重略提升 */
-.digits {
-    font-variant-numeric: tabular-nums lining-nums;
-    font-feature-settings: "tnum" 1, "lnum" 1;
-    letter-spacing: .02em;
-    font-weight: 600;
-    /* 可按需调成 500/600 */
-}
-
-/* 可选：卡片视觉更清爽 */
-.fx-card {
-    border-radius: 14px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
-    background: rgba(255, 255, 255, .04);
-    border: 1px solid rgba(255, 255, 255, .08);
-    overflow: hidden;
+    /* 宽度与间距基线（可按项目调） */
+    --max-wrap: 960px;
+    --max-card: 600px;
+    --radius: 12px;
+    --gap: 12px;
 }
 
 @media (prefers-color-scheme: light) {
@@ -74,28 +38,85 @@ body {
     }
 }
 
+/* ---- Reset / 基础排版 ---- */
 * {
-    box-sizing: border-box
+    box-sizing: border-box;
 }
 
-html,
-body {
-    height: 100%
+html {
+    font-size: 18px;
+    height: 100%;
 }
 
 body {
+    height: 100%;
     margin: 0;
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: .01em;
     color: var(--text);
     background:
         radial-gradient(1200px 600px at 10% -10%, rgba(77, 163, 255, .15), transparent 60%),
         radial-gradient(900px 500px at 110% 10%, rgba(61, 220, 151, .12), transparent 55%),
         var(--bg);
-    display: grid;
-    place-items: center;
-    padding: 6vh 16px;
+    padding: 24px 16px;
 }
 
+/* ---- 基础容器（默认不过度拉宽） ---- */
+.top,
+.wrap,
+.below {
+    max-width: var(--max-wrap);
+    width: min(94vw, var(--max-wrap));
+    margin: 0 auto;
+}
+
+/* 顶部条 */
+.top {
+    margin: 4px auto 10px;
+    padding: 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.brand h1 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+/* 用户信息胶囊 */
+.userbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 40, 85, .10);
+    background: #eef5ff;
+}
+
+.avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .75rem;
+    font-weight: 700;
+}
+
+.uname {
+    color: #42608f;
+    font-size: .9rem;
+}
+
+/* ---- 卡片/面板 ---- */
 .card {
     width: 100%;
     max-width: 420px;
@@ -107,7 +128,6 @@ body {
     animation: pop .25s ease-out;
 }
 
-/* 语义化卡片尺寸 */
 .card-sm {
     max-width: 480px;
 }
@@ -124,50 +144,60 @@ body {
     max-width: 1280px;
 }
 
-.ap-link {
-    color: var(--primary);
-    font-weight: 600;
-    text-decoration: none;
-    padding: 2px 6px;
-    border-radius: 6px;
-    background: rgba(0, 0, 0, .04);
-    border: 1px solid rgba(0, 0, 0, .08);
+.fx-card {
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid rgba(255, 255, 255, .08);
+    overflow: hidden;
 }
 
-.ap-link:hover {
-    text-decoration: underline;
+/* 面板（浅色业务页） */
+.panel {
+    background: #ffffff;
+    border: 1px solid rgba(17, 40, 85, .08);
+    border-radius: 16px;
+    box-shadow: 0 8px 28px rgba(17, 40, 85, .10);
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    min-height: 260px;
 }
 
-
-@keyframes pop {
-    from {
-        transform: translateY(6px);
-        opacity: .0
-    }
-
-    to {
-        transform: none;
-        opacity: 1
-    }
+.panel h2 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
 }
 
+/* ---- 文本 & 链接 ---- */
 h1 {
     margin: 0 0 6px;
-    font-size: 1.6rem
+    font-size: 1.6rem;
 }
 
 p.sub {
     margin: 0 0 16px;
     color: var(--muted);
-    font-size: .95rem
+    font-size: .95rem;
 }
 
 label {
     display: block;
-    font-size: .9rem;
-    margin: 14px 0 6px
+    font-size: .92rem;
+    margin: 12px 0 6px;
 }
 
+a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* 输入组 */
 .input {
     display: flex;
     align-items: center;
@@ -193,84 +223,252 @@ label {
     font-size: 1rem;
 }
 
-a {
-    color: var(--primary);
-    text-decoration: none
-}
-
-a:hover {
-    text-decoration: underline
-}
-
-.actions {
-    margin-top: 16px
-}
-
-button {
+/* ---- 按钮 ---- */
+button,
+.btn {
     width: 100%;
     border: 0;
     border-radius: 10px;
     padding: 12px 14px;
     font-weight: 600;
     background: linear-gradient(180deg, var(--primary), var(--primary-strong));
-    color: white;
+    color: #fff;
     cursor: pointer;
     transition: transform .03s ease;
+    height: 42px;
 }
 
-button:active {
-    transform: translateY(1px)
+button:active,
+.btn:active {
+    transform: translateY(1px);
 }
 
-button[disabled] {
+button[disabled],
+.btn[disabled] {
     opacity: .7;
-    cursor: not-allowed
+    cursor: not-allowed;
 }
 
-.row {
-    display: flex;
-    gap: 10px
+.btn-primary {
+    background: linear-gradient(180deg, var(--primary), var(--primary-strong));
+    color: #fff;
 }
 
-.row>* {
-    flex: 1
+.btn-soft {
+    background: #eaf3ff;
+    border: 1px solid #cfe0ff;
+    color: #19427a;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 10px;
 }
 
+.btn-danger-soft {
+    background: #fff2f2;
+    border: 1px solid #ffd6d6;
+    color: #a72a2a;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 10px;
+}
+
+/* ---- 信息条 ---- */
 .msg {
     margin-top: 10px;
-    font-size: .92rem
-}
-
-.msg.error {
-    color: var(--danger)
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: .92rem;
+    background: #eef5ff;
+    border: 1px solid #cfe0ff;
+    color: #1f2a44;
+    display: none;
 }
 
 .msg.ok {
-    color: var(--ok)
+    display: block;
+    background: #ebfff1;
+    border-color: #c6f3d5;
+    color: #106b33;
 }
 
-.footer {
-    margin-top: 16px;
+.msg.err {
+    display: block;
+    background: #fff2f2;
+    border-color: #ffd6d6;
+    color: #a72a2a;
+}
+
+/* ---- 工具条/标签 ---- */
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.toolbar .row>* {
+    flex: 0 0 auto;
+}
+
+.chip {
+    border: 1px solid #cfe0ff;
+    background: #eef5ff;
+    color: #1f2a44;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: .94rem;
+}
+
+/* ---- 列表/卡片项（历史/文件等） ---- */
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 640px;
+    overflow: auto;
+    padding-right: 6px;
+}
+
+.item {
+    border: 1px solid rgba(17, 40, 85, .08);
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.item-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.block {
+    background: #f3f7ff;
+    border: 1px solid #dbe6ff;
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.clamp {
+    max-height: 7.5em;
+    overflow: hidden;
+    position: relative;
+}
+
+.clamp:after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2.2em;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #ffffff);
+}
+
+.muted {
+    color: #6b7a99;
+}
+
+.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+/* 滚动条（浅色） */
+.list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.list::-webkit-scrollbar-thumb {
+    background: #cfe0ff;
+    border-radius: 8px;
+}
+
+/* ---- 表格居中与数字齐头 ---- */
+.table-centered {
+    margin: 0 auto;
+    table-layout: auto;
+}
+
+.table-centered th,
+.table-centered td {
     text-align: center;
-    color: var(--muted);
-    font-size: .92rem
+    vertical-align: middle;
+    padding: 12px 14px;
 }
 
-.toggle {
-    font-size: .85rem;
-    color: var(--muted);
+.digits {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+    letter-spacing: .02em;
+    font-weight: 600;
+}
+
+/* ---- 版心/底部按钮条 ---- */
+.below {
+    margin: 12px auto 18px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.below button {
+    width: auto;
+    flex: 0 0 auto;
+    min-width: 200px;
+    border-radius: 10px;
+    height: 40px;
+}
+
+/* ---- 自定义文件选择器（中文文案） ---- */
+/* 标准结构：
+  <div class="file-picker">
+    <input type="file" id="fileInput">
+    <label for="fileInput" class="btn btn-soft file-btn">选择文件</label>
+    <span class="file-name">未选择文件</span>
+  </div> */
+#fileInput {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.file-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.file-btn {
     cursor: pointer;
-    user-select: none;
 }
 
-.small {
-    font-size: .85rem;
-    color: var(--muted)
+.file-name {
+    flex: 1 1 auto;
+    min-width: 200px;
+    border: 1px solid #cfe0ff;
+    border-radius: 10px;
+    background: #f8fbff;
+    padding: 10px 12px;
+    color: #6c7aa0;
+    font-size: .95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.1;
 }
 
-/* === 大号地图卡片 === */
+/* ---- 地图卡片尺寸（保留原需求） ---- */
 .card--mapXL {
-    /* 地图卡片特殊样式 */
     padding: 20px;
 }
 
@@ -284,15 +482,13 @@ button[disabled] {
     margin-bottom: 10px;
 }
 
-/* 地图容器 - 移除过高的vh设置 */
 .card--mapXL .map-container {
     min-height: 500px;
     max-height: 75vh;
     width: 100%;
 }
 
-/* 大屏优化 */
-@media (min-width: 1280px) {
+@media (min-width:1280px) {
     .card--mapXL {
         padding: 22px;
     }
@@ -303,73 +499,116 @@ button[disabled] {
     }
 }
 
-/* 超大屏优化 */
-@media (min-width: 1600px) {
+@media (min-width:1600px) {
     .card--mapXL .map-container {
         min-height: 600px;
         max-height: 72vh;
     }
 }
-/* ---- App 布局覆盖：业务页不要全页居中网格 ---- */
+
+/* ---- 交互/动画 ---- */
+@keyframes pop {
+    from {
+        transform: translateY(6px);
+        opacity: 0;
+    }
+
+    to {
+        transform: none;
+        opacity: 1;
+    }
+}
+
+/* =========================
+   页面级工具类（按需给 <body> 添加）
+   ========================= */
+
+/* 业务页不要全页 grid 居中，使用常规块级布局 */
 body.app {
-  display: block;           /* 覆盖原来的 display: grid */
-  padding: 24px 16px;       /* 顶部留白更小 */
-  min-height: 100%;
+    display: block;
+    padding: 24px 16px;
+    min-height: 100%;
+    background: #f7faff;
+    /* 业务页默认浅色背景 */
 }
 
-/* ---- 容器工具类：可选 ---- */
-.container      { max-width: 1280px; margin: 24px auto; padding: 0 16px; }
-.container-lg   { max-width: 1440px; margin: 24px auto; padding: 0 16px; }
-
-/* ---- 面板组件（替代 .card，不限制 420px） ---- */
-/* ===== 历史页浅色主题：淡蓝 + 白色 ===== */
-body { background: #f7faff; } /* 整体淡蓝底 */
-.panel {
-  background: #ffffff;
-  border: 1px solid rgba(17, 40, 85, .08);
-  box-shadow: 0 8px 28px rgba(17, 40, 85, .10);
-}
-.item {
-  background: #ffffff;
-  border: 1px solid rgba(17, 40, 85, .08);
-}
-.block {
-  background: #f3f7ff;                       /* 内容块淡蓝 */
-  border: 1px solid #dbe6ff;
-}
-.chip {
-  background: #eef5ff;                        /* 标签淡蓝 */
-  border: 1px solid #cfe0ff;
-  color: #1f2a44;
-}
-.msg {
-  background: #eef5ff;                        /* 提示淡蓝 */
-  border-color: #cfe0ff;
-  color: #1f2a44;
-}
-.muted { color: #6b7a99; }
-
-/* 折叠渐隐由白色过渡，更自然 */
-.clamp:after {
-  background: linear-gradient(to bottom, rgba(255,255,255,0), #ffffff);
+/* 更紧凑的上下间距（全局/页面可选） */
+.stack-tight {
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
 }
 
-/* 滚动条也更浅一点（可选） */
-.list::-webkit-scrollbar { width: 8px; }
-.list::-webkit-scrollbar-thumb {
-  background: #2b6add;
-  border-radius: 8px;
+.stack-tight h1,
+.stack-tight h2 {
+    margin-top: 0 !important;
+    margin-bottom: 8px !important;
 }
 
-.below button{
-  width: auto !important;             /* 关键：取消全宽 */
-  flex: 0 0 auto;                     /* 不占满剩余空间 */
-  min-width: 220px;                   /* 两个按钮尺寸更均衡，可按需调整 */
+/* 上传页专用收紧：标题-卡片-底部按钮间距压缩，版心/卡片更窄 */
+body.app.stack-tight.upload-page {
+    padding: 12px 12px !important;
 }
-.toolbar .row > * {
-  flex: 0 0 auto;
+
+body.app.stack-tight.upload-page .top,
+body.app.stack-tight.upload-page .wrap,
+body.app.stack-tight.upload-page .below {
+    max-width: 820px !important;
+    width: min(94vw, 820px) !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
 }
-.top, .wrap, .below {                 /* 头部 / 主容器 / 底部按钮条 */
-  max-width: 1440px;                  /* 想更宽就调这里，比如 1680/1800 */
-  width: min(96vw, 1600px);
+
+body.app.stack-tight.upload-page .top {
+    padding: 4px 0 !important;
+    margin: 0 auto 6px !important;
 }
+
+body.app.stack-tight.upload-page .brand h1 {
+    margin: 0 !important;
+    font-size: 1.05rem !important;
+}
+
+body.app.stack-tight.upload-page .wrap {
+    padding: 0 !important;
+    margin-top: 6px !important;
+    margin-bottom: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+}
+
+body.app.stack-tight.upload-page .panel {
+    max-width: 600px !important;
+    margin: 0 auto !important;
+    padding: 18px 18px !important;
+    gap: 12px !important;
+    min-height: auto !important;
+    box-shadow: 0 6px 18px rgba(17, 40, 85, .10) !important;
+}
+
+body.app.stack-tight.upload-page .below {
+    margin-top: 10px !important;
+    margin-bottom: 14px !important;
+    gap: 12px !important;
+}
+
+body.app.stack-tight.upload-page .below button {
+    height: 40px !important;
+    min-width: 180px !important;
+    border-radius: 10px !important;
+}
+
+/* 宽容器（需要更宽的页面可包一层 .container-lg） */
+.container {
+    max-width: 1280px;
+    margin: 24px auto;
+    padding: 0 16px;
+}
+
+.container-lg {
+    max-width: 1440px;
+    margin: 24px auto;
+    padding: 0 16px;
+}
+
+/* 禁止被其它文件“拉宽”的全局选择器（避免扩大 .top/.wrap/.below） */
+/* 若确需更宽，请在页面包裹 .container 或自行写新类，不要改全局 .top/.wrap/.below */

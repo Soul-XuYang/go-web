@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>文件上传</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        :root {
+            --muted: #6b7a99;
+            --glass: #ffffffcc;
+            --glass-border: rgba(17, 40, 85, .12);
+        }
+
+        body {
+            margin: 0;
+            background: #f7faff;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+
+        /* ===== 主卡片：加宽 ===== */
+        .card {
+            width: min(96vw, 1020px);
+            /* 改这里：更宽 */
+            background: rgba(255, 255, 255, .65);
+            backdrop-filter: saturate(140%) blur(8px);
+            -webkit-backdrop-filter: saturate(140%) blur(8px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(17, 40, 85, .10);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card__header {
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .75), rgba(255, 255, 255, .55));
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .card__title {
+            margin: 0;
+            font-size: 1.08rem;
+            color: #14213d;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(17, 40, 85, .10);
+            background: #eef5ff;
+        }
+
+        .avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .72rem;
+            font-weight: 700;
+        }
+
+        .uname {
+            color: #42608f;
+            font-size: .9rem;
+        }
+
+        .card__body {
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* 表单区域 */
+        .form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            color: #1f2a44;
+            font-weight: 600;
+            font-size: .95rem;
+        }
+
+        .file-picker {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        #fileInput {
+            position: absolute;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+        }
+
+        .btn {
+            height: 38px;
+            padding: 0 14px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .btn-soft {
+            background: #eaf3ff;
+            border: 1px solid #cfe0ff;
+            color: #19427a;
+        }
+
+        .btn-primary:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        .file-btn {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .file-name {
+            flex: 1 1 auto;
+            min-width: 260px;
+            border: 1px solid #cfe0ff;
+            border-radius: 10px;
+            background: #f8fbff;
+            padding: 9px 12px;
+            color: #203774;
+            font-size: .95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        textarea {
+            border: 1px solid #cfe0ff;
+            border-radius: 10px;
+            background: #f8fbff;
+            padding: 10px 12px;
+            color: #42608f;
+            font-size: .98rem;
+            min-height: 92px;
+            resize: vertical;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 2px;
+        }
+
+        .msg {
+            padding: 10px 12px;
+            border-radius: 10px;
+            line-height: 1.5;
+            display: none;
+            background: #eef5ff;
+            border: 1px solid #cfe0ff;
+            color: #1f2a44;
+        }
+
+        .msg.ok {
+            display: block;
+            background: #ebfff1;
+            border-color: #c6f3d5;
+            color: #106b33;
+        }
+
+        .msg.err {
+            display: block;
+            background: #fff2f2;
+            border-color: #ffd6d6;
+            color: #a72a2a;
+        }
+
+        /* ===== 底部按钮：水平居中且不换行 ===== */
+        .card__footer {
+            padding: 12px 18px;
+            display: flex;
+            justify-content: center;
+            /* 居中 */
+            align-items: center;
+            gap: 16px;
+            flex-wrap: nowrap;
+            /* 一行显示 */
+            background: linear-gradient(180deg, rgba(255, 255, 255, .55), rgba(255, 255, 255, .75));
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .card__footer .btn {
+            min-width: 120px;
+        }
+
+        .wrap {
+            max-width: none;
+            width: auto;
+        }
+
+        /* 关键：把 base.css 的 max-width 顶掉 */
+        .card {
+            width: min(96vw, 960px);
+            max-width: 960px !important;
+            /* 覆盖 base.css 的 420px */
+        }
+
+        /* 很窄的屏幕再允许换行 */
+        @media (max-width: 120px) {
+            .card__footer {
+                flex-wrap: wrap;
+            }
+
+            .card__footer .btn {
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <section class="card">
+        <header class="card__header">
+            <h1 class="card__title">个人文件上传界面</h1>
+            <div class="userbox">
+                <div class="avatar" id="avatar">U</div>
+                <span class="uname" id="username">加载中…</span>
+            </div>
+        </header>
+
+        <div class="card__body">
+            <h2 style="margin:0 0 6px; font-size:1.02rem;">上传文件卡片</h2>
+
+            <form id="uploadForm" class="form">
+                <div class="form-group">
+                    <label>请选择文件</label>
+                    <div class="file-picker">
+                        <input type="file" id="fileInput" required />
+                        <label for="fileInput" class="btn btn-soft file-btn">选择文件</label>
+                        <span id="fileName" class="file-name">未选择文件</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">文件描述（可选）</label>
+                    <textarea id="content" placeholder="输入文件描述…"></textarea>
+                </div>
+
+                <div class="actions">
+                    <button type="button" id="btnReset" class="btn btn-soft">清空表单</button>
+                    <button type="submit" id="uploadBtn" class="btn btn-primary">上传</button>
+                </div>
+            </form>
+
+            <div id="status" class="msg"></div>
+        </div>
+
+        <footer class="card__footer">
+            <button id="backHome" class="btn btn-primary" style="width:50%">返回主菜单</button>
+            <button id="gotoManage" class="btn btn-primary" style="width:50%">文件管理</button>
+        </footer>
+    </section>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const API_UPLOAD = '/api/files/upload';
+        const API_ME = '/api/me';
+
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            if (!t) return null;
+            return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t);
+        }
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign({}, opts.headers || {});
+            if (token) headers['Authorization'] = token;
+            const r = await fetch(url, { ...opts, headers, credentials: 'include' });
+            if (r.status === 401) { localStorage.removeItem('token'); throw new Error('Unauthorized'); }
+            return r;
+        }
+        function setStatus(text, type) {
+            const el = $('#status');
+            if (!text) { el.style.display = 'none'; el.className = 'msg'; el.textContent = ''; return; }
+            el.style.display = 'block';
+            el.className = 'msg' + (type ? ' ' + type : '');
+            el.textContent = text;
+        }
+        function initialOf(name) { const s = (name || '').trim(); return s ? s[0].toUpperCase() : 'U'; }
+
+        $('#fileInput').addEventListener('change', () => {
+            const f = $('#fileInput').files[0];
+            $('#fileName').textContent = f ? f.name : '未选择文件';
+        });
+
+        $('#uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const f = $('#fileInput').files[0];
+            if (!f) { setStatus('请先选择文件', 'err'); return; }
+
+            const fd = new FormData();
+            fd.append('file', f);
+            fd.append('content', $('#content').value || '');
+
+            setStatus('上传中…');
+            $('#uploadBtn').disabled = true;
+
+            try {
+                const res = await authFetch(API_UPLOAD, { method: 'POST', body: fd });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+
+                const bytes = Number(f.size) || 0;
+                setStatus(`上传成功！ID: ${data.id ?? '-'}  文件大小: ${bytes.toLocaleString()}B`, 'ok');
+            } catch (err) {
+                setStatus('文件上传失败：' + err.message, 'err');
+            } finally {
+                $('#uploadBtn').disabled = false;
+            }
+        });
+
+        $('#btnReset').onclick = () => {
+            $('#uploadForm').reset();
+            $('#fileName').textContent = '未选择文件';
+            setStatus('');
+        };
+
+        (async function () {
+            try {
+                const r = await authFetch(API_ME);
+                const d = await r.json().catch(() => ({}));
+                const uname = d.username || d.name || 'User';
+                $('#username').textContent = uname;
+                $('#avatar').textContent = initialOf(uname);
+            } catch { }
+        })();
+
+        $('#backHome').onclick = () => location.href = '/page/shell';
+        $('#gotoManage').onclick = () => location.href = '/page/files/manage';
+    </script>
+</body>
+
+</html>

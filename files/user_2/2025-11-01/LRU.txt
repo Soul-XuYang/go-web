@@ -1,0 +1,114 @@
+import java.util.HashMap;
+import java.util.Map;
+
+public class LRUCache {
+    //优化内存管理 和 避免不必要的对外部类的依赖
+    // DLinkedNode 只存储 key、value 和链表指针 (prev/next)，不依赖 LRUCache 的任何方法或变量。
+    //适合 static 的情况：
+    //内部类 1.不需要访问外部类的成员变量或方法（如 DLinkedNode不访问我们的private遍量）。
+    //内部类 2.用于纯数据结构（如链表节点、树节点、工具类）。
+    //内存特点:不持有外部类的引用：
+    //static 内部类在编译后不会自动生成一个指向外部类实例的隐式引用（LRUCache.this），因此它 独立于外部类实例 存在。
+    //类似于普通顶层类：
+    //在JVM的方法区（Method Area）中，static 内部类像普通类一样被加载，不占用外部类实例的内存。
+    // ------------------------------------------------------------------------------------------------
+    static class DLinkedNode {  //双向链表可以更好的进行队尾和队头的插入和删除
+        int key;
+        int val;
+        // 节点这里最好设置key 和 value不然我们的哈希表找到对应指针还要结合前后来看,可以省空间但是意义不大
+        // 这里可以哈希表占据key，链表单独占据value
+        DLinkedNode pre;
+        DLinkedNode next;
+        DLinkedNode(int key,int val) {
+            this.key = key;
+            this.val = val;
+        }
+        DLinkedNode() {}// 另一个给定下一个节点直接创建  //添加、插入操作
+    }
+    private Map<Integer,DLinkedNode> map = new HashMap<>();
+    private DLinkedNode LRU_head=null,LRU_tail=null;
+    private int size = 0,capacity=0;
+    public LRUCache(int capacity) {  //对应其构造方法
+        this.size = 0;  //表示待缓存的元素数量
+        this.capacity=capacity;
+        //关于插入和删除必须考虑的一点***头插法***
+        LRU_head = new DLinkedNode(); //因为涉及到查询这里就不给辅助节点赋值了
+        LRU_tail = new DLinkedNode();
+        //我去，这个太关键了，两个自循环的初始节点使得之后我们写起来极其方便
+        LRU_head.next = LRU_tail;
+        LRU_tail.pre = LRU_head;
+    }
+
+    public int get(int key) {
+        if(map.containsKey(key)){
+            DLinkedNode newNode = map.get(key);
+            moveToHead(newNode);
+            return map.get(key).val;
+        }
+        else
+        return -1;
+    }
+    public void put(int key, int value) {
+        if(map.containsKey(key)){  //如果链表中有值的话
+            DLinkedNode Node = map.get(key);
+            Node.val = value;  //先变值再移动队首
+            moveToHead(Node);
+            //map的key 和 指针没必要变
+        }
+        else {     //链表中没有这个值我们就需要插入了
+            if (size < capacity) {  //容量够就直接插入并
+                insert(key, value);
+            } else {
+                //容量不够,超了就不动size了
+                //删除队尾并插入新值
+                removeTail();
+                DLinkedNode newNode = new DLinkedNode(key, value);
+                insertHead(newNode);
+                map.put(key,newNode);  //*易错*少了这一步
+            }
+        }
+    }
+    //四个代码:
+
+    //应该分成队首 和 非队首的插入，因为之后的移动队首也需要这个函数
+    private void insert(int k,int v){  //插入是从头部插入以保证顺序一致
+        DLinkedNode newNode = new DLinkedNode(k, v);
+        if(size ==0){
+            LRU_head.next =newNode;
+            newNode.pre=LRU_head;
+            newNode.next =LRU_tail;
+            LRU_tail.pre = newNode;
+        }
+        else{
+             insertHead(newNode);
+        }
+        map.put(k,newNode);
+        size++;  //在容量不够的情况插入时肯定size++
+    }
+    // 以下的单独操作实质上都是在size不变的情况
+    private void insertHead(DLinkedNode n){  //这种连接肯定从后开始做
+//        LRU_head.next.pre=n;
+//        n.next = LRU_head.next;
+//        LRU_head.next = n;
+//        n.pre = LRU_head;
+        //上述的这种写法并不好，以下是通用写法,size==0都可以-前提是自循环的初始情况
+        n.next = LRU_head.next;
+        n.pre =  LRU_head;
+        LRU_head.next.pre = n;
+        LRU_head.next = n;
+
+    }
+    private void removeTail(){  //移除的时候一定是满的时候
+         DLinkedNode last = LRU_tail.pre;
+         last.pre.next = LRU_tail;
+         LRU_tail.pre = last.pre;
+         map.remove(last.key);  //---*易错*删除对应的索引
+    }
+    private void moveToHead(DLinkedNode node) {
+        // 1. 先从链表中移除节点
+        node.pre.next = node.next;
+        node.next.pre = node.pre;
+        // 2. 再插入到头部
+        insertHead(node);
+    }
+}

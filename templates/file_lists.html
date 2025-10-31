@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>我的文件</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        :root {
+            --muted: #6b7a99;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px 16px;
+            background: #f7faff;
+        }
+
+        .top,
+        .wrap,
+        .below {
+            max-width: 1440px;
+            width: min(96vw, 1440px);
+            margin: 0 auto;
+        }
+
+        .top {
+            margin: 8px auto;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.35rem;
+        }
+
+        .wrap {
+            padding: 0 16px;
+            margin-top: 8px;
+        }
+
+        .panel {
+            width: 100%;
+            background: #fff;
+            border: 1px solid rgba(17, 40, 85, .08);
+            border-radius: 16px;
+            padding: 32px 26px;
+            box-shadow: 0 8px 28px rgba(17, 40, 85, .10);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-height: 520px;
+        }
+
+        .panel h2 {
+            margin: 0 0 6px;
+            font-size: 1.22rem;
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            border: 1px solid #cfe0ff;
+            background: #eef5ff;
+            color: #1f2a44;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: .94rem;
+        }
+
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-height: 640px;
+            overflow: auto;
+            padding-right: 6px;
+        }
+
+        .item {
+            border: 1px solid rgba(17, 40, 85, .08);
+            background: #fff;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .item-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+
+        .btn-soft {
+            background: #eaf3ff;
+            border: 1px solid #cfe0ff;
+            color: #19427a;
+            font-weight: 600;
+            border-radius: 10px;
+            height: 40px;
+            padding: 0 12px;
+        }
+
+        .btn-soft:hover {
+            background: #dcecff;
+        }
+
+        .btn-danger-soft {
+            background: #fff2f2;
+            border: 1px solid #ffd6d6;
+            color: #a72a2a;
+            font-weight: 600;
+            border-radius: 10px;
+            height: 40px;
+            padding: 0 12px;
+        }
+
+        .btn-danger-soft:hover {
+            background: #ffe8e8;
+        }
+
+        .msg {
+            padding: 14px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            background: #eef5ff;
+            border: 1px solid #cfe0ff;
+            color: #1f2a44;
+            min-height: 52px
+        }
+
+        .msg.ok {
+            background: #ebfff1;
+            border-color: #c6f3d5;
+            color: #106b33
+        }
+
+        .msg.err {
+            background: #fff2f2;
+            border-color: #ffd6d6;
+            color: #a72a2a
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .actions-grid {
+            display: grid;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .actions-grid.cols-3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        @media(max-width:860px) {
+            .actions-grid.cols-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .below {
+            margin: 16px auto 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap
+        }
+
+        .below button {
+            min-width: 220px;
+            border-radius: 12px;
+            height: 48px
+        }
+
+        .muted {
+            color: #6b7a99
+        }
+
+        input,
+        select {
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid #cfe0ff;
+            padding: 0 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="top">
+        <div class="brand">
+            <h1>我的文件</h1>
+        </div>
+    </header>
+
+    <main class="wrap">
+        <section class="panel">
+            <h2>文件列表</h2>
+
+            <!-- 工具条：筛选 + 分页设置 -->
+            <div class="toolbar">
+                <div class="row">
+                    <input id="q" placeholder="文件名关键词" />
+                    <input id="ext" placeholder="扩展名 .pdf/.png" style="width:130px;" />
+                    <input id="ct" placeholder="MIME 前缀 image/ 或 application/pdf" style="width:220px;" />
+                    <input id="dateFrom" placeholder="起始日期 YYYY-MM-DD" style="width:160px;" />
+                    <input id="dateTo" placeholder="结束日期 YYYY-MM-DD" style="width:160px;" />
+                    <input id="minSize" type="number" placeholder="最小字节" style="width:120px;" />
+                    <input id="maxSize" type="number" placeholder="最大字节" style="width:120px;" />
+                    <select id="order">
+                        <option value="created_desc">按时间(新→旧)</option>
+                        <option value="created_asc">按时间(旧→新)</option>
+                        <option value="size_desc">按大小(大→小)</option>
+                        <option value="size_asc">按大小(小→大)</option>
+                    </select>
+                    <button id="btnSearch" class="btn-primary" style="height:34px;border-radius:8px;">搜索</button>
+                </div>
+                <div class="row">
+                    <span class="chip">页码：<b id="chipPage">1</b></span>
+                    <span class="chip">总数：<b id="chipTotal">—</b></span>
+                    <label class="chip" style="display:flex;align-items:center;gap:6px;">
+                        每页
+                        <select id="selPageSize" style="height:28px;border-radius:8px;padding:0 8px;">
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </label>
+                    <button id="btnRefresh" class="btn-soft">刷新</button>
+                </div>
+            </div>
+
+            <div id="status" class="msg" style="display:none;"></div>
+            <div id="list" class="list"></div>
+
+            <div class="row" style="justify-content:space-between;margin-top:8px;">
+                <button id="btnPrev" class="btn-primary" style="min-width:60px;">上一页</button>
+                <button id="btnNext" class="btn-primary" style="min-width:60px;">下一页</button>
+            </div>
+        </section>
+    </main>
+
+    <div class="below">
+        <button id="gotoUpload" class="btn-primary">上传新文件</button>
+        <button id="backHome" class="btn-primary">返回主菜单</button>
+    </div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const API_LIST = '/api/files';
+        const API_FILE = id => `/api/files/${id}`;
+
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            if (!t) return null;
+            return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t);
+        }
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign(token ? { Authorization: token } : {}, opts.headers || {});
+            const r = await fetch(url, { ...opts, headers, credentials: 'include' });
+            if (r.status === 401) { localStorage.removeItem('token'); location.href = '/auth/login'; throw new Error('Unauthorized'); }
+            return r;
+        }
+        function setStatus(text, ok) {
+            const el = $('#status');
+            el.style.display = 'block';
+            el.textContent = text;
+            el.className = 'msg' + (ok === true ? ' ok' : ok === false ? ' err' : '');
+        }
+        function human(n) {
+            n = Number(n || 0);
+            if (n < 1024) return n + ' B';
+            const u = ['KB', 'MB', 'GB', 'TB']; let i = -1;
+            do { n /= 1024; i++; } while (n >= 1024 && i < u.length - 1);
+            return n.toFixed(1) + ' ' + u[i];
+        }
+
+        let page = 1, pageSize = 10, total = 0;
+
+        function buildQuery() {
+            const p = new URLSearchParams();
+            p.set('page', page);
+            p.set('page_size', pageSize);
+            const q = $('#q').value.trim();
+            const ext = $('#ext').value.trim();
+            const ct = $('#ct').value.trim();
+            const df = $('#dateFrom').value.trim();
+            const dt = $('#dateTo').value.trim();
+            const minS = $('#minSize').value.trim();
+            const maxS = $('#maxSize').value.trim();
+            const order = $('#order').value;
+
+            if (q) p.set('q', q);
+            if (ext) p.set('ext', ext);
+            if (ct) p.set('content_type', ct);
+            if (df) p.set('date_from', df);
+            if (dt) p.set('date_to', dt);
+            if (minS) p.set('min_size', minS);
+            if (maxS) p.set('max_size', maxS);
+            if (order) p.set('order', order);
+            return p.toString();
+        }
+
+        function renderList(items) {
+            const box = $('#list'); box.innerHTML = '';
+            if (!items || items.length === 0) {
+                const d = document.createElement('div'); d.className = 'msg'; d.textContent = '暂无文件记录。'; box.appendChild(d); return;
+            }
+            for (const it of items) {
+                const id = it.id;
+                const filename = it.filename;
+                const size = it.size_bytes;
+                const mime = it.content_type || '';
+                const created = (it.created_at || '').toString().replace('T', ' ').replace('Z', '');
+                const wrap = document.createElement('div'); wrap.className = 'item';
+
+                const head = document.createElement('div'); head.className = 'item-head';
+                head.innerHTML = `
+          <div class="row" style="gap:8px;">
+            <b>${filename}</b> | <span class="muted">${human(size)}</span> | <span class="muted">${mime}</span>
+          </div>
+          <div class="muted"><span class="label">上传时间：</span>${created}</div>
+        `;
+                wrap.appendChild(head);
+
+                const grid = document.createElement('div'); grid.className = 'actions-grid cols-3';
+
+                const btnPreview = document.createElement('a');
+                btnPreview.className = 'btn-soft'; btnPreview.textContent = '预览';
+                btnPreview.href = API_FILE(id); // inline 预览
+                btnPreview.target = '_blank';
+                btnPreview.rel = 'noopener';
+
+                const btnDownload = document.createElement('a');
+                btnDownload.className = 'btn-soft'; btnDownload.textContent = '下载';
+                btnDownload.href = API_FILE(id) + '?download=1';
+                btnDownload.target = '_blank';
+                btnDownload.rel = 'noopener';
+
+                const btnDel = document.createElement('button');
+                btnDel.className = 'btn-danger-soft'; btnDel.textContent = '删除';
+                btnDel.onclick = async () => {
+                    if (!confirm(`确定删除「${filename}」吗？`)) return;
+                    try {
+                        const r = await authFetch(API_FILE(id), { method: 'DELETE' });
+                        if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || ('HTTP ' + r.status)); }
+                        await loadList(page);
+                    } catch (e) { setStatus('删除失败：' + e.message, false); }
+                };
+
+                grid.appendChild(btnPreview);
+                grid.appendChild(btnDownload);
+                grid.appendChild(btnDel);
+
+                wrap.appendChild(grid);
+                box.appendChild(wrap);
+            }
+        }
+
+        async function loadList(p = 1) {
+            page = Math.max(1, p);
+            setStatus('加载中…');
+            try {
+                const qs = buildQuery();
+                const r = await authFetch(`${API_LIST}?${qs}`);
+                const d = await r.json().catch(() => ({ total: 0, items: [] }));
+                total = Number(d.total || 0);
+                $('#chipTotal').textContent = total;
+                const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                $('#chipPage').textContent = `${page} / ${totalPages}`;
+                renderList(d.items || []);
+                setStatus('加载完成。', true);
+            } catch (e) {
+                renderList([]); setStatus('加载失败：' + e.message, false);
+            }
+        }
+
+        // 事件
+        $('#btnPrev').onclick = () => { if (page > 1) loadList(page - 1); };
+        $('#btnNext').onclick = () => loadList(page + 1);
+        $('#btnRefresh').onclick = () => loadList(page);
+        $('#btnSearch').onclick = () => loadList(1);
+        $('#selPageSize').onchange = () => { pageSize = parseInt($('#selPageSize').value, 10) || 10; loadList(1); };
+        $('#gotoUpload').onclick = () => location.href = '/page/files';
+        $('#backHome').onclick = () => location.href = '/page/shell';
+
+        // 初始化
+        loadList(1);
+    </script>
+</body>
+
+</html>

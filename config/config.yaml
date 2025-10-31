@@ -1,6 +1,6 @@
 app:
   name: Go-Web # 应用程序的名称
-  port: :3000 # 监听的程序端口
+  port: :3001 # 监听的程序端口
 
 database: # 数据库的配置
   # 通过 TCP 连接本地 MySQL 的 3306 端口 root 是本地数据库的密码  - @tcp(127.0.0.1:3306) - 通过 TCP 连接本地 MySQL 的 3306 端口
@@ -32,3 +32,8 @@ translation_api:
   baseURL: "https://api.moonshot.cn/v1" # OpenAI API的基础URL
   model: "moonshot-v1-8k" # 这里使用kimi的模型
   LocationDailyLimit: 100 # 单个用户的使用上限制，硬编码默认为100
+
+upload:
+  totalSize: 500
+  fileSize: 50
+  storagepath: "files"

@@ -41,6 +41,7 @@ func runMigrations() {
 		&models.Game_Map_Time{},
 		// 新增翻译历史记录表
 		&models.TranslationHistory{},
+		&models.Files{},
 	); err != nil {
 		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
 	}
