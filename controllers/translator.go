@@ -96,7 +96,7 @@ Do NOT add any commentary, labels, or extra text. Preserve original formatting (
 
 	// 构建OpenAI风格的请求体-这里同一使用openai风格
 	// 设置请求
-	openaiReq := AIRequest{ //这里信息设置两片信息
+	openaiReq := AIRequest{ //这里信息设置两片信息-第一片信息很关键
 		Model: req.Model,
 		Messages: []Message{
 			{

@@ -38,7 +38,7 @@ type Config struct { //标明这个配置文件是可以全局使用的
 	}
 	Local_Api struct {
 		ApiKey             string
-		BaseURL  string
+		BaseURL            string
 		LocationDailyLimit int
 	}
 	Translation_Api struct {
@@ -46,6 +46,11 @@ type Config struct { //标明这个配置文件是可以全局使用的
 		ApiKey   string
 		BaseURL  string
 		Model    string
+	}
+	Upload struct {
+		TotalSize int
+		FileSize  int
+		Storagepath string
 	}
 }
 
@@ -66,6 +71,7 @@ func InitConfig() {
 		log.Fatalf("Error unmarshalling config file: %v", err)
 	}
 	// LocalAPIKey = AppConfig.Api.LocalKey //设置定位的api密钥
+	initPath()
 	initDB()
 	initRedis()
 	runMigrations()

@@ -46,6 +46,10 @@ func SetupRouter() *gin.Engine {
 		// 翻译界面
 		page.GET("/translate", func(c *gin.Context) { c.HTML(200, "translator.html", nil) })
 		page.GET("/translate/history", func(c *gin.Context) { c.HTML(200, "translator_history.html", nil) })
+
+		//文件管理界面
+		page.GET("/files", func(c *gin.Context) { c.HTML(200, "upload.html", nil) })
+		page.GET("/files/manage", func(c *gin.Context) { c.HTML(200, "file_lists.html", nil) })
 	}
 
 	// 受保护的 API（数据接口，需要登录）
@@ -88,6 +92,12 @@ func SetupRouter() *gin.Engine {
 		api.GET("/translate/history", controllers.GetTranslationHistory)
 		api.DELETE("/translate/history/:id", controllers.DeleteTranslationHistory) //删除指定的记录
 		api.DELETE("/translate/history", controllers.ClearTranslationHistory)      //清空记录
+
+		//文件资源管理系统
+		api.POST("/files/upload",controllers.UploadFile)
+		api.GET("/files/:id",controllers.DownloadFile) // Get只需要获得文件id即可
+		api.DELETE("/files/:id",controllers.DeleteFile)
+		api.GET("/files/lists",controllers.ListMyFiles)
 
 	}
 	// 超级管理员系统

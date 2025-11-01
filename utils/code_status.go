@@ -224,7 +224,7 @@ func (cc *CodeCounter) countLinesFast(filename string) (int, int64, error) {
 	for {
 		n, e := f.Read(buf)
 		if n > 0 {
-			size += int64(n)
+			size += int64(n) //读取的字节数量
 			b := buf[:n]
 			lastByte = b[n-1]
 			// 计换行
@@ -277,7 +277,7 @@ func (cc *CodeCounter) PrintReport() {
 	fmt.Printf("📊 本项目Go-Web详细代码统计报告\n")
 	fmt.Printf("📁 目录: %s\n", cc.lastDir)
 	fmt.Println(strings.Repeat("=", 75))
-	fmt.Printf("%-15s %8s %12s %12s %8s\n", "语言", "文件数", "代码行数", "文件大小(KB)", "占比")
+	fmt.Printf("%-15s %8s %12s %12s %8s\n", "语言", "文件数", "代码行数", "文件大小", "占比")
 	fmt.Println(strings.Repeat("-", 75))
 
 	for _, item := range sorted {
@@ -285,14 +285,15 @@ func (cc *CodeCounter) PrintReport() {
 		if totalLines > 0 {
 			percentage = float64(item.Stats.Lines) / float64(totalLines) * 100
 		}
-		sizeKB := float64(item.Stats.Size) / 1024.0
-		fmt.Printf("%-15s %8d     %12d     %12.2f        %7.1f%%\n",
-			item.Lang, item.Stats.Files, item.Stats.Lines, sizeKB, percentage)
+		size, uint := chooseSize(item.Stats.Size) //统计它的大小来以为单位
+		fmt.Printf("%-15s %8d     %12d     %12.2f"+uint+"    %7.1f%%\n",
+			item.Lang, item.Stats.Files, item.Stats.Lines, size, percentage)
 	}
 
 	fmt.Println(strings.Repeat("=", 75))
-	fmt.Printf("%s: %d个文件数| %d行数 |%.2fKB\n",
-		"总计", totalFiles, totalLines, float64(totalSize)/1024.0)
+	total, totalUint := chooseSize(totalSize)
+	fmt.Printf("%s: %d个文件数| %d行数 |%.2f"+totalUint+"\n",
+		"总计", totalFiles, totalLines, total)
 
 	// 文件数量 Top5
 	fmt.Printf("\n🏆 文件数量排名:\n")
@@ -311,4 +312,21 @@ func (cc *CodeCounter) PrintReport() {
 		}
 	}
 	fmt.Println(strings.Repeat("=", 80))
+}
+func chooseSize(size int64) (float64, string) {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+	)
+	switch {
+	case size < KB:
+		return float64(size), "B " //保证统一
+	case size < MB:
+		return float64(size) / KB, "KB"
+	case size < GB:
+		return float64(size) / MB, "MB"
+	default:
+		return float64(size) / GB, "GB"
+	}
 }
