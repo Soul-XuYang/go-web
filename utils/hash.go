@@ -20,10 +20,7 @@ func CalculateHash(file io.Reader) (string, error) {  //接收一个 io.Reader �
 }
 
 
-// CopyWithHash 将 src 流复制到 dst，同时计算 sha256。
-// - maxSize>0 时启用上限保护（内部以 maxSize+1 读取，判断是否超限）
-// - expectedSize>0 时要求写入字节数必须等于它
-// 返回值：文件的 sha256 十六进制字符串、实际写入字节数、错误
+
 func CopyWithHash(dst io.Writer, src io.Reader, maxSize, expectedSize int64) (string, int64, error) {
 	hasher := sha256.New() // 创建一个新的 SHA256 哈希计算器
 	w := io.MultiWriter(dst, hasher) // 创建一个多路写入器 一是文件存储二是哈希计算器
@@ -36,7 +33,7 @@ func CopyWithHash(dst io.Writer, src io.Reader, maxSize, expectedSize int64) (st
 
 	written, err := io.Copy(w, r)
 	if err != nil {
-		return "", written, fmt.Errorf("copy failed: %w", err)
+		return "", written, fmt.Errorf("this file's copy failed: %w", err)
 	}
 
 	// 超限判断（用 > maxSize，因为我们读了 maxSize+1 触发检测）

@@ -129,6 +129,7 @@ func UploadFile(c *gin.Context) {
 	}
 	defer out.Close()
 
+	//每个文件有对应的Hash值
 	fileHash, written, err := utils.CopyWithHash(out, reader, maxLoad, header.Size) //边写入文件边读取其Hash值
 	if err != nil {                                                                 //依据结果写错误情况
 		_ = os.Remove(tmpRel)
@@ -140,20 +141,6 @@ func UploadFile(c *gin.Context) {
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "write file failed"})
 		}
-		return
-	}
-
-	// 去重（按内容+用户）
-	var cnt int64
-	global.DB.Model(&models.Files{}).
-		Where("hash = ? AND user_id = ?", fileHash, userID).
-		Count(&cnt)
-	if cnt > 0 {
-		_ = os.Remove(tmpRel)
-		c.JSON(http.StatusOK, &UploadResponse{
-			Msg:  "文件内容未变化，已存在相同文件。",
-			Size: utils.Get_size(written),
-		})
 		return
 	}
 
@@ -252,6 +239,21 @@ func DownloadFile(c *gin.Context) {
 	}
 	modTime := stat.ModTime() //获取文件的最后修改时间
 
+	// 先定义etag变量
+	etag := `W/"` + f.Hash + `"` // W/+"文件内容的哈希值"
+
+	// 这里是缓存验证机制
+	if ims := c.GetHeader("If-Modified-Since"); ims != "" { // 获取请求头的If-Modified-Since值
+		if t, perr := http.ParseTime(ims); perr == nil && !modTime.After(t) { //解析客户端发送的时间字符串-检查客户端缓存的时间是否晚于文件修改时间
+			// 响应头都是键值对形式
+			c.Header("ETag", etag)                                           //设置对应的ETag头和Last-Modified
+			c.Header("Last-Modified", modTime.UTC().Format(http.TimeFormat)) //将文件上次修改的时间传回去
+			c.Status(http.StatusNotModified)
+			return
+		}
+	}
+
+	// 只有在实际发送文件内容时才增加下载计数
 	if err := global.DB.
 		Model(&models.Files{}). //更新
 		Where("id = ? AND user_id = ?", f.ID, userID).
@@ -266,22 +268,11 @@ func DownloadFile(c *gin.Context) {
 		c.Header("X-Download-Count", strconv.FormatInt(newCnt, 10)) //只要找到文件就下载量+1
 	}
 
-	etag := `W/"` + f.Hash + `"` // W/+"文件内容的哈希值"
 	// 获取客户端即前端传来的ETag验证，获取其请求头并使用strings.Contains查找是否有对应的字串部分
 	if inm := c.GetHeader("If-None-Match"); inm != "" && strings.Contains(inm, f.Hash) {
 		c.Header("ETag", etag)
 		c.Status(http.StatusNotModified) //提前结束处理不发送文件内容
 		return
-	}
-	// 这里是缓存验证机制
-	if ims := c.GetHeader("If-Modified-Since"); ims != "" { // 获取请求头的If-Modified-Since值
-		if t, perr := http.ParseTime(ims); perr == nil && !modTime.After(t) { //解析客户端发送的时间字符串-检查客户端缓存的时间是否晚于文件修改时间
-			// 响应头都是键值对形式
-			c.Header("ETag", etag)                                           //设置对应的ETag头和Last-Modified
-			c.Header("Last-Modified", modTime.UTC().Format(http.TimeFormat)) //将文件上次修改的时间传回去
-			c.Status(http.StatusNotModified)
-			return
-		}
 	}
 
 	ct := f.FileType //获取文件的类型
@@ -369,6 +360,9 @@ func DeleteFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"msg": "deleted"})
 }
 
+
+
+
 // DTO结构
 type FileItem struct {
 	ID          uint      `json:"id"`
@@ -378,6 +372,8 @@ type FileItem struct {
 	Hash        string    `json:"hash"`
 	Path        string    `json:"path"` // 相对 key（不暴露真实磁盘根）
 	CreatedAt   time.Time `json:"created_at"`
+	Downloads    uint    `json:"downloads"`
+	FileInfo     string  `json:"fileinfo"`
 }
 
 type ListFilesResponse struct {
@@ -386,7 +382,6 @@ type ListFilesResponse struct {
 	PageSize int        `json:"page_size"`
 	Items    []FileItem `json:"items"`
 }
-
 // ListMyFiles godoc
 // @Summary      列出当前用户的文件
 // @Description  支持按关键字、扩展名、MIME、时间范围、大小范围筛选，分页返回；按 created_at 排序。
@@ -405,8 +400,8 @@ type ListFilesResponse struct {
 // @Param        order        query  string false "排序：共四种组合，两种排序方式-上传日期和文件大小 created_desc（默认）/created_asc/size_desc/size_asc"
 // @Success      200  {object}  ListFilesResponse
 // @Failure      401  {object}  ErrorResponse
-// @Router       /files/lists [get]
-func ListMyFiles(c *gin.Context) { //展示用户的所有文件
+// @Router       /files/lists [get]  
+func ListMyFiles(c *gin.Context) { //这里是展示用户的所有文件-并加有限制参数
 	userID := c.GetUint("user_id")
 	if userID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -522,6 +517,8 @@ func ListMyFiles(c *gin.Context) { //展示用户的所有文件
 			Hash:        r.Hash,
 			Path:        r.FilePath, // 相对 key，前端需要拼下载接口或你提供的 URL
 			CreatedAt:   r.CreatedAt,
+			Downloads:    r.Downloads, //下载数
+			FileInfo: r.FileInfo,
 		})
 	}
 

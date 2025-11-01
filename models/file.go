@@ -14,7 +14,7 @@ type Files struct {
 	FileSize   int64  `gorm:"not null"`
 	Downloads  uint   `gorm:"default:0"` // 下载数-配合redis缓存
 	Hash       string `gorm:"size:64;uniqueIndex"`
-	FileInfo   string
+	FileInfo   string 
 	// 这里上传时间就是UpdatedAt
 }
 

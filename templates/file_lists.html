@@ -3,12 +3,17 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>我的文件</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>个人文件界面</title>
     <link rel="stylesheet" href="/static/base.css" />
     <style>
         :root {
             --muted: #6b7a99;
+            --primary: #4a90e2;
+            /* 更新为按钮蓝色 */
+            --card-bg: #ffffff;
+            --border-color: rgba(17, 40, 85, .08);
+            --shadow: 0 8px 28px rgba(17, 40, 85, .10);
         }
 
         body {
@@ -17,48 +22,25 @@
             background: #f7faff;
         }
 
-        .top,
-        .wrap,
-        .below {
-            max-width: 1440px;
-            width: min(96vw, 1440px);
+        .wrap {
+            max-width: 960px;
+            width: 100%;
             margin: 0 auto;
         }
 
-        .top {
-            margin: 8px auto;
-            padding: 0 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .brand h1 {
-            margin: 0;
-            font-size: 1.35rem;
-        }
-
-        .wrap {
-            padding: 0 16px;
-            margin-top: 8px;
-        }
-
-        .panel {
-            width: 100%;
-            background: #fff;
-            border: 1px solid rgba(17, 40, 85, .08);
+        .panel,
+        .below {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 16px;
-            padding: 32px 26px;
-            box-shadow: 0 8px 28px rgba(17, 40, 85, .10);
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            min-height: 520px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            margin-top: 16px;
         }
 
         .panel h2 {
-            margin: 0 0 6px;
-            font-size: 1.22rem;
+            font-size: 1.35rem;
+            margin-bottom: 16px;
         }
 
         .row {
@@ -87,13 +69,13 @@
         }
 
         .item {
-            border: 1px solid rgba(17, 40, 85, .08);
             background: #fff;
+            border: 1px solid var(--border-color);
             border-radius: 12px;
             padding: 14px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
         }
 
         .item-head {
@@ -107,20 +89,23 @@
             background: var(--primary);
             border-color: var(--primary);
             color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
         }
 
         .btn-soft {
             background: #eaf3ff;
             border: 1px solid #cfe0ff;
-            color: #19427a;
+            color: #4a90e2;
+            /* 更改按钮颜色 */
             font-weight: 600;
+            padding: 8px 14px;
             border-radius: 10px;
-            height: 40px;
-            padding: 0 12px;
         }
 
-        .btn-soft:hover {
-            background: #dcecff;
+        .uname {
+            color: #42608f;
+            font-size: .9rem;
         }
 
         .btn-danger-soft {
@@ -128,13 +113,16 @@
             border: 1px solid #ffd6d6;
             color: #a72a2a;
             font-weight: 600;
+            padding: 8px 14px;
             border-radius: 10px;
-            height: 40px;
-            padding: 0 12px;
+        }
+
+        .btn-soft:hover {
+            background: #5d8eca;
         }
 
         .btn-danger-soft:hover {
-            background: #ffe8e8;
+            background: #bc5353;
         }
 
         .msg {
@@ -144,19 +132,19 @@
             background: #eef5ff;
             border: 1px solid #cfe0ff;
             color: #1f2a44;
-            min-height: 52px
+            min-height: 52px;
         }
 
         .msg.ok {
             background: #ebfff1;
             border-color: #c6f3d5;
-            color: #106b33
+            color: #106b33;
         }
 
         .msg.err {
             background: #fff2f2;
             border-color: #ffd6d6;
-            color: #a72a2a
+            color: #a72a2a;
         }
 
         .toolbar {
@@ -177,7 +165,7 @@
             grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
-        @media(max-width:860px) {
+        @media(max-width: 860px) {
             .actions-grid.cols-3 {
                 grid-template-columns: 1fr;
             }
@@ -186,20 +174,28 @@
         .below {
             margin: 16px auto 24px;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            gap: 24px;
-            flex-wrap: wrap
+            gap: 16px;
+            flex-wrap: wrap;
+            max-width: 960px;
+            width: 100%;
         }
 
         .below button {
             min-width: 220px;
-            border-radius: 12px;
-            height: 48px
+            border-radius: 10px;
+            height: 48px;
         }
 
-        .muted {
-            color: #6b7a99
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(17, 40, 85, .10);
+            background: #eef5ff;
         }
 
         input,
@@ -209,19 +205,27 @@
             border: 1px solid #cfe0ff;
             padding: 0 10px;
         }
+
+        .below .btn {
+            width: 45%;
+        }
     </style>
 </head>
 
 <body>
     <header class="top">
-        <div class="brand">
-            <h1>我的文件</h1>
+        <div class="brand" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <h1 style="margin: 0;">我的文件</h1>
+            <div class="userbox">
+                <div class="avatar" id="avatar">U</div>
+                <span class="uname" id="username">加载中…</span>
+            </div>
         </div>
     </header>
 
     <main class="wrap">
         <section class="panel">
-            <h2>文件列表</h2>
+            <h2>个人的文件列表</h2>
 
             <!-- 工具条：筛选 + 分页设置 -->
             <div class="toolbar">
@@ -239,7 +243,6 @@
                         <option value="size_desc">按大小(大→小)</option>
                         <option value="size_asc">按大小(小→大)</option>
                     </select>
-                    <button id="btnSearch" class="btn-primary" style="height:34px;border-radius:8px;">搜索</button>
                 </div>
                 <div class="row">
                     <span class="chip">页码：<b id="chipPage">1</b></span>
@@ -253,17 +256,24 @@
                             <option value="100">100</option>
                         </select>
                     </label>
-                    <button id="btnRefresh" class="btn-soft">刷新</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button id="btnRefresh" class="btn-primary"
+                            style="padding: 6px 12px; font-size: 0.9rem;">刷新</button>
+                        <button id="btnSearch" class="btn-primary"
+                            style="padding: 6px 12px; font-size: 0.9rem;">搜索</button>
+                    </div>
                 </div>
             </div>
 
             <div id="status" class="msg" style="display:none;"></div>
             <div id="list" class="list"></div>
 
-            <div class="row" style="justify-content:space-between;margin-top:8px;">
-                <button id="btnPrev" class="btn-primary" style="min-width:60px;">上一页</button>
-                <button id="btnNext" class="btn-primary" style="min-width:60px;">下一页</button>
+            <div
+                style="display: flex; justify-content: space-between; width: 100%; max-width: 400px; margin: 0 auto; gap: 32px;">
+                <button id="btnPrev" class="btn-primary" style="min-width: 100px;">上一页</button>
+                <button id="btnNext" class="btn-primary" style="min-width: 100px;">下一页</button>
             </div>
+
         </section>
     </main>
 
@@ -274,14 +284,16 @@
 
     <script>
         const $ = s => document.querySelector(s);
-        const API_LIST = '/api/files';
+        const API_LIST = '/api/files/lists';
         const API_FILE = id => `/api/files/${id}`;
+        const API_ME = '/api/me';
 
         function getStoredToken() {
             const t = localStorage.getItem('token');
             if (!t) return null;
             return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t);
         }
+
         async function authFetch(url, opts = {}) {
             const token = getStoredToken();
             const headers = Object.assign(token ? { Authorization: token } : {}, opts.headers || {});
@@ -289,12 +301,14 @@
             if (r.status === 401) { localStorage.removeItem('token'); location.href = '/auth/login'; throw new Error('Unauthorized'); }
             return r;
         }
+
         function setStatus(text, ok) {
             const el = $('#status');
             el.style.display = 'block';
             el.textContent = text;
             el.className = 'msg' + (ok === true ? ' ok' : ok === false ? ' err' : '');
         }
+
         function human(n) {
             n = Number(n || 0);
             if (n < 1024) return n + ' B';
@@ -329,6 +343,12 @@
             return p.toString();
         }
 
+        // 格式化时间，只显示时分秒
+        function formatTime(time) {
+            const created = new Date(time);
+            return created.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
         function renderList(items) {
             const box = $('#list'); box.innerHTML = '';
             if (!items || items.length === 0) {
@@ -339,16 +359,21 @@
                 const filename = it.filename;
                 const size = it.size_bytes;
                 const mime = it.content_type || '';
-                const created = (it.created_at || '').toString().replace('T', ' ').replace('Z', '');
+                const created = formatTime(it.created_at);  // 使用新的时间格式
+                const downloadCount = it.downloads; // 获取下载次数
+                const fileDescription = it.fileinfo || '无描述'; // 获取文件描述
+
                 const wrap = document.createElement('div'); wrap.className = 'item';
 
                 const head = document.createElement('div'); head.className = 'item-head';
                 head.innerHTML = `
-          <div class="row" style="gap:8px;">
-            <b>${filename}</b> | <span class="muted">${human(size)}</span> | <span class="muted">${mime}</span>
-          </div>
-          <div class="muted"><span class="label">上传时间：</span>${created}</div>
-        `;
+                  <div class="row" style="gap:8px;">
+                    <b>${filename}</b> | <span class="muted">${human(size)}</span> | <span class="muted">${mime}</span>
+                  </div>
+                  <div class="muted"><span class="label">上传时间：</span>${created}</div>
+                  <div class="muted"><span class="label">下载次数：</span>${downloadCount}</div>
+                  <div class="muted"><span class="label">文件描述：</span>${fileDescription}</div>
+                `;
                 wrap.appendChild(head);
 
                 const grid = document.createElement('div'); grid.className = 'actions-grid cols-3';
@@ -365,7 +390,7 @@
                 btnDownload.target = '_blank';
                 btnDownload.rel = 'noopener';
 
-                const btnDel = document.createElement('button');
+                const btnDel = document.createElement('a');
                 btnDel.className = 'btn-danger-soft'; btnDel.textContent = '删除';
                 btnDel.onclick = async () => {
                     if (!confirm(`确定删除「${filename}」吗？`)) return;
@@ -402,8 +427,22 @@
                 renderList([]); setStatus('加载失败：' + e.message, false);
             }
         }
+        function initialOf(name) {
+            if (!name) return 'U'; // 如果没有用户名，返回 'U'
+            const s = String(name).trim();
+            return s.length > 0 ? s[0].toUpperCase() : 'U'; // 返回大写字母
+        }
+        (async function () {
+            try {
+                const r = await authFetch(API_ME);
+                const d = await r.json().catch(() => ({}));
+                const uname = d.username || d.name || 'User';
+                $('#username').textContent = uname;
+                $('#avatar').textContent = initialOf(uname);
+            } catch { }
+        })();
 
-        // 事件
+        // 事件绑定部分
         $('#btnPrev').onclick = () => { if (page > 1) loadList(page - 1); };
         $('#btnNext').onclick = () => loadList(page + 1);
         $('#btnRefresh').onclick = () => loadList(page);
@@ -412,7 +451,6 @@
         $('#gotoUpload').onclick = () => location.href = '/page/files';
         $('#backHome').onclick = () => location.href = '/page/shell';
 
-        // 初始化
         loadList(1);
     </script>
 </body>

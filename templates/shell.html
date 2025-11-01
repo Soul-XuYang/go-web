@@ -122,23 +122,39 @@
             color: #fff;
         }
 
-        /* 底部按钮区 */
         .footer {
             max-width: 960px;
+            /* Keep it the same for consistency */
             margin: 6px auto 24px;
             padding: 0 16px;
             display: flex;
             justify-content: center;
             gap: 8px;
             flex-wrap: wrap;
+            width: 100%;
+            /* Add a wrapper card for controlling width */
+            box-sizing: border-box;
         }
 
+        /* Create a card wrapper for the logout button */
+        .footer-card {
+            width: 100%;
+            /* Allow full width inside the footer */
+            max-width: 240px;
+            /* Limit the max width */
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Adjust the logout button */
         #logout {
-            height: 32px;
-            padding: 0 12px;
-            min-width: 96px;
+            height: 42px;
+            padding: 0 16px;
+            min-width: 120px;
+            font-size: 1rem;
             border-radius: 999px;
-            font-size: .92rem;
+            line-height: 42px;
+            width: 100%;
         }
     </style>
 </head>
@@ -193,8 +209,11 @@
 
     <!-- 底部：退出登录 -->
     <div class="footer">
-        <button id="logout">退出登录</button>
+        <div class="footer-card">
+            <button id="logout">退出登录</button>
+        </div>
     </div>
+
 
     <script>
         (function () {
