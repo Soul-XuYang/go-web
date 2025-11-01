@@ -1,6 +1,6 @@
 app:
   name: Go-Web # 应用程序的名称
-  port: :3001 # 监听的程序端口
+  port: :3000 # 监听的程序端口
 
 database: # 数据库的配置
   # 通过 TCP 连接本地 MySQL 的 3306 端口 root 是本地数据库的密码  - @tcp(127.0.0.1:3306) - 通过 TCP 连接本地 MySQL 的 3306 端口
