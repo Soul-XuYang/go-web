@@ -47,6 +47,9 @@ func SetupRouter() *gin.Engine {
 		page.GET("/translate", func(c *gin.Context) { c.HTML(200, "translator.html", nil) })
 		page.GET("/translate/history", func(c *gin.Context) { c.HTML(200, "translator_history.html", nil) })
 
+		// 计算器界面
+		page.GET("/calculator", func(c *gin.Context) { c.HTML(200, "calculator.html", nil) })
+
 		//文件管理界面
 		page.GET("/files", func(c *gin.Context) { c.HTML(200, "upload.html", nil) })
 		page.GET("/files/manage", func(c *gin.Context) { c.HTML(200, "file_lists.html", nil) })
@@ -94,10 +97,13 @@ func SetupRouter() *gin.Engine {
 		api.DELETE("/translate/history", controllers.ClearTranslationHistory)      //清空记录
 
 		//文件资源管理系统
-		api.POST("/files/upload",controllers.UploadFile)
-		api.GET("/files/:id",controllers.DownloadFile) // Get只需要获得文件id即可
-		api.DELETE("/files/:id",controllers.DeleteFile)
-		api.GET("/files/lists",controllers.ListMyFiles)
+		api.POST("/files/upload", controllers.UploadFile)
+		api.GET("/files/:id", controllers.DownloadFile) // Get只需要获得文件id即可
+		api.DELETE("/files/:id", controllers.DeleteFile)
+		api.GET("/files/lists", controllers.ListMyFiles)
+
+		// 计算器模块
+		api.POST("/calculator/calculate", controllers.Calculate)
 
 	}
 	// 超级管理员系统

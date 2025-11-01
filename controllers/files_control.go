@@ -93,7 +93,7 @@ func UploadFile(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "This is an empty file,can't upload"})
 		return
 	}
-	contentType := http.DetectContentType(sniff[:n]) //使用
+	contentType := http.DetectContentType(sniff[:n]) //后端这个函数来检测
 	reader := io.MultiReader(bytes.NewReader(sniff[:n]), file)
 
 	// 配额（写盘前）判断大小

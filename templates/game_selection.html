@@ -17,7 +17,7 @@
 
         /* 顶部：标题 + 用户展示 */
         .top {
-            max-width: 960px;
+            max-width: 1400px;
             margin: 20px auto 12px;
             padding: 0 16px;
             display: flex;
@@ -61,12 +61,12 @@
 
         /* 游戏卡片区 */
         .wrap {
-            max-width: 960px;
+            max-width: 1400px;
             padding: 0 16px;
             margin: 28px auto;
             display: grid;
-            gap: 24px;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 28px;
+            grid-template-columns: repeat(3, 1fr);
             align-items: stretch;
         }
 
@@ -198,13 +198,18 @@
         }
 
         .footer {
-            max-width: 960px;
+            max-width: 1400px;
             margin: 6px auto 24px;
             padding: 0 16px;
             display: flex;
             justify-content: center;
             gap: 16px;
             flex-wrap: wrap;
+        }
+
+        .footer .btn-game {
+            min-width: 160px;
+            max-width: 200px;
         }
 
         @media (max-width:900px) {
@@ -218,7 +223,7 @@
 <body>
     <header class="top">
         <div class="brand">
-            <h1>游戏选择中心</h1>
+            <h1>应用选择界面</h1>
         </div>
         <div class="userbox">
             <div class="avatar" id="avatar">U</div>
@@ -254,7 +259,7 @@
             </ul>
             <div class="game-actions">
                 <button id="translate" class="btn-game btn-play">翻译界面</button>
-                <button id="translate_history" class="btn-game btn-ranks">查看历史记录</button>
+                <button id="translate_history" class="btn-game btn-ranks">历史记录</button>
             </div>
         </section>
 
@@ -271,7 +276,7 @@
 
             <div style="margin-top:10px; display:flex; gap:10px; justify-content:center;">
                 <button id="btnWeatherRefresh" class="btn-game">刷新</button>
-                <button id="btnWeatherTop10" class="btn-game btn-ranks">查看天气 Top10</button>
+                <button id="btnWeatherTop10" class="btn-game btn-ranks">天气Top10</button>
             </div>
         </section>
 
@@ -288,6 +293,21 @@
             <div class="game-actions">
                 <button id="playMapGame" class="btn-game btn-play">开始游戏</button>
                 <button id="mapRanks" class="btn-game btn-ranks">查看排行</button>
+            </div>
+        </section>
+
+        <!-- 计算器 -->
+        <section class="game-card">
+            <h2>🧮 计算器</h2>
+            <p class="game-description">支持小数点的四则运算计算器，界面简洁易用！</p>
+            <ul class="game-features">
+                <li>基本四则运算</li>
+                <li>支持小数点计算</li>
+                <li>支持括号运算</li>
+                <li>键盘快捷操作</li>
+            </ul>
+            <div class="game-actions">
+                <button id="openCalculator" class="btn-game btn-play">打开计算器</button>
             </div>
         </section>
     </main>
@@ -518,6 +538,7 @@
             bind('btnWeatherRefresh', loadWeatherSummary);
             bind('translate', () => location.href = '/page/translate');
             bind('translate_history', () => location.href = '/page/translate/history');
+            bind('openCalculator', () => location.href = '/page/calculator');
 
 
             // init
