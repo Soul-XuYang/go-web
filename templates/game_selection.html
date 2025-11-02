@@ -310,6 +310,21 @@
                 <button id="openCalculator" class="btn-game btn-play">打开计算器</button>
             </div>
         </section>
+
+        <!-- 2048游戏 -->
+        <section class="game-card">
+            <h2>🎮 2048 游戏</h2>
+            <p class="game-description">经典的数字合并益智游戏，挑战你的策略思维！</p>
+            <ul class="game-features">
+                <li>简单易上手</li>
+                <li>策略性强</li>
+                <li>支持触屏操作</li>
+                <li>分数保存记录</li>
+            </ul>
+            <div class="game-actions">
+                <button id="open2048" class="btn-game btn-play">开始游戏</button>
+            </div>
+        </section>
     </main>
 
     <div class="footer">
@@ -539,6 +554,7 @@
             bind('translate', () => location.href = '/page/translate');
             bind('translate_history', () => location.href = '/page/translate/history');
             bind('openCalculator', () => location.href = '/page/calculator');
+            bind('open2048', () => location.href = '/page/game/2048');
 
 
             // init

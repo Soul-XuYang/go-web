@@ -34,3 +34,17 @@ type Game_Map_Time struct {
 }
 
 func (Game_Map_Time) TableName() string { return "game_map_times" }
+
+// 2048游戏分数表
+type Game_2048_Score struct {
+	ID        uint           `gorm:"primaryKey"`
+	UserID    uint           `gorm:"index;not null"` // 外键
+	UserName  string         `gorm:"not null"`
+	User      Users          `gorm:"foreignKey:UserID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Score     int            `gorm:"not null"` // 2048游戏分数
+	CreatedAt time.Time      `gorm:"autoCreateTime"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime"`
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (Game_2048_Score) TableName() string { return "game_2048_scores" }

@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// 双栈法计算表达式-中缀表达式转后缀表达式-计算后缀表达式
+
 // CalculatorRequest 计算器请求结构
 type CalculatorRequest struct {
 	Expression string `json:"expression" binding:"required"` // 计算表达式

@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>2048 游戏</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        :root {
+            --muted: #7d9ac2;
+            --primary: #3b82f6;
+            --cell-size: 100px;
+            --cell-gap: 14px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC";
+            background: #f5f7fb;
+            color: #0f172a;
+        }
+
+        /* 顶部用户信息 */
+        .top {
+            max-width: 800px;
+            margin: 16px auto 12px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(0, 0, 0, .06);
+            background: rgba(255, 255, 255, .9);
+        }
+
+        .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .uname {
+            color: var(--muted);
+            font-size: .95rem;
+        }
+
+        /* 主容器 - 横向布局 */
+        .wrap {
+            max-width: 1200px;
+            margin: 16px auto;
+            padding: 0 16px;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        /* 左侧游戏棋盘区域 */
+        .game-area {
+            flex: 0 0 auto;
+        }
+
+        /* 右侧控制区域 */
+        .control-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            border: 1px solid rgba(0, 0, 0, .06);
+            border-radius: 16px;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, .06);
+        }
+
+        .card h2 {
+            margin: 0 0 16px;
+            font-size: 1.15rem;
+        }
+
+        /* 游戏棋盘专用卡片 - 更大的空间 */
+        .card-game {
+            border: 1px solid rgba(0, 0, 0, .06);
+            border-radius: 16px;
+            background: #fff;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, .06);
+        }
+
+        .card-game h2 {
+            margin: 0 0 20px;
+            font-size: 1.25rem;
+            text-align: center;
+        }
+
+        /* 分数卡片 */
+        .score-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .game-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #776e65;
+            margin: 0;
+        }
+
+        .scores-container {
+            display: flex;
+            gap: 15px;
+        }
+
+        .score-box {
+            background: #bbada0;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 70px;
+        }
+
+        .score-label {
+            font-size: 0.8rem;
+            color: #eee4da;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* 游戏说明 */
+        .game-intro {
+            color: rgba(0, 0, 0, 0.7);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        /* 控制按钮 */
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            height: 38px;
+            border: none;
+            border-radius: 8px;
+            padding: 0 20px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: #8f7a66;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #9f8a76;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        /* 游戏棋盘容器 */
+        .game-board {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .grid-container {
+            background: #bbada0;
+            border-radius: 10px;
+            padding: var(--cell-gap);
+            position: relative;
+            width: fit-content;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, var(--cell-size));
+            grid-template-rows: repeat(4, var(--cell-size));
+            gap: var(--cell-gap);
+            position: relative;
+            width: fit-content;
+            height: fit-content;
+        }
+
+        .cell {
+            background: rgba(238, 228, 218, 0.35);
+            border-radius: 4px;
+            width: var(--cell-size);
+            height: var(--cell-size);
+        }
+
+        .tile {
+            position: absolute;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: var(--cell-size);
+            height: var(--cell-size);
+            border-radius: 4px;
+            font-size: 2rem;
+            font-weight: 700;
+            transition: all 0.15s ease-in-out;
+            left: 0;
+            top: 0;
+        }
+
+        /* 数字方块颜色 */
+        .tile-2 {
+            background: #eee4da;
+            color: #776e65;
+        }
+
+        .tile-4 {
+            background: #ede0c8;
+            color: #776e65;
+        }
+
+        .tile-8 {
+            background: #f2b179;
+            color: #f9f6f2;
+        }
+
+        .tile-16 {
+            background: #f59563;
+            color: #f9f6f2;
+        }
+
+        .tile-32 {
+            background: #f67c5f;
+            color: #f9f6f2;
+        }
+
+        .tile-64 {
+            background: #f65e3b;
+            color: #f9f6f2;
+        }
+
+        .tile-128 {
+            background: #edcf72;
+            color: #f9f6f2;
+            font-size: 1.75rem;
+        }
+
+        .tile-256 {
+            background: #edcc61;
+            color: #f9f6f2;
+            font-size: 1.75rem;
+        }
+
+        .tile-512 {
+            background: #edc850;
+            color: #f9f6f2;
+            font-size: 1.75rem;
+        }
+
+        .tile-1024 {
+            background: #edc53f;
+            color: #f9f6f2;
+            font-size: 1.5rem;
+        }
+
+        .tile-2048 {
+            background: #edc22e;
+            color: #f9f6f2;
+            font-size: 1.5rem;
+        }
+
+        .tile-super {
+            background: #3c3a32;
+            color: #f9f6f2;
+            font-size: 1.25rem;
+        }
+
+        .game-message {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(238, 228, 218, 0.95);
+            border-radius: 8px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .game-message.show {
+            display: flex;
+        }
+
+        .game-message h2 {
+            font-size: 2.5rem;
+            color: #776e65;
+            margin: 0 0 20px;
+        }
+
+        .game-message p {
+            font-size: 1.1rem;
+            color: #776e65;
+            margin-bottom: 30px;
+        }
+
+        .footer {
+            text-align: center;
+        }
+
+        @media (max-width: 900px) {
+            .wrap {
+                flex-direction: column;
+            }
+
+            .game-area,
+            .control-area {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 600px) {
+            :root {
+                --cell-size: 70px;
+                --cell-gap: 10px;
+            }
+
+            .card-game {
+                padding: 20px;
+            }
+
+            .game-title {
+                font-size: 1.5rem;
+            }
+
+            .score-box {
+                padding: 8px 15px;
+                min-width: 60px;
+            }
+
+            .score-label {
+                font-size: 0.7rem;
+            }
+
+            .score-value {
+                font-size: 1.2rem;
+            }
+
+            .tile {
+                font-size: 1.5rem;
+            }
+
+            .tile-128,
+            .tile-256,
+            .tile-512 {
+                font-size: 1.3rem;
+            }
+
+            .tile-1024,
+            .tile-2048 {
+                font-size: 1.1rem;
+            }
+
+            .tile-super {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="top">
+        <div class="brand">
+            <h1>2048游戏界面</h1>
+        </div>
+        <div class="userbox">
+            <div class="avatar" id="avatar">U</div>
+            <span class="uname" id="username">加载中…</span>
+        </div>
+    </header>
+
+    <main class="wrap">
+        <!-- 左侧：游戏棋盘 -->
+        <div class="game-area">
+            <div class="card-game">
+                <h2>Go-web 2048游戏棋盘🎮</h2>
+                <div class="game-board">
+                    <div class="grid-container">
+                        <div class="grid" id="grid">
+                            <!-- 背景格子 -->
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                            <div class="cell"></div>
+                        </div>
+
+                        <div class="game-message" id="gameMessage">
+                            <h2 id="messageTitle">游戏结束！</h2>
+                            <p id="messageText">最终分数: <span id="finalScore">0</span></p>
+                            <button class="btn btn-primary" id="restartBtn">再来一局</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：分数和控制 -->
+        <div class="control-area">
+            <!-- 分数卡片 -->
+            <div class="card">
+                <div class="score-card">
+                    <h1 class="game-title">2048</h1>
+                    <div class="scores-container">
+                        <div class="score-box">
+                            <div class="score-label">分数</div>
+                            <div class="score-value" id="score">0</div>
+                        </div>
+                        <div class="score-box">
+                            <div class="score-label">最佳</div>
+                            <div class="score-value" id="best">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 说明卡片 -->
+            <div class="card">
+                <h2>游戏说明</h2>
+                <p class="game-intro">
+                    <strong>使用方向键移动方块！</strong><br>
+                    当两个相同数字的方块碰撞时，它们会合并成一个。<br>
+                    目标是达到 <strong>2048</strong>！
+                </p>
+            </div>
+
+            <!-- 控制按钮卡片 -->
+            <div class="card">
+                <h2>游戏控制</h2>
+                <div class="controls">
+                    <button class="btn btn-primary" id="newGameBtn">新游戏</button>
+                    <button class="btn btn-success" id="saveScoreBtn" style="display: none;">保存分数</button>
+                    <button class="btn btn-secondary" id="backBtn">返回游戏中心</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            const gridSize = 4;
+            let board = [];
+            let score = 0;
+            let bestScore = 0;
+            let gameOver = false;
+            let gameWon = false;
+
+            // DOM 元素
+            const gridEl = document.getElementById('grid');
+            const scoreEl = document.getElementById('score');
+            const bestEl = document.getElementById('best');
+            const gameMessageEl = document.getElementById('gameMessage');
+            const messageTitleEl = document.getElementById('messageTitle');
+            const messageTextEl = document.getElementById('messageText');
+            const finalScoreEl = document.getElementById('finalScore');
+            const saveScoreBtnEl = document.getElementById('saveScoreBtn');
+
+            // 获取token
+            function getStoredToken() {
+                const t = localStorage.getItem('token');
+                if (!t) return null;
+                return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t);
+            }
+
+            // 带认证的fetch
+            async function authFetch(url, opts = {}) {
+                const token = getStoredToken();
+                const headers = Object.assign(
+                    { 'Content-Type': 'application/json' },
+                    token ? { 'Authorization': token } : {},
+                    opts.headers || {}
+                );
+                const r = await fetch(url, { credentials: 'include', ...opts, headers });
+                if (r.status === 401) {
+                    localStorage.removeItem('token');
+                    location.href = '/auth/login';
+                    throw new Error('Unauthorized');
+                }
+                return r;
+            }
+
+            // 加载用户信息
+            function initialOf(name) {
+                if (!name) return 'U';
+                const s = String(name).trim();
+                return s ? s[0].toUpperCase() : 'U';
+            }
+
+            async function loadMe() {
+                try {
+                    const r = await authFetch('/api/me');
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    const d = await r.json().catch(() => ({}));
+                    const uname = d.username || d.name || 'unknown';
+                    document.getElementById('username').textContent = uname;
+                    document.getElementById('avatar').textContent = initialOf(uname);
+                } catch (err) {
+                    console.error('加载用户信息失败：', err);
+                }
+            }
+
+            // 初始化游戏
+            function initGame() {
+                board = Array(gridSize).fill(null).map(() => Array(gridSize).fill(0));
+                score = 0;
+                gameOver = false;
+                gameWon = false;
+                updateScore();
+                clearTiles();
+                hideMessage();
+                addRandomTile();
+                addRandomTile();
+                renderBoard();
+                saveScoreBtnEl.style.display = 'none';
+            }
+
+            // 添加随机方块
+            function addRandomTile() {
+                const emptyCells = [];
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        if (board[i][j] === 0) {
+                            emptyCells.push({ row: i, col: j });
+                        }
+                    }
+                }
+
+                if (emptyCells.length > 0) {
+                    const { row, col } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    board[row][col] = Math.random() < 0.9 ? 2 : 4;
+                }
+            }
+
+            // 清除所有方块
+            function clearTiles() {
+                const tiles = gridEl.querySelectorAll('.tile');
+                tiles.forEach(tile => tile.remove());
+            }
+
+            // 渲染棋盘
+            function renderBoard() {
+                clearTiles();
+                const cellSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+                const cellGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-gap'));
+
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        if (board[i][j] !== 0) {
+                            createTile(board[i][j], i, j, cellSize, cellGap);
+                        }
+                    }
+                }
+            }
+
+            // 创建方块
+            function createTile(value, row, col, cellSize, cellGap) {
+                const tile = document.createElement('div');
+                tile.className = `tile tile-${value > 2048 ? 'super' : value}`;
+                tile.textContent = value;
+                // 关键修复：数字方块的位置要相对于grid容器，不包含grid-container的padding
+                tile.style.left = `${col * (cellSize + cellGap)}px`;
+                tile.style.top = `${row * (cellSize + cellGap)}px`;
+                gridEl.appendChild(tile);
+            }
+
+            // 更新分数
+            function updateScore() {
+                scoreEl.textContent = score;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestEl.textContent = bestScore;
+                    localStorage.setItem('best2048Score', bestScore);
+                }
+            }
+
+            // 移动逻辑
+            function move(direction) {
+                if (gameOver) return false;
+
+                let moved = false;
+
+                if (direction === 'left') {
+                    for (let i = 0; i < gridSize; i++) {
+                        const row = slideAndMerge(board[i]);
+                        board[i] = row.tiles;
+                        if (row.moved) moved = true;
+                        score += row.scoreGained;
+                    }
+                } else if (direction === 'right') {
+                    for (let i = 0; i < gridSize; i++) {
+                        const row = slideAndMerge(board[i].slice().reverse());
+                        board[i] = row.tiles.reverse();
+                        if (row.moved) moved = true;
+                        score += row.scoreGained;
+                    }
+                } else if (direction === 'up') {
+                    for (let j = 0; j < gridSize; j++) {
+                        const col = board.map(row => row[j]);
+                        const result = slideAndMerge(col);
+                        for (let i = 0; i < gridSize; i++) {
+                            board[i][j] = result.tiles[i];
+                        }
+                        if (result.moved) moved = true;
+                        score += result.scoreGained;
+                    }
+                } else if (direction === 'down') {
+                    for (let j = 0; j < gridSize; j++) {
+                        const col = board.map(row => row[j]).reverse();
+                        const result = slideAndMerge(col);
+                        for (let i = 0; i < gridSize; i++) {
+                            board[i][j] = result.tiles.reverse()[i];
+                        }
+                        if (result.moved) moved = true;
+                        score += result.scoreGained;
+                    }
+                }
+
+                if (moved) {
+                    updateScore();
+                    addRandomTile();
+                    renderBoard();
+
+                    // 检查是否达到2048
+                    if (!gameWon && checkWin()) {
+                        gameWon = true;
+                        showMessage('恭喜获胜！', `您达到了 2048！分数: ${score}`);
+                        saveScoreBtnEl.style.display = 'inline-block';
+                    }
+
+                    // 检查游戏是否结束
+                    if (isGameOver()) {
+                        gameOver = true;
+                        showMessage('游戏结束！', `最终分数: ${score}`);
+                        saveScoreBtnEl.style.display = 'inline-block';
+                    }
+                }
+
+                return moved;
+            }
+
+            // 滑动和合并
+            function slideAndMerge(tiles) {
+                let scoreGained = 0;
+                let moved = false;
+                const original = [...tiles];
+
+                // 移除0
+                let filtered = tiles.filter(x => x !== 0);
+
+                // 合并相同的
+                const merged = [];
+                for (let i = 0; i < filtered.length; i++) {
+                    if (i < filtered.length - 1 && filtered[i] === filtered[i + 1]) {
+                        merged.push(filtered[i] * 2);
+                        scoreGained += filtered[i] * 2;
+                        i++;
+                    } else {
+                        merged.push(filtered[i]);
+                    }
+                }
+
+                // 填充0
+                while (merged.length < gridSize) {
+                    merged.push(0);
+                }
+
+                // 检查是否有移动
+                for (let i = 0; i < gridSize; i++) {
+                    if (original[i] !== merged[i]) {
+                        moved = true;
+                        break;
+                    }
+                }
+
+                return { tiles: merged, moved, scoreGained };
+            }
+
+            // 检查是否获胜
+            function checkWin() {
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        if (board[i][j] === 2048) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            // 检查游戏是否结束
+            function isGameOver() {
+                // 检查是否有空格
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        if (board[i][j] === 0) return false;
+                    }
+                }
+
+                // 检查是否有相邻的相同方块
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        const current = board[i][j];
+                        if ((j < gridSize - 1 && current === board[i][j + 1]) ||
+                            (i < gridSize - 1 && current === board[i + 1][j])) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            // 显示消息
+            function showMessage(title, text) {
+                messageTitleEl.textContent = title;
+                messageTextEl.innerHTML = text;
+                finalScoreEl.textContent = score;
+                gameMessageEl.classList.add('show');
+            }
+
+            // 隐藏消息
+            function hideMessage() {
+                gameMessageEl.classList.remove('show');
+            }
+
+            // 保存分数到服务器
+            async function saveScore() {
+                if (score === 0) {
+                    alert('分数为0，无法保存！');
+                    return;
+                }
+
+                try {
+                    const response = await authFetch('/api/game/2048/save', {
+                        method: 'POST',
+                        body: JSON.stringify({ score: score })
+                    });
+
+                    const data = await response.json();
+                    if (response.ok) {
+                        alert('分数保存成功！');
+                        saveScoreBtnEl.style.display = 'none';
+                    } else {
+                        alert(data.error || '保存失败');
+                    }
+                } catch (err) {
+                    console.error('保存分数失败：', err);
+                    alert('保存失败，请稍后重试');
+                }
+            }
+
+            // 键盘事件
+            document.addEventListener('keydown', (e) => {
+                if (gameMessageEl.classList.contains('show')) return;
+
+                const keyMap = {
+                    'ArrowLeft': 'left',
+                    'ArrowRight': 'right',
+                    'ArrowUp': 'up',
+                    'ArrowDown': 'down'
+                };
+
+                if (keyMap[e.key]) {
+                    e.preventDefault();
+                    move(keyMap[e.key]);
+                }
+            });
+
+            // 触摸事件（移动端支持）
+            let touchStartX, touchStartY;
+            gridEl.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            });
+
+            gridEl.addEventListener('touchend', (e) => {
+                if (!touchStartX || !touchStartY) return;
+
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+
+                const dx = touchEndX - touchStartX;
+                const dy = touchEndY - touchStartY;
+
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    move(dx > 0 ? 'right' : 'left');
+                } else {
+                    move(dy > 0 ? 'down' : 'up');
+                }
+
+                touchStartX = null;
+                touchStartY = null;
+            });
+
+            // 按钮事件
+            document.getElementById('newGameBtn').addEventListener('click', initGame);
+            document.getElementById('restartBtn').addEventListener('click', () => {
+                hideMessage();
+                initGame();
+            });
+            document.getElementById('saveScoreBtn').addEventListener('click', saveScore);
+            document.getElementById('backBtn').addEventListener('click', () => {
+                location.href = '/page/game/selection';
+            });
+
+            // 加载最佳分数
+            const saved = localStorage.getItem('best2048Score');
+            if (saved) {
+                bestScore = parseInt(saved);
+                bestEl.textContent = bestScore;
+            }
+
+            // 初始化
+            (async function init() {
+                await loadMe();
+                initGame();
+            })();
+        })();
+    </script>
+</body>
+
+</html>

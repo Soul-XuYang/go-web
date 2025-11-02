@@ -110,18 +110,44 @@
             min-width: 0;
         }
 
-        /* 大号输入与按钮 */
+        /* 大号输入 */
         #guessInput {
-            height: 64px;
+            height: 56px;
             font-size: 1.15rem;
             padding: 0 16px;
             border-radius: 12px;
+            width: 100%;
+        }
+
+        /* 按钮统一高度 */
+        #btnGuess,
+        #btnQuick,
+        #btnClear {
+            height: 50px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
         }
 
         #btnGuess {
-            height: 64px;
-            min-width: 184px;
-            border-radius: 12px;
+            flex: 2;
+            min-width: 0;
+        }
+
+        #btnQuick,
+        #btnClear {
+            flex: 1;
+            min-width: 0;
+        }
+
+        #btnClear {
+            background: #6b7280;
+            border-color: #6b7280;
+        }
+
+        #btnClear:hover {
+            background: #4b5563;
+            border-color: #4b5563;
         }
 
         .stat {
@@ -177,8 +203,8 @@
 
         .actions {
             display: flex;
-            gap: 10px;
-            margin-top: 6px;
+            gap: 12px;
+            margin-top: 0;
         }
 
         .btn-primary {
@@ -240,17 +266,17 @@
             <h2>开始猜数字</h2>
             <p class="sub">系统会生成 1–100 的整数。共三轮，轮次越靠后可用次数越少。</p>
 
-            <div class="row">
-                <input id="guessInput" class="grow" type="number" min="1" max="100" placeholder="输入 1-100 的整数" />
+            <div>
+                <input id="guessInput" type="number" min="1" max="100" placeholder="输入 1-100 的整数" />
+            </div>
+
+            <div class="actions">
                 <button id="btnGuess" class="btn-primary">提交</button>
+                <button id="btnQuick" class="btn-primary">随机试一个</button>
+                <button id="btnClear">清空</button>
             </div>
 
             <div id="feedback" class="msg">在上方输入 1–100 的整数并提交。</div>
-
-            <div class="actions">
-                <button id="btnQuick" class="btn-primary">随机试一个</button>
-                <button id="btnClear" class="btn-primary">清空</button>
-            </div>
         </section>
 
         <!-- 右：进度与分数 + 历史最佳 -->

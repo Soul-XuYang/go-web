@@ -42,6 +42,7 @@ func runMigrations() {
 		// 新增翻译历史记录表
 		&models.TranslationHistory{},
 		&models.Files{},
+		&models.Game_2048_Score{}, // 新增2048游戏分数表
 	); err != nil {
 		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
 	}

@@ -15,7 +15,11 @@ func SetupRouter() *gin.Engine {
 
 	//加载数据
 	r.LoadHTMLGlob("templates/*.html")
-	r.Static("/static", "./static") // 可选：放点 css/js
+	r.Static("/static", "./static") 
+
+	//根路径（公开）- 欢迎页面
+	r.GET("/", func(c *gin.Context) { c.HTML(200, "index.html", nil) })
+
 	//页面（公开）
 	r.GET("/auth/login", func(c *gin.Context) { c.HTML(200, "login.html", nil) })
 	r.GET("/auth/register", func(c *gin.Context) { c.HTML(200, "register.html", nil) })
@@ -38,6 +42,7 @@ func SetupRouter() *gin.Engine {
 		page.GET("/game/guess", func(c *gin.Context) { c.HTML(200, "game_guess_number.html", nil) })
 		page.GET("/game/map", func(c *gin.Context) { c.HTML(200, "game_map_time.html", nil) })
 		page.GET("/game/map/display", func(c *gin.Context) { c.HTML(200, "map_display.html", nil) }) //可视化显示
+		page.GET("/game/2048", func(c *gin.Context) { c.HTML(200, "game_2048.html", nil) })          // 2048游戏
 
 		// game排行榜界面
 		page.GET("/game/leaderboards", func(c *gin.Context) { c.HTML(200, "game_leaderboards.html", nil) })
@@ -85,6 +90,8 @@ func SetupRouter() *gin.Engine {
 		api.POST("/game/map/complete", controllers.GameMapComplete) // 完成地图游戏
 		api.POST("/game/map/reset", controllers.GameMapReset)       // 重置地图游戏
 		api.GET("/game/map/display", controllers.Display_Map)       // 地图可视化界面
+		// 2048游戏模块
+		api.POST("/game/2048/save", controllers.Game2048SaveScore) // 保存2048游戏分数
 		//文章操作模块
 		api.GET("/articles", controllers.Get_All_Articles)
 
