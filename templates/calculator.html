@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>计算器</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .calculator-container {
+            width: 100%;
+            max-width: 400px;
+            background: #ece9e9;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, .5);
+        }
+
+        .calculator-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .calculator-header h1 {
+            margin: 0 0 8px;
+            font-size: 1.75rem;
+            color: #000000;
+        }
+
+        .calculator-header p {
+            margin: 0;
+            color: #8e8e93;
+            font-size: 0.9rem;
+        }
+
+        .display {
+            background: transparent;
+            padding: 20px 10px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+        }
+
+        .display-expression {
+            color: #8e8e93;
+            font-size: 1.2rem;
+            min-height: 30px;
+            word-break: break-all;
+            text-align: right;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .display-result {
+            color: #ffffff;
+            font-size: 3.5rem;
+            font-weight: 300;
+            min-height: 60px;
+            word-break: break-all;
+            text-align: right;
+            width: 100%;
+            line-height: 1.1;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .btn {
+            height: 75px;
+            border: none;
+            border-radius: 50%;
+            background: #333333;
+            color: #ffffff;
+            font-size: 1.8rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .btn:active {
+            opacity: 0.6;
+        }
+
+        /* 功能按钮（清除、退格等） */
+        .btn-function {
+            background: #a5a5a5;
+            color: #000000;
+            font-weight: 500;
+        }
+
+        /* 运算符按钮 */
+        .btn-operator {
+            background: #ff9f0a;
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .btn-operator:hover {
+            background: #ffb340;
+        }
+
+        /* 等号按钮 */
+        .btn-equal {
+            background: #ff9f0a;
+            color: #ffffff;
+            font-weight: 500;
+            grid-column: span 2;
+            border-radius: 40px;
+        }
+
+        .btn-equal:hover {
+            background: #ffb340;
+        }
+
+        /* 0按钮（占两格） */
+        .btn-zero {
+            grid-column: span 2;
+            border-radius: 40px;
+            justify-content: flex-start;
+            padding-left: 30px;
+        }
+
+        .actions {
+            margin-top: 24px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-action {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            background: #1c1c1e;
+            color: #ffffff;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            background: #2c2c2e;
+        }
+
+        .error-message {
+            color: #ff453a;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 12px;
+            min-height: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .calculator-container {
+                padding: 16px;
+            }
+
+            .btn {
+                height: 65px;
+                font-size: 1.5rem;
+            }
+
+            .display-result {
+                font-size: 2.8rem;
+            }
+
+            .display-expression {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="calculator-container">
+        <div class="calculator-header">
+            <h1>🧮 Go-Web计算器</h1>
+            <p>支持小数点的四则运算，支持括号，支持优先级运算-类iphone计算器风格</p>
+        </div>
+
+        <div class="display">
+            <div class="display-expression" id="expression"></div>
+            <div class="display-result" id="result">0</div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn btn-function" data-action="clear">AC</button>
+            <button class="btn btn-function" data-action="backspace">⌫</button>
+            <button class="btn btn-operator" data-value="(">(</button>
+            <button class="btn btn-operator" data-value=")">)</button>
+
+            <button class="btn" data-value="7">7</button>
+            <button class="btn" data-value="8">8</button>
+            <button class="btn" data-value="9">9</button>
+            <button class="btn btn-operator" data-value="/">÷</button>
+
+            <button class="btn" data-value="4">4</button>
+            <button class="btn" data-value="5">5</button>
+            <button class="btn" data-value="6">6</button>
+            <button class="btn btn-operator" data-value="*">×</button>
+
+            <button class="btn" data-value="1">1</button>
+            <button class="btn" data-value="2">2</button>
+            <button class="btn" data-value="3">3</button>
+            <button class="btn btn-operator" data-value="-">-</button>
+
+            <button class="btn btn-zero" data-value="0">0</button>
+            <button class="btn" data-value=".">.</button>
+            <button class="btn btn-operator" data-value="+">+</button>
+
+            <button class="btn btn-equal" data-action="calculate">=</button>
+        </div>
+
+        <div class="error-message" id="error"></div>
+
+        <div class="actions">
+            <button id="backBtn" class="btn-action">返回应用中心</button>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            let currentExpression = '';
+            let currentResult = '0';
+            let lastCalculated = false;
+
+            const expressionEl = document.getElementById('expression');
+            const resultEl = document.getElementById('result');
+            const errorEl = document.getElementById('error');
+
+            function updateDisplay() {
+                expressionEl.textContent = currentExpression;
+                resultEl.textContent = currentResult;
+            }
+
+            function clearError() {
+                errorEl.textContent = '';
+            }
+
+            function showError(msg) {
+                errorEl.textContent = msg;
+                setTimeout(() => {
+                    clearError();
+                }, 3000);
+            }
+
+            function clear() {
+                currentExpression = '';
+                currentResult = '0';
+                lastCalculated = false;
+                clearError();
+                updateDisplay();
+            }
+
+            function backspace() {
+                if (lastCalculated) {
+                    clear();
+                    return;
+                }
+                currentExpression = currentExpression.slice(0, -1);
+                if (currentExpression === '') {
+                    currentResult = '0';
+                }
+                clearError();
+                updateDisplay();
+            }
+
+            function appendValue(value) {
+                if (lastCalculated) {
+                    // 如果上次已经计算过，点击数字开始新的计算
+                    if (value >= '0' && value <= '9' || value === '.') {
+                        currentExpression = value;
+                        currentResult = value;
+                        lastCalculated = false;
+                    } else {
+                        // 如果是运算符，则继续使用上次的结果
+                        currentExpression = currentResult + value;
+                        lastCalculated = false;
+                    }
+                } else {
+                    currentExpression += value;
+                }
+                clearError();
+                updateDisplay();
+            }
+
+            async function calculate() {
+                if (currentExpression === '') {
+                    return;
+                }
+
+                try {
+                    const token = localStorage.getItem('token');
+                    const headers = {
+                        'Content-Type': 'application/json'
+                    };
+
+                    if (token) {
+                        const authToken = token.toLowerCase().startsWith('bearer ') ? token : ('Bearer ' + token);
+                        headers['Authorization'] = authToken;
+                    }
+
+                    const response = await fetch('/api/calculator/calculate', {
+                        method: 'POST',
+                        headers: headers,
+                        credentials: 'include',
+                        body: JSON.stringify({ expression: currentExpression })
+                    });
+
+                    if (response.status === 401) {
+                        localStorage.removeItem('token');
+                        location.href = '/auth/login';
+                        return;
+                    }
+
+                    const data = await response.json();
+
+                    if (data.error) {
+                        showError(data.error);
+                        return;
+                    }
+
+                    currentResult = data.result;
+                    lastCalculated = true;
+                    updateDisplay();
+
+                } catch (err) {
+                    console.error('计算失败：', err);
+                    showError('计算失败，请稍后重试');
+                }
+            }
+
+            // 绑定按钮事件
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const value = btn.getAttribute('data-value');
+                    const action = btn.getAttribute('data-action');
+
+                    if (action === 'clear') {
+                        clear();
+                    } else if (action === 'backspace') {
+                        backspace();
+                    } else if (action === 'calculate') {
+                        calculate();
+                    } else if (value) {
+                        appendValue(value);
+                    }
+                });
+            });
+
+            // 键盘事件支持
+            document.addEventListener('keydown', (e) => {
+                if (e.key >= '0' && e.key <= '9' || e.key === '.' || e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/' || e.key === '(' || e.key === ')') {
+                    e.preventDefault();
+                    appendValue(e.key);
+                } else if (e.key === 'Enter' || e.key === '=') {
+                    e.preventDefault();
+                    calculate();
+                } else if (e.key === 'Backspace') {
+                    e.preventDefault();
+                    backspace();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    clear();
+                }
+            });
+
+            // 返回按钮
+            document.getElementById('backBtn').addEventListener('click', () => {
+                location.href = '/page/game/selection';
+            });
+
+            // 初始化显示
+            updateDisplay();
+        })();
+    </script>
+</body>
+
+</html>

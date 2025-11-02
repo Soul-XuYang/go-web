@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>欢迎 - Go-Web 应用平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+            background: linear-gradient(135deg, #5277a0 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 60px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #1f2937;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #6b7280;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .features {
+            text-align: left;
+            margin: 40px 0;
+            padding: 0 20px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: #374151;
+        }
+
+        .feature-item::before {
+            content: "✨";
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 16px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+        }
+
+        .btn-secondary {
+            background: #10b981;
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-secondary:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
+        }
+
+        .footer {
+            margin-top: 40px;
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+
+        .version {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 6px 12px;
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 40px 30px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .logo {
+                font-size: 3rem;
+            }
+
+            .btn {
+                padding: 14px 30px;
+                font-size: 1rem;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">🚀</div>
+        <h1>Go-Web 应用平台</h1>
+        <p class="subtitle">
+            欢迎各位来到基于 Gin + GORM 构建的现代化 Web 应用平台<br>
+            功能丰富 · 界面精美 · 体验流畅
+        </p>
+
+        <div class="features">
+            <div class="feature-item">游戏中心：数字猜猜乐、地图寻路、2048</div>
+            <div class="feature-item">实用工具：多语言翻译、计算器、天气查询</div>
+            <div class="feature-item">文件管理：上传、下载、在线预览</div>
+            <div class="feature-item">用户系统：JWT认证、权限管理、个人中心</div>
+        </div>
+
+        <div class="buttons">
+            <a href="/auth/login" class="btn btn-primary">立即登录</a>
+            <a href="/auth/register" class="btn btn-secondary">注册账号</a>
+        </div>
+
+        <div class="footer">
+            <p>使用 Go + Gin + GORM + Mysql +Redis 构建</p>
+            <span class="version">V0.0.1</span>
+        </div>
+    </div>
+    <script>
+    </script>
+</body>
+
+</html>

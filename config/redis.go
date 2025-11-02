@@ -17,6 +17,7 @@ const (
 	//这里是redis中各个游戏的表名
 	RedisKeyTop10Best       = "game:guess:top10:best"  // 猜数字的游戏排行榜
 	RedisKeyTop10FastestMap = "game:map:top10:fastest" // 地图游戏排行榜（用时最短）
+	RedisKeyTop10game2048   = "game:2048:top10:best"   // 用best表示分数好
 	Cache_RateKey = "rmb_top10:cny"
 )
 const (

@@ -20,6 +20,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
 // ***注意这里的后端程序在计算时或者耗时的程序时一定要加锁，否则会报错
 
 var game_rounds = [3]int{8, 12, 16}                   // 不同难度对应的大小
@@ -32,7 +33,7 @@ type P struct { // 坐标点-保持json映射关系
 	Y int `json:"y"`
 }
 
-// 地图游戏玩家状态-resp数据
+// 地图游戏玩家状态-req数据
 type MapGamePlayer struct {
 	Round            int       `json:"round"`            // 当前轮次：1, 2, 3
 	Difficulty       int       `json:"difficulty"`       // 当前轮次难度等级：0, 1, 2
@@ -127,23 +128,22 @@ type completeMapGameResp struct { // 返回完成游戏的数据
 // @Router      /api/game/map/start [post]
 func GameMapStart(c *gin.Context) { //开始游戏
 	// 不用请求参数-因为用户一点击按钮就开始游戏了
-
 	uid := c.GetUint("user_id")
 	if uid == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	mapGame.mu.Lock()
+	mapGame.mu.Lock() //加锁
+	
 	// 取/建玩家状态
 	p, ok := mapGame.Players[uid] // 取玩家状态
 	if !ok {
 		p = init_MapGamePlayer() // 如果玩家不存在就初始化表
 		mapGame.Players[uid] = p // 保存玩家状态-全局变量
 	}
-
 	// 根据当前轮次设置难度
-	difficulty := getDifficultyForRound(p.Round) // 根据当前轮次设置难度-这个函数是限定的
+	difficulty := getDifficultyForRound(p.Round) // 根据当前轮次设置难度-这里p.round是前端传来的
 	p.Difficulty = difficulty                    // 保存难度-全局变量
 	mapGame.mu.Unlock()                          // 解锁-以求用户进行按钮或者触发
 	// 生成地图
@@ -153,11 +153,21 @@ func GameMapStart(c *gin.Context) { //开始游戏
 	// 生成起点
 	startPoint := P{}
 	startPoint.X, startPoint.Y = start_index(arr)
+
+	// 简化路径生成 - 直接生成足够的路径-依据难度升级计算
+	randNumber := rand.Intn(difficulty+1) //这里易错不能用0一定会出问题
+	switch  {
+	case randNumber <= 1:
+		go_next(arr, startPoint, size, difficulty) //difficulty保证我们的go_next肯定初始的步数不会出错
+	case randNumber == 2:
+		primMaze(arr, startPoint)
+	case randNumber == 3:
+		boolChess := make(map[P]bool, 0)
+		generateMazeDFS(arr, startPoint, boolChess) // DFS算法（高难度）
+	default:
+		go_next(arr, startPoint, size, difficulty)
+	}
 	arr[startPoint.X][startPoint.Y] = '+'
-
-	// 简化路径生成 - 直接生成足够的路径
-	go_next(arr, startPoint, size, difficulty)
-
 	// 找到终点
 	endPoint, currentDistance := end_index(arr, startPoint)
 	arr[endPoint.X][endPoint.Y] = 'x' //终点标记为x
@@ -319,9 +329,10 @@ func Display_Map(c *gin.Context) {
 	grid := array_init(displayNum, displayNum+8)
 	sx, sy := start_index(grid)
 	startPoint := P{X: sx, Y: sy}
-	grid[startPoint.X][startPoint.Y] = '+'
-	go_next(grid, startPoint, displayNum+8, 3)
+	visitedChess := make(map[P]bool, 0)
+	generateMazeDFS(grid, startPoint, visitedChess)
 	endPoint, _ := end_index(grid, startPoint)
+	grid[startPoint.X][startPoint.Y] = '+'
 	grid[endPoint.X][endPoint.Y] = 'x'
 	path, ok := AStar(grid, startPoint, endPoint)
 	//  输出 rows（每行一个 string）
@@ -352,6 +363,7 @@ func abs(x int) int {
 	return x
 }
 func manhattan(a, b P) int { return abs(a.X-b.X) + abs(a.Y-b.Y) }
+
 type pq []*item //存有结构体地址
 // heap包的Push/Pop函数内部会：
 // 调用你实现的Push方法添加元素
@@ -451,7 +463,7 @@ func start_index(arr [][]byte) (int, int) {
 	return x, y
 }
 
-// 递归生成路径 - 修改算法确保生成足够路径
+// 递归生成路径 - 修改算法确保生成足够路径-这个是最简单的路径-EASY
 func go_next(arr [][]byte, start_point P, step int, step_rand int) {
 	if step <= 0 {
 		return
@@ -471,6 +483,83 @@ func go_next(arr [][]byte, start_point P, step int, step_rand int) {
 		// 不满足条件则跳出
 	}
 	// 最后也是跳出
+}
+
+// media难度
+func primMaze(arr [][]byte, start P) { //这里是因为权重都为1，所以先不设置最小堆
+	arr[start.X][start.Y] = 'o' //起点设置
+
+	// 初始化表-局部全局变量
+	walls := make([]P, 0)
+
+	// 添加起始点周围的墙
+	Point_addWalls := func(p P) { //构建进入点函数
+		for i := 0; i < len(dir); i++ { //
+			wallX := p.X + dir[i][0]
+			wallY := p.Y + dir[i][1]
+			if wallX >= 0 && wallX < len(arr)-1 && wallY >= 0 && wallY < len(arr[0])-1 { //这里是四周的点
+				if arr[wallX][wallY] == '#' { //如果是'o'跳过
+					walls = append(walls, P{wallX, wallY}) //存入数据
+				}
+			}
+		}
+	}
+	Point_addWalls(start) //从起点开始生成
+
+	for len(walls) > 0 { //队列里的数据-只不过这是一个随机队列
+		// 随机选一个墙
+		idx := rand.Intn(len(walls)) //获取索引
+		wall := walls[idx]
+		walls = append(walls[:idx], walls[idx+1:]...) // 弹出数据，这里切片的第二位置的数据需要用...展开
+
+		visitedCount := 0
+
+		for i := 0; i < len(dir); i++ { // 遍历四个方向
+			newX := wall.X + dir[i][0]
+			newY := wall.Y + dir[i][1]
+
+			// 判断新坐标是否在迷宫范围内
+			if newX >= 0 && newX < len(arr) && newY >= 0 && newY < len(arr[0]) {
+				// 如果是通道，则计数
+				if arr[newX][newY] == 'o' {
+					visitedCount++
+				}
+			}
+		}
+		// 关键逻辑：如果四个方向中只有一侧已访问，打通这堵墙-避免全破的情况-实际上这个是迷宫通道生成的关键
+		if visitedCount == 1 {
+			arr[wall.X][wall.Y] = 'o' // 打通当前墙壁
+			Point_addWalls(wall)      // 将新访问的格子周围的墙壁加入队列
+		}
+	}
+}
+
+// hard难度
+func generateMazeDFS(arr [][]byte, current P, visited map[P]bool) { //通路为'o'
+	visited[current] = true //标明
+	arr[current.X][current.Y] = 'o'
+	//随机打乱方向
+	directions := []int{0, 1, 2, 3}
+	rand.Shuffle(len(directions), func(i, j int) {
+		directions[i], directions[j] = directions[j], directions[i]
+	}) //交换-借助交换打乱顺序
+
+	for _, i := range directions { //四个方向BFS似的DFS
+		// 每次跳2格（中间保留墙壁）,二者之间打破墙壁
+		newX := current.X + dir[i][0]*2
+		newY := current.Y + dir[i][1]*2
+
+		if newX >= 0 && newX < len(arr) && newY >= 0 && newY < len(arr[0]) { //实际上递归的跳出条件 + visit
+			next := P{newX, newY}
+			if !visited[next] { //加一个访问过
+				// 打通二者之间的墙
+				wallX := current.X + dir[i][0]
+				wallY := current.Y + dir[i][1]
+				arr[wallX][wallY] = 'o'
+				generateMazeDFS(arr, next, visited)
+			}
+		}
+	}
 }
 
 // BFS 找到最远的终点

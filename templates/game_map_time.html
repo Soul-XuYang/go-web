@@ -76,19 +76,19 @@
         }
 
         .card--mapXL {
-            flex: 1 1 0;
-            min-width: 320px;
+            flex: 2 1 0;
+            min-width: 600px;
         }
 
         .card--controls {
-            flex: 0 0 380px;
-            max-width: 380px;
+            flex: 0 0 350px;
+            max-width: 350px;
             min-width: 280px;
         }
 
         .card--stats {
-            flex: 0 0 320px;
-            max-width: 320px;
+            flex: 0 0 300px;
+            max-width: 300px;
             min-width: 240px;
         }
 
@@ -108,6 +108,25 @@
             font-size: 1.15rem;
         }
 
+        /* 地图专用大卡片 */
+        .card-map {
+            border: 1px solid rgba(0, 0, 0, .06);
+            border-radius: 16px;
+            background: #fff;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, .06);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-map h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            text-align: center;
+            color: var(--primary);
+        }
+
         .sub {
             margin: 0 0 8px;
             color: rgba(0, 0, 0, 0.856);
@@ -121,8 +140,8 @@
             background: rgba(0, 0, 0, .03);
             border: 1px solid rgba(0, 0, 0, .04);
             border-radius: 12px;
-            padding: 16px;
-            min-height: 360px;
+            padding: 20px;
+            min-height: 500px;
             max-height: 75vh;
             display: flex;
             align-items: center;
@@ -130,6 +149,53 @@
             overflow: auto;
             /* 超出时滚动，不会把别的列推开 */
             width: 100%;
+        }
+
+        /* 轮次完成提示 */
+        .round-complete-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(59, 130, 246, 0.95);
+            border-radius: 12px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .round-complete-overlay.show {
+            display: flex;
+        }
+
+        .round-complete-overlay h3 {
+            color: #fff;
+            font-size: 2.5rem;
+            margin: 0 0 20px;
+            text-align: center;
+        }
+
+        .round-complete-overlay p {
+            color: #fff;
+            font-size: 1.2rem;
+            margin: 0 0 30px;
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         /* map-grid: 注意 width 与 grid-template-columns 会被 JS 动态设置 */
@@ -513,8 +579,8 @@
 
     <main class="wrap">
         <!-- 左：地图（自适应） -->
-        <section class="card card--mapXL">
-            <h2>地图显示区</h2>
+        <section class="card-map card--mapXL">
+            <h2>🗺️ 地图显示区</h2>
             地图游戏规则：
             <ul style="color:var(--muted);font-size:.9rem;line-height:1.6;">
                 用户移动蓝色玩家>(🔵)从起点出发，探索地图，抵达隐藏终点(实际上是寻找离起点最远的有效点)即自动完成本轮。
@@ -529,7 +595,13 @@
             <div class="map-container">
                 <div class="map-controls">方向键/按钮移动 | 抵达终点自动记录</div>
                 <div id="mapDisplay" class="map-grid">
-                    <div class="msg info">点击“开始游戏”生成地图</div>
+                    <div class="msg info">点击"开始游戏"生成地图</div>
+                </div>
+                <!-- 轮次完成提示覆盖层 -->
+                <div id="roundCompleteOverlay" class="round-complete-overlay">
+                    <h3 id="roundCompleteTitle">🎉 第1轮游戏已完成！</h3>
+                    <p id="roundCompleteText">用时：10.5秒</p>
+                    <button class="btn primary" id="nextRoundBtn">开始下一轮</button>
                 </div>
             </div>
 
@@ -700,6 +772,32 @@
         function enableMovementButtons() { $('#btnUp').disabled = false; $('#btnDown').disabled = false; $('#btnLeft').disabled = false; $('#btnRight').disabled = false; }
         function disableMovementButtons() { $('#btnUp').disabled = true; $('#btnDown').disabled = true; $('#btnLeft').disabled = true; $('#btnRight').disabled = true; }
 
+        // 显示轮次完成提示覆盖层
+        function showRoundCompleteOverlay(round, roundTime, gameComplete) {
+            const overlay = $('#roundCompleteOverlay');
+            const title = $('#roundCompleteTitle');
+            const text = $('#roundCompleteText');
+            const nextBtn = $('#nextRoundBtn');
+
+            if (gameComplete) {
+                title.textContent = '🎉 恭喜完成全部游戏！';
+                text.textContent = `第${round}轮用时：${formatTime(roundTime)}`;
+                nextBtn.textContent = '开始新游戏';
+            } else {
+                title.textContent = `🎉 第${round}轮游戏已完成！`;
+                text.textContent = `本轮用时：${formatTime(roundTime)}`;
+                nextBtn.textContent = '开始下一轮';
+            }
+
+            overlay.classList.add('show');
+        }
+
+        // 隐藏轮次完成提示覆盖层
+        function hideRoundCompleteOverlay() {
+            const overlay = $('#roundCompleteOverlay');
+            overlay.classList.remove('show');
+        }
+
         // ====== 移动 ======
         async function movePlayer(direction) {
             if (!gameState.isActive || !gameState.playerPos || gameState.completing) return;
@@ -798,8 +896,8 @@
                 $('#feedback').className = 'msg success';
                 $('#feedback').textContent = (d.message || '本轮完成。') + suffix;
 
-                // 清空地图并提示（现在会完整横向显示，不会竖排）
-                clearMapWithTip(d.gameComplete ? '游戏已完成，点击“开始游戏”开启新一局' : '本轮已完成，点击“开始游戏”进入下一轮');
+                // 显示轮次完成提示覆盖层
+                showRoundCompleteOverlay(d.round, d.roundTime, d.gameComplete);
 
                 disableMovementButtons();
                 gameState.isActive = false;
@@ -872,6 +970,14 @@
             await loadMyBest();
             setupKeyboardControls();
             disableMovementButtons();
+
+            // 绑定"开始下一轮"按钮事件
+            $('#nextRoundBtn').addEventListener('click', function () {
+                hideRoundCompleteOverlay();
+                // 清空地图并显示提示
+                const tip = gameState.round >= 3 ? '游戏已完成，点击"开始游戏"开启新一局' : '本轮已完成，点击"开始游戏"进入下一轮';
+                clearMapWithTip(tip);
+            });
         })();
     </script>
 </body>
