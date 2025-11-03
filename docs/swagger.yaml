@@ -13,6 +13,21 @@ definitions:
       title:
         type: string
     type: object
+  controllers.CalculatorRequest:
+    properties:
+      expression:
+        description: 计算表达式
+        type: string
+    required:
+    - expression
+    type: object
+  controllers.CalculatorResponse:
+    properties:
+      error:
+        type: string
+      result:
+        type: string
+    type: object
   controllers.CreateArticleDTO:
     properties:
       content:
@@ -28,6 +43,83 @@ definitions:
     - preview
     - title
     type: object
+  controllers.DisplayResp:
+    properties:
+      endPoint:
+        $ref: '#/definitions/controllers.P'
+      mapData:
+        items:
+          type: string
+        type: array
+      ok:
+        type: boolean
+      path:
+        items:
+          $ref: '#/definitions/controllers.P'
+        type: array
+      startPoint:
+        $ref: '#/definitions/controllers.P'
+    type: object
+  controllers.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  controllers.FileItem:
+    properties:
+      content_type:
+        type: string
+      created_at:
+        type: string
+      downloads:
+        type: integer
+      fileinfo:
+        type: string
+      filename:
+        type: string
+      hash:
+        type: string
+      id:
+        type: integer
+      path:
+        description: 相对 key（不暴露真实磁盘根）
+        type: string
+      size_bytes:
+        type: integer
+    type: object
+  controllers.Game2048SaveRequest:
+    properties:
+      score:
+        minimum: 0
+        type: integer
+    required:
+    - score
+    type: object
+  controllers.LBEntry:
+    properties:
+      rank:
+        description: 1-based
+        type: integer
+      score:
+        type: integer
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+  controllers.ListFilesResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/controllers.FileItem'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+    type: object
   controllers.LoginDTO:
     properties:
       password:
@@ -38,6 +130,13 @@ definitions:
     - password
     - username
     type: object
+  controllers.P:
+    properties:
+      x:
+        type: integer
+      "y":
+        type: integer
+    type: object
   controllers.UpdateArticleDTO:
     properties:
       content:
@@ -47,10 +146,97 @@ definitions:
       title:
         type: string
     type: object
+  controllers.UploadResponse:
+    properties:
+      id:
+        type: integer
+      msg:
+        type: string
+      size:
+        type: string
+      url:
+        type: string
+    type: object
+  controllers.completeMapGameResp:
+    properties:
+      gameComplete:
+        description: 是否完成全部三轮
+        type: boolean
+      message:
+        type: string
+      round:
+        description: 当前轮次
+        type: integer
+      roundTime:
+        description: 本轮用时（秒）
+        type: number
+      saved:
+        description: 是否保存到数据库（仅第3轮）
+        type: boolean
+      totalTime:
+        description: 累计总时间（秒）
+        type: number
+    type: object
+  controllers.guessReq:
+    properties:
+      number:
+        maximum: 100
+        minimum: 1
+        type: integer
+    required:
+    - number
+    type: object
+  controllers.guessResp:
+    properties:
+      attempts:
+        type: integer
+      message:
+        type: string
+      remaining:
+        type: integer
+      round:
+        type: integer
+      status:
+        description: low/high/correct
+        type: string
+      totalScore:
+        type: integer
+    type: object
+  controllers.resetMapGameResp:
+    properties:
+      message:
+        type: string
+      reset:
+        type: boolean
+    type: object
+  controllers.startMapGameResp:
+    properties:
+      currentDistance:
+        type: integer
+      difficulty:
+        type: integer
+      endPoint:
+        $ref: '#/definitions/controllers.P'
+      mapData:
+        description: ← 改这里
+        items:
+          type: string
+        type: array
+      message:
+        type: string
+      round:
+        type: integer
+      size:
+        type: integer
+      startPoint:
+        $ref: '#/definitions/controllers.P'
+      totalTime:
+        type: number
+    type: object
 info:
   contact: {}
-  description: 接口文档
-  title: Go_project API
+  description: Go-Web 综合性Web应用接口文档
+  title: Go-Web项目 API
   version: 0.0.1
 paths:
   /ad:
@@ -97,6 +283,34 @@ paths:
       summary: 获取全部文章
       tags:
       - Articles
+  /api/calculator/calculate:
+    post:
+      consumes:
+      - application/json
+      description: 支持基本的四则运算，包括小数点计算
+      parameters:
+      - description: 计算表达式
+        in: body
+        name: expression
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CalculatorRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.CalculatorResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 计算器计算
+      tags:
+      - 计算器
   /api/create_articles:
     post:
       consumes:
@@ -138,6 +352,176 @@ paths:
       summary: 创建文章
       tags:
       - Articles
+  /api/game/2048/save:
+    post:
+      consumes:
+      - application/json
+      description: 保存用户的2048游戏分数到数据库
+      parameters:
+      - description: 游戏分数
+        in: body
+        name: score
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.Game2048SaveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 保存2048游戏分数
+      tags:
+      - 游戏
+  /api/game/leaderboard/me:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        返回指定游戏的公共排行榜Top10和当前用户在该游戏中的成绩与排名
+        不传game参数时，返回所有游戏的排行榜和个人数据
+        传game参数时，只返回指定游戏的排行榜和个人数据
+      parameters:
+      - description: 游戏代号（可选值：guess_game, map_game, 2048_game）不传则返回所有游戏
+        in: query
+        name: game
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 返回单个游戏排行榜（传game参数）
+          schema:
+            properties:
+              game:
+                type: string
+              leaderboard:
+                items:
+                  $ref: '#/definitions/controllers.LBEntry'
+                type: array
+              my_rank:
+                properties:
+                  best:
+                    type: integer
+                  rank:
+                    type: integer
+                  user_id:
+                    type: integer
+                  username:
+                    type: string
+                type: object
+            type: object
+        "400":
+          description: 无效的游戏代号
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: 未授权
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取游戏排行榜及个人排名
+      tags:
+      - 游戏排行榜
+  /api/game/map/complete:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 响应数据
+          schema:
+            $ref: '#/definitions/controllers.completeMapGameResp'
+      security:
+      - Bearer: []
+      summary: 完成地图游戏
+      tags:
+      - Game
+  /api/game/map/display:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 响应数据
+          schema:
+            $ref: '#/definitions/controllers.DisplayResp'
+      security:
+      - Bearer: []
+      summary: 地图游戏可视化展示
+      tags:
+      - Game
+  /api/game/map/reset:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 响应数据
+          schema:
+            $ref: '#/definitions/controllers.resetMapGameResp'
+      security:
+      - Bearer: []
+      summary: 重置地图游戏状态
+      tags:
+      - Game
+  /api/game/map/start:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 响应数据
+          schema:
+            $ref: '#/definitions/controllers.startMapGameResp'
+      security:
+      - Bearer: []
+      summary: 开始地图游戏
+      tags:
+      - Game
+  /api/gameguess:
+    post:
+      parameters:
+      - description: 请求参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.guessReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 响应数据
+          schema:
+            $ref: '#/definitions/controllers.guessResp'
+      security:
+      - Bearer: []
+      summary: 猜数字游戏
+      tags:
+      - Game
   /api/rmb-top10:
     get:
       produces:
@@ -152,7 +536,7 @@ paths:
             type: array
       security:
       - Bearer: []
-      summary: 读取当前人民币对Top10地区的汇率快照
+      summary: 读取当前人民币对Top10地区的汇率快照（来自 Redis）
       tags:
       - Exchange
   /api/update_articles/{id}:
@@ -204,7 +588,7 @@ paths:
             type: object
       security:
       - Bearer: []
-      summary: 更新文章
+      summary: 更新文章数据
       tags:
       - Articles
   /auth/login:
@@ -222,7 +606,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: token,result_url
           schema:
             additionalProperties:
               type: string
@@ -281,6 +665,189 @@ paths:
       summary: 获取当前汇率数据
       tags:
       - Me
+  /files/{id}:
+    delete:
+      description: 根据ID删除当前用户的文件（先删磁盘，再删数据库）；文件不存在将被忽略以便幂等。
+      parameters:
+      - description: 文件ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除文件
+      tags:
+      - Files
+    get:
+      description: '根据文件ID下载或预览；支持 Range/304。query: download=1 为附件下载，否则 inline 预览。服务端会在成功响应时为该文件的下载次数
+        +1，并通过响应头 `X-Download-Count` 回传最新次数。'
+      parameters:
+      - description: 文件ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 1=attachment; 省略或0=inline
+        in: query
+        name: download
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: 响应头包含 X-Download-Count、ETag、Last-Modified 等
+          headers:
+            X-Download-Count:
+              description: 最新下载次数
+              type: string
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 下载/预览文件
+      tags:
+      - Files
+  /files/lists:
+    get:
+      description: 支持按关键字、扩展名、MIME、时间范围、大小范围筛选，分页返回；按 created_at 排序。
+      parameters:
+      - description: 关键字（匹配文件名，模糊）
+        in: query
+        name: q
+        type: string
+      - description: 扩展名（如 .pdf/.png，不区分大小写）
+        in: query
+        name: ext
+        type: string
+      - description: MIME 前缀（如 image/、application/pdf）
+        in: query
+        name: content_type
+        type: string
+      - description: 起始日期（YYYY-MM-DD）
+        in: query
+        name: date_from
+        type: string
+      - description: 结束日期（YYYY-MM-DD，含当日）
+        in: query
+        name: date_to
+        type: string
+      - description: 最小大小（字节）
+        in: query
+        name: min_size
+        type: integer
+      - description: 最大大小（字节）
+        in: query
+        name: max_size
+        type: integer
+      - description: 页码（默认1）
+        in: query
+        name: page
+        type: integer
+      - description: 每页的条数（默认20，最大100）
+        in: query
+        name: page_size
+        type: integer
+      - description: 排序：共四种组合，两种排序方式-上传日期和文件大小 created_desc（默认）/created_asc/size_desc/size_asc
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.ListFilesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 列出当前用户的文件
+      tags:
+      - Files
+  /files/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 使用相对路径存储；服务端校验扩展名/MIME、配额，写入相对目录（基于 CWD 的 config.AppConfig.Upload.Storagepath），并保存元信息到数据库。
+      parameters:
+      - description: 文件（必填）
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: 文件描述/备注
+        in: formData
+        name: content
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.UploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: 上传文件
+      tags:
+      - Files
   /me:
     get:
       produces:
@@ -297,6 +864,51 @@ paths:
       summary: 获取当前用户名
       tags:
       - Me
+  /proxy:
+    get:
+      description: '从白名单中的图片源以浏览器头伪装拉取资源，透传 Content-Type，并设置 Cache-Control: public,
+        max-age=3600。'
+      parameters:
+      - description: 源图片 URL（需 URL 编码且域名在白名单内）
+        example: https%3A%2F%2Fmat1.gtimg.com%2Fsome%2Fimage.jpg
+        in: query
+        name: url
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: 图片字节流
+          headers:
+            Cache-Control:
+              description: public, max-age=3600
+              type: string
+            Content-Type:
+              description: image/jpeg | image/png | image/webp | image/avif
+              type: string
+          schema:
+            type: file
+        "400":
+          description: missing url parameter / invalid url / url too long
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "403":
+          description: host is not allowed
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: internal
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "502":
+          description: fetch failed / upstream non-200
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      summary: 代理获取图片（透传 Content-Type，缓存 1 小时）
+      tags:
+      - image
+      - proxy
   /rmb-top10/refresh:
     post:
       produces:
@@ -310,7 +922,7 @@ paths:
             type: object
       security:
       - Bearer: []
-      summary: 手动刷新人民币 Top10 汇率
+      summary: 手动刷新人民币 Top10 汇率（写入 Redis，TTL=24h）
       tags:
       - Exchange
 swagger: "2.0"

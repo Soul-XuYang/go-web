@@ -509,6 +509,17 @@
                     <button class="btn btn-success" id="saveScoreBtn" style="display: none;">保存分数</button>
                     <button class="btn btn-secondary" id="backBtn">返回游戏中心</button>
                 </div>
+                <div
+                    style="margin-top: 16px; padding: 12px; background: rgba(255, 255, 255, 0.5); border-radius: 8px; text-align: center;">
+                    <label
+                        style="display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="timerToggle" checked style="width: auto; height: auto;">
+                        <span style="font-size: 0.9rem; color: var(--muted);">启用倒计时 (90秒)</span>
+                    </label>
+                    <div id="timerDisplay"
+                        style="font-size: 1.3rem; font-weight: 700; color: var(--primary); margin-top: 8px;">
+                        01:30</div>
+                </div>
             </div>
         </div>
     </main>
@@ -521,6 +532,8 @@
             let bestScore = 0;
             let gameOver = false;
             let gameWon = false;
+            let timeLeft = 90; // 90秒倒计时（1分半）
+            let timerInterval = null;
 
             // DOM 元素
             const gridEl = document.getElementById('grid');
@@ -531,6 +544,8 @@
             const messageTextEl = document.getElementById('messageText');
             const finalScoreEl = document.getElementById('finalScore');
             const saveScoreBtnEl = document.getElementById('saveScoreBtn');
+            const timerToggleEl = document.getElementById('timerToggle');
+            const timerDisplayEl = document.getElementById('timerDisplay');
 
             // 获取token
             function getStoredToken() {
@@ -576,6 +591,67 @@
                 }
             }
 
+            // 倒计时函数
+            function startTimer() {
+                // 只有启用倒计时才启动
+                if (!timerToggleEl.checked) {
+                    timerDisplayEl.style.display = 'none';
+                    return;
+                }
+
+                timerDisplayEl.style.display = 'block';
+                if (timerInterval) clearInterval(timerInterval);
+                timeLeft = 90; // 90秒倒计时
+                updateTimer();
+
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateTimer();
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        if (!gameOver) {
+                            gameOver = true;
+                            showMessage('时间到！', `游戏结束！最终分数: ${score}`);
+                            saveScoreBtnEl.style.display = 'inline-block';
+                        }
+                    }
+                }, 1000);
+            }
+
+            function updateTimer() {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerDisplayEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+                // 最后10秒变红色提示
+                if (timeLeft <= 10) {
+                    timerDisplayEl.style.color = '#ef4444';
+                } else {
+                    timerDisplayEl.style.color = 'var(--primary)';
+                }
+            }
+
+            function stopTimer() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+            }
+
+            // 倒计时开关事件
+            timerToggleEl.addEventListener('change', () => {
+                if (!gameOver) {
+                    if (timerToggleEl.checked) {
+                        startTimer();
+                    } else {
+                        stopTimer();
+                        timerDisplayEl.style.display = 'none';
+                    }
+                }
+            });
+
             // 初始化游戏
             function initGame() {
                 board = Array(gridSize).fill(null).map(() => Array(gridSize).fill(0));
@@ -589,6 +665,7 @@
                 addRandomTile();
                 renderBoard();
                 saveScoreBtnEl.style.display = 'none';
+                startTimer(); // 启动倒计时
             }
 
             // 添加随机方块
@@ -700,16 +777,18 @@
                     // 检查是否达到2048
                     if (!gameWon && checkWin()) {
                         gameWon = true;
+                        stopTimer();
                         showMessage('恭喜获胜！', `您达到了 2048！分数: ${score}`);
                         saveScoreBtnEl.style.display = 'inline-block';
                     }
+                }
 
-                    // 检查游戏是否结束
-                    if (isGameOver()) {
-                        gameOver = true;
-                        showMessage('游戏结束！', `最终分数: ${score}`);
-                        saveScoreBtnEl.style.display = 'inline-block';
-                    }
+                // 在每次移动尝试后检查游戏是否结束（无论是否成功移动）
+                if (!gameOver && isGameOver()) {
+                    gameOver = true;
+                    stopTimer();
+                    showMessage('游戏结束！', `棋盘已满！最终分数: ${score}`);
+                    saveScoreBtnEl.style.display = 'inline-block';
                 }
 
                 return moved;
@@ -815,8 +894,10 @@
 
                     const data = await response.json();
                     if (response.ok) {
-                        alert('分数保存成功！');
+                        alert('分数保存成功！已更新排行榜');
                         saveScoreBtnEl.style.display = 'none';
+                        // 可选：保存后跳转到排行榜
+                        // setTimeout(() => { location.href = '/page/game/leaderboards'; }, 1000);
                     } else {
                         alert(data.error || '保存失败');
                     }

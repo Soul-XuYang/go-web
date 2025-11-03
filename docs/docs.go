@@ -87,6 +87,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/calculator/calculate": {
+            "post": {
+                "description": "支持基本的四则运算，包括小数点计算",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "计算器"
+                ],
+                "summary": "计算器计算",
+                "parameters": [
+                    {
+                        "description": "计算表达式",
+                        "name": "expression",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.CalculatorRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.CalculatorResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/create_articles": {
             "post": {
                 "security": [
@@ -152,6 +195,278 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/game/2048/save": {
+            "post": {
+                "description": "保存用户的2048游戏分数到数据库",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "游戏"
+                ],
+                "summary": "保存2048游戏分数",
+                "parameters": [
+                    {
+                        "description": "游戏分数",
+                        "name": "score",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.Game2048SaveRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/game/leaderboard/me": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "返回指定游戏的公共排行榜Top10和当前用户在该游戏中的成绩与排名\n不传game参数时，返回所有游戏的排行榜和个人数据\n传game参数时，只返回指定游戏的排行榜和个人数据",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "游戏排行榜"
+                ],
+                "summary": "获取游戏排行榜及个人排名",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "游戏代号（可选值：guess_game, map_game, 2048_game）不传则返回所有游戏",
+                        "name": "game",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "返回单个游戏排行榜（传game参数）",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "game": {
+                                    "type": "string"
+                                },
+                                "leaderboard": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/controllers.LBEntry"
+                                    }
+                                },
+                                "my_rank": {
+                                    "type": "object",
+                                    "properties": {
+                                        "best": {
+                                            "type": "integer"
+                                        },
+                                        "rank": {
+                                            "type": "integer"
+                                        },
+                                        "user_id": {
+                                            "type": "integer"
+                                        },
+                                        "username": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "无效的游戏代号",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/game/map/complete": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "完成地图游戏",
+                "responses": {
+                    "200": {
+                        "description": "响应数据",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.completeMapGameResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/game/map/display": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "地图游戏可视化展示",
+                "responses": {
+                    "200": {
+                        "description": "响应数据",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.DisplayResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/game/map/reset": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "重置地图游戏状态",
+                "responses": {
+                    "200": {
+                        "description": "响应数据",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.resetMapGameResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/game/map/start": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "开始地图游戏",
+                "responses": {
+                    "200": {
+                        "description": "响应数据",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.startMapGameResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/gameguess": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "猜数字游戏",
+                "parameters": [
+                    {
+                        "description": "请求参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.guessReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "响应数据",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.guessResp"
+                        }
+                    }
+                }
+            }
+        },
         "/api/rmb-top10": {
             "get": {
                 "security": [
@@ -165,7 +480,7 @@ const docTemplate = `{
                 "tags": [
                     "Exchange"
                 ],
-                "summary": "读取当前人民币对Top10地区的汇率快照",
+                "summary": "读取当前人民币对Top10地区的汇率快照（来自 Redis）",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -196,7 +511,7 @@ const docTemplate = `{
                 "tags": [
                     "Articles"
                 ],
-                "summary": "更新文章",
+                "summary": "更新文章数据",
                 "parameters": [
                     {
                         "type": "string",
@@ -286,7 +601,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "token,result_url",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -378,6 +693,289 @@ const docTemplate = `{
                 }
             }
         },
+        "/files/lists": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "支持按关键字、扩展名、MIME、时间范围、大小范围筛选，分页返回；按 created_at 排序。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Files"
+                ],
+                "summary": "列出当前用户的文件",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "关键字（匹配文件名，模糊）",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "扩展名（如 .pdf/.png，不区分大小写）",
+                        "name": "ext",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "MIME 前缀（如 image/、application/pdf）",
+                        "name": "content_type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "起始日期（YYYY-MM-DD）",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束日期（YYYY-MM-DD，含当日）",
+                        "name": "date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "最小大小（字节）",
+                        "name": "min_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "最大大小（字节）",
+                        "name": "max_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码（默认1）",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页的条数（默认20，最大100）",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序：共四种组合，两种排序方式-上传日期和文件大小 created_desc（默认）/created_asc/size_desc/size_asc",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ListFilesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/files/upload": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "使用相对路径存储；服务端校验扩展名/MIME、配额，写入相对目录（基于 CWD 的 config.AppConfig.Upload.Storagepath），并保存元信息到数据库。",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Files"
+                ],
+                "summary": "上传文件",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "文件（必填）",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "文件描述/备注",
+                        "name": "content",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.UploadResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/files/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据文件ID下载或预览；支持 Range/304。query: download=1 为附件下载，否则 inline 预览。服务端会在成功响应时为该文件的下载次数 +1，并通过响应头 ` + "`" + `X-Download-Count` + "`" + ` 回传最新次数。",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Files"
+                ],
+                "summary": "下载/预览文件",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文件ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "1=attachment; 省略或0=inline",
+                        "name": "download",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "响应头包含 X-Download-Count、ETag、Last-Modified 等",
+                        "schema": {
+                            "type": "file"
+                        },
+                        "headers": {
+                            "X-Download-Count": {
+                                "type": "string",
+                                "description": "最新下载次数"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据ID删除当前用户的文件（先删磁盘，再删数据库）；文件不存在将被忽略以便幂等。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Files"
+                ],
+                "summary": "删除文件",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文件ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/me": {
             "get": {
                 "security": [
@@ -405,6 +1003,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/proxy": {
+            "get": {
+                "description": "从白名单中的图片源以浏览器头伪装拉取资源，透传 Content-Type，并设置 Cache-Control: public, max-age=3600。",
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "image",
+                    "proxy"
+                ],
+                "summary": "代理获取图片（透传 Content-Type，缓存 1 小时）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "https%3A%2F%2Fmat1.gtimg.com%2Fsome%2Fimage.jpg",
+                        "description": "源图片 URL（需 URL 编码且域名在白名单内）",
+                        "name": "url",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "图片字节流",
+                        "schema": {
+                            "type": "file"
+                        },
+                        "headers": {
+                            "Cache-Control": {
+                                "type": "string",
+                                "description": "public, max-age=3600"
+                            },
+                            "Content-Type": {
+                                "type": "string",
+                                "description": "image/jpeg | image/png | image/webp | image/avif"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "missing url parameter / invalid url / url too long",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "host is not allowed",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "internal",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "fetch failed / upstream non-200",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/rmb-top10/refresh": {
             "post": {
                 "security": [
@@ -418,7 +1081,7 @@ const docTemplate = `{
                 "tags": [
                     "Exchange"
                 ],
-                "summary": "手动刷新人民币 Top10 汇率",
+                "summary": "手动刷新人民币 Top10 汇率（写入 Redis，TTL=24h）",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -454,6 +1117,29 @@ const docTemplate = `{
                 }
             }
         },
+        "controllers.CalculatorRequest": {
+            "type": "object",
+            "required": [
+                "expression"
+            ],
+            "properties": {
+                "expression": {
+                    "description": "计算表达式",
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.CalculatorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "result": {
+                    "type": "string"
+                }
+            }
+        },
         "controllers.CreateArticleDTO": {
             "type": "object",
             "required": [
@@ -475,6 +1161,123 @@ const docTemplate = `{
                 }
             }
         },
+        "controllers.DisplayResp": {
+            "type": "object",
+            "properties": {
+                "endPoint": {
+                    "$ref": "#/definitions/controllers.P"
+                },
+                "mapData": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "ok": {
+                    "type": "boolean"
+                },
+                "path": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controllers.P"
+                    }
+                },
+                "startPoint": {
+                    "$ref": "#/definitions/controllers.P"
+                }
+            }
+        },
+        "controllers.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.FileItem": {
+            "type": "object",
+            "properties": {
+                "content_type": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "downloads": {
+                    "type": "integer"
+                },
+                "fileinfo": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "hash": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "path": {
+                    "description": "相对 key（不暴露真实磁盘根）",
+                    "type": "string"
+                },
+                "size_bytes": {
+                    "type": "integer"
+                }
+            }
+        },
+        "controllers.Game2048SaveRequest": {
+            "type": "object",
+            "required": [
+                "score"
+            ],
+            "properties": {
+                "score": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "controllers.LBEntry": {
+            "type": "object",
+            "properties": {
+                "rank": {
+                    "description": "1-based",
+                    "type": "integer"
+                },
+                "score": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.ListFilesResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controllers.FileItem"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
         "controllers.LoginDTO": {
             "type": "object",
             "required": [
@@ -487,6 +1290,17 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "controllers.P": {
+            "type": "object",
+            "properties": {
+                "x": {
+                    "type": "integer"
+                },
+                "y": {
+                    "type": "integer"
                 }
             }
         },
@@ -503,6 +1317,135 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "controllers.UploadResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "msg": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.completeMapGameResp": {
+            "type": "object",
+            "properties": {
+                "gameComplete": {
+                    "description": "是否完成全部三轮",
+                    "type": "boolean"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "round": {
+                    "description": "当前轮次",
+                    "type": "integer"
+                },
+                "roundTime": {
+                    "description": "本轮用时（秒）",
+                    "type": "number"
+                },
+                "saved": {
+                    "description": "是否保存到数据库（仅第3轮）",
+                    "type": "boolean"
+                },
+                "totalTime": {
+                    "description": "累计总时间（秒）",
+                    "type": "number"
+                }
+            }
+        },
+        "controllers.guessReq": {
+            "type": "object",
+            "required": [
+                "number"
+            ],
+            "properties": {
+                "number": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 1
+                }
+            }
+        },
+        "controllers.guessResp": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "remaining": {
+                    "type": "integer"
+                },
+                "round": {
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "low/high/correct",
+                    "type": "string"
+                },
+                "totalScore": {
+                    "type": "integer"
+                }
+            }
+        },
+        "controllers.resetMapGameResp": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "reset": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "controllers.startMapGameResp": {
+            "type": "object",
+            "properties": {
+                "currentDistance": {
+                    "type": "integer"
+                },
+                "difficulty": {
+                    "type": "integer"
+                },
+                "endPoint": {
+                    "$ref": "#/definitions/controllers.P"
+                },
+                "mapData": {
+                    "description": "← 改这里",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "round": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "startPoint": {
+                    "$ref": "#/definitions/controllers.P"
+                },
+                "totalTime": {
+                    "type": "number"
+                }
+            }
         }
     }
 }`
@@ -513,8 +1456,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},
-	Title:            "Go_project API",
-	Description:      "接口文档",
+	Title:            "Go-Web项目 API",
+	Description:      "Go-Web 综合性Web应用接口文档",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

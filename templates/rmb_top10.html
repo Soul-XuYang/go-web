@@ -7,6 +7,14 @@
     <title>RMB汇率 Top10</title>
     <link rel="stylesheet" href="/static/base.css" />
     <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
         /* 覆盖 base.css：让本页按钮不占满整行 */
         .btn {
             width: auto;
@@ -19,6 +27,8 @@
         .card.wide {
             padding: 24px;
             max-width: 1080px;
+            width: 100%;
+            margin: 0 auto;
         }
 
         /* 工具栏：标题在左，按钮在右（横向紧挨） */
