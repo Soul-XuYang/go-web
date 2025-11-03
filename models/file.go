@@ -13,8 +13,8 @@ type Files struct {
 	FilePath   string `gorm:"not null;size:500"`                             // 存储路径（本地路径 or URL）
 	FileSize   int64  `gorm:"not null"`
 	Downloads  uint   `gorm:"default:0"` // 下载数-配合redis缓存
-	Hash       string `gorm:"size:64;uniqueIndex"`
-	FileInfo   string 
+	Hash       string `gorm:"size:64"`   // 移除uniqueIndex，允许重复文件
+	FileInfo   string
 	// 这里上传时间就是UpdatedAt
 }
 

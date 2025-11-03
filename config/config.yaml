@@ -23,12 +23,12 @@ superadmin: # 超级管理员账号
 
 local_api:
   baseURL: "https://restapi.amap.com/v3/ip" # 高德地图的默认api
-  apiKey:
+  apiKey: "0270ba7fa32241c95ff5446901b99f6b"
   LocationDailyLimit: 100 # 单个用户的使用上限制，硬编码默认为100
 
 translation_api:
   provider: "Kimi K2" # 可以是 "openai", "azure", "google" 等
-  apiKey: # 替换为实际的API密钥
+  apiKey: "sk-jyhcMDgKVf92eTIGK50HHYtivSBEi3JtUAjHOLgs4QgYHDhx"
   baseURL: "https://api.moonshot.cn/v1" # OpenAI API的基础URL
   model: "moonshot-v1-8k" # 这里使用kimi的模型
   LocationDailyLimit: 100 # 单个用户的使用上限制，硬编码默认为100
