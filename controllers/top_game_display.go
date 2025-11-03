@@ -24,7 +24,7 @@ func GameLeaderboards(c *gin.Context) {
 	for gameCode, zkey := range boards {  //这里只有一个面板
 		// 判断是否是"越低越好"的游戏
 		isLowerBetter := lowerIsBetter[gameCode]
-		items, err := readTopN(topK, zkey, isLowerBetter)  // items返回的是LBEntry的切片数据
+		items, err := readTopN(topK, zkey, isLowerBetter)  // items返回的是LBEntry的切片数据-对应应用的用户数据
 		if err != nil {
 			errors[gameCode] = err.Error() // 对应游戏的名称错误
 			continue

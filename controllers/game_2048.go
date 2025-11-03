@@ -6,6 +6,7 @@ import (
 	"project/global"
 	"project/models"
 	"sync"
+	"project/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -103,9 +104,9 @@ func save2048Score(uid uint, username string, score int) error {
 		return err
 	}
 
-	// 如果超过5条，删除最旧的
+	// 如果超过10条，删除最旧的
 	if cnt >= game2048_number {
-		deleteCount := cnt - 4 // 保留最新的5条
+		deleteCount := cnt - 4 // 保留最新的10条
 
 		// 查找最旧的记录ID
 		var oldIDs []uint
@@ -127,7 +128,8 @@ func save2048Score(uid uint, username string, score int) error {
 			}
 		}
 	}
-
+	// 上述的情况都已满足-无论是缓存满不满都要加入到redis里
+    _ = updateTop10BestAfterDB(config.RedisKeyTop10Game2048,config.RedisKeyUsernames,uid, username, score)
 	// 提交事务
 	return tx.Commit().Error
 }

@@ -47,8 +47,8 @@ type ArticleResp struct { //DTO这里是给数据库要更改的数据
 func CreateArticle(c *gin.Context) {
 	user_id := c.GetUint("user_id") // 中间件放进去的当前用户ID
 
-	var in CreateArticleDTO                       // 创建DTO对象
-	if err := c.ShouldBindJSON(&in); err != nil { //接受对象
+	var in CreateArticleDTO //获取前端的数据                      // 创建DTO对象
+	if err := c.ShouldBindJSON(&in); err != nil { //接受传来的数据对象
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

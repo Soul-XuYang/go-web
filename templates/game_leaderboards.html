@@ -25,7 +25,7 @@
         }
 
         .container {
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px 16px;
         }
@@ -71,38 +71,52 @@
             font-size: 0.9rem;
         }
 
-        .toolbar {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
         .leaderboard-container {
             display: flex;
+            gap: 16px;
             justify-content: center;
-            margin-bottom: 30px;
+            align-items: flex-start;
+            margin: 20px 0 30px 0;
+            flex-wrap: wrap;
         }
 
         .leaderboard-card {
             background: var(--card);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
-            padding: 24px;
+            padding: 20px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            width: 100%;
+            flex: 1 1 320px;
+            max-width: 380px;
+        }
+
+        @media (max-width: 1100px) {
+            .leaderboard-card {
+                flex: 1 1 280px;
+                max-width: 450px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .leaderboard-card {
+                flex: 1 1 100%;
+                max-width: 100%;
+            }
         }
 
         .card-title {
             margin: 0 0 8px 0;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: var(--text);
+            text-align: center;
         }
 
         .card-subtitle {
-            margin: 0 0 20px 0;
+            margin: 0 0 16px 0;
             color: var(--muted);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            text-align: center;
+            line-height: 1.4;
         }
 
         .leaderboard-table {
@@ -112,29 +126,40 @@
 
         .leaderboard-table th,
         .leaderboard-table td {
-            padding: 12px 8px;
+            padding: 10px 4px;
             text-align: left;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .leaderboard-table th:first-child,
+        .leaderboard-table td:first-child {
+            padding-left: 0;
+        }
+
+        .leaderboard-table th:last-child,
+        .leaderboard-table td:last-child {
+            padding-right: 0;
         }
 
         .leaderboard-table th {
             color: var(--muted);
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .leaderboard-table td {
             color: var(--text);
+            font-size: 0.9rem;
         }
 
         .rank-badge {
             display: inline-block;
-            min-width: 32px;
+            min-width: 28px;
             text-align: center;
-            padding: 4px 8px;
-            border-radius: 12px;
+            padding: 3px 6px;
+            border-radius: 10px;
             font-weight: bold;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
 
         .rank-1 {
@@ -162,6 +187,87 @@
             font-weight: 600;
         }
 
+        /* 个人成绩卡片 */
+        .my-stats-container {
+            max-width: 1200px;
+            margin: 0 auto 24px;
+            padding: 0;
+        }
+
+        .my-stats-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(16, 185, 129, 0.08) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 10px;
+            padding: 16px 20px;
+            box-shadow: 0 2px 12px rgba(59, 130, 246, 0.1);
+        }
+
+        .my-stats-title {
+            margin: 0 0 12px 0;
+            font-size: 1rem;
+            color: var(--text);
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            min-width: 240px;
+            flex: 0 1 auto;
+        }
+
+        .stat-game {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .stat-data {
+            text-align: right;
+            flex: 1;
+        }
+
+        .stat-score {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 2px;
+        }
+
+        .stat-rank {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .stat-rank.not-ranked {
+            color: #f59e0b;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                flex-direction: column;
+            }
+
+            .stat-item {
+                width: 100%;
+            }
+        }
+
         .footer {
             display: flex;
             justify-content: center;
@@ -181,20 +287,24 @@
             </div>
         </header>
 
-        <!-- 工具栏 -->
-        <div class="toolbar">
-            <button id="btnRefresh" class="btn-primary">刷新排行榜</button>
+        <!-- 个人成绩统计卡片 -->
+        <div class="my-stats-container">
+            <div class="my-stats-card">
+                <h3 class="my-stats-title">🏆 我的游戏成绩</h3>
+                <div class="stats-grid" id="myStatsWrap">
+                    <!-- JS 动态插入个人成绩 -->
+                </div>
+            </div>
         </div>
 
-        <!-- 排行榜卡片 -->
-        <div class="leaderboard-container">
-            <div class="leaderboard-card" id="boardWrap">
-                <!-- JS 动态插入排行榜内容 -->
-            </div>
+        <!-- 排行榜卡片容器 -->
+        <div class="leaderboard-container" id="boardWrap">
+            <!-- JS 动态插入排行榜卡片 -->
         </div>
 
         <!-- 底部按钮 -->
         <div class="footer">
+            <button id="btnRefresh" class="btn-primary">刷新排行榜</button>
             <button id="backHome" class="btn-primary">返回主菜单</button>
             <button id="logout" class="btn-primary">退出登录</button>
         </div>
@@ -204,12 +314,21 @@
         (function () {
             const $ = s => document.querySelector(s);
             const wrap = $('#boardWrap');
+            const myStatsWrap = $('#myStatsWrap');
 
             // 和后端的 gameCode 映射到展示标题
             const GAME_TITLES = {
-                'guess_game': '数字猜猜乐 · Top 10',
-                'map_game': '地图寻路挑战 · Top 10',
-                // 以后加更多：'snake': '贪吃蛇 · Top 10', ...
+                'guess_game': '数字猜猜乐',
+                'map_game': '地图寻路挑战',
+                '2048_game': '2048游戏',
+                // 以后加更多：'snake': '贪吃蛇', ...
+            };
+
+            // 游戏图标
+            const GAME_ICONS = {
+                'guess_game': '🎯',
+                'map_game': '🗺️',
+                '2048_game': '🎮',
             };
 
             function bind(id, handler) {
@@ -260,7 +379,7 @@
             }
 
             function titleByCode(code) {
-                return GAME_TITLES[code] || (code + ' · Top 10');
+                return GAME_TITLES[code] || code;
             }
 
             function renderCard(gameCode, items, currentUID) {
@@ -274,9 +393,11 @@
                 const subtitle = document.createElement('p');
                 subtitle.className = 'card-subtitle';
                 if (gameCode === 'map_game') {
-                    subtitle.textContent = '展示前 10 名最快完成记录（用时越短排名越高）。';
+                    subtitle.textContent = 'Top 10 最快完成记录';
+                } else if (gameCode === '2048_game') {
+                    subtitle.textContent = 'Top 10 最高分数';
                 } else {
-                    subtitle.textContent = '展示 Redis ZSET 的前 10 名（按分数降序）。';
+                    subtitle.textContent = 'Top 10 最佳成绩';
                 }
 
                 card.appendChild(title);
@@ -296,10 +417,15 @@
                 table.className = 'leaderboard-table';
 
                 const thead = document.createElement('thead');
-                const scoreLabel = gameCode === 'map_game' ? '用时(秒)' : '分数';
+                let scoreLabel = '分数';
+                if (gameCode === 'map_game') {
+                    scoreLabel = '用时';
+                } else if (gameCode === '2048_game') {
+                    scoreLabel = '分数';
+                }
                 thead.innerHTML = `
       <tr>
-        <th style="width:80px;">名次</th>
+        <th style="width:60px;">名次</th>
         <th>用户</th>
         <th class="score">${scoreLabel}</th>
       </tr>`;
@@ -330,6 +456,8 @@
                     if (gameCode === 'map_game') {
                         const seconds = parseFloat(row.score);
                         tdScore.textContent = isNaN(seconds) ? row.score : seconds.toFixed(2) + 's';
+                    } else if (gameCode === '2048_game') {
+                        tdScore.textContent = parseInt(row.score).toLocaleString();
                     } else {
                         tdScore.textContent = row.score;
                     }
@@ -345,13 +473,75 @@
                 return card;
             }
 
+            // 渲染个人成绩卡片
+            function renderMyStats(gamesData, username) {
+                myStatsWrap.innerHTML = '';
+
+                if (!gamesData || Object.keys(gamesData).length === 0) {
+                    myStatsWrap.innerHTML = '<div style="text-align:center;color:var(--muted)">暂无个人成绩</div>';
+                    return;
+                }
+
+                // 按固定顺序渲染：guess_game, map_game, 2048_game
+                const order = ['guess_game', 'map_game', '2048_game'];
+
+                for (const code of order) {
+                    if (!gamesData[code]) continue;
+
+                    const myRank = gamesData[code].my_rank;
+                    const statItem = document.createElement('div');
+                    statItem.className = 'stat-item';
+
+                    const gameInfo = document.createElement('div');
+                    const gameName = document.createElement('div');
+                    gameName.className = 'stat-game';
+                    gameName.textContent = `${GAME_ICONS[code] || '🎮'} ${GAME_TITLES[code] || code}`;
+                    gameInfo.appendChild(gameName);
+
+                    const statData = document.createElement('div');
+                    statData.className = 'stat-data';
+
+                    // 分数显示
+                    const scoreDiv = document.createElement('div');
+                    scoreDiv.className = 'stat-score';
+                    if (code === 'map_game') {
+                        const seconds = parseFloat(myRank.best);
+                        scoreDiv.textContent = isNaN(seconds) ? myRank.best : seconds.toFixed(2) + 's';
+                    } else if (code === '2048_game') {
+                        scoreDiv.textContent = parseInt(myRank.best).toLocaleString() + ' 分';
+                    } else {
+                        scoreDiv.textContent = myRank.best + ' 分';
+                    }
+
+                    // 排名显示
+                    const rankDiv = document.createElement('div');
+                    rankDiv.className = 'stat-rank';
+                    if (myRank.rank === 0) {
+                        rankDiv.classList.add('not-ranked');
+                        rankDiv.textContent = '未上榜';
+                    } else {
+                        rankDiv.textContent = `排名 #${myRank.rank}`;
+                    }
+
+                    statData.appendChild(scoreDiv);
+                    statData.appendChild(rankDiv);
+
+                    statItem.appendChild(gameInfo);
+                    statItem.appendChild(statData);
+                    myStatsWrap.appendChild(statItem);
+                }
+            }
+
             async function loadBoards() {
-                wrap.innerHTML = ''; // 清空
+                wrap.innerHTML = ''; // 清空排行榜
+                myStatsWrap.innerHTML = '<div style="text-align:center;color:var(--muted)">加载中…</div>';
+
                 const me = await loadMe();
 
                 let data;
                 try {
-                    const r = await authFetch('/api/game/leaderboards');
+                    // 调用新的API，同时获取排行榜和个人数据
+                    const r = await authFetch('/api/game/leaderboard/me');
                     data = await r.json();
                 } catch (e) {
                     console.error('读取排行榜失败：', e);
@@ -359,26 +549,32 @@
                     errCard.className = 'card';
                     errCard.innerHTML = `<h2>读取失败</h2><p class="sub">请稍后再试。</p>`;
                     wrap.appendChild(errCard);
+                    myStatsWrap.innerHTML = '<div style="text-align:center;color:var(--muted)">加载失败</div>';
                     return;
                 }
 
-                const boards = (data && data.leaderboards) || {};
-                const codes = Object.keys(boards);
+                const games = (data && data.games) || {};
+                const codes = Object.keys(games);
 
-                // 若后端暂时只有一个 guess_game，这里也能正常工作
                 if (codes.length === 0) {
                     const empty = document.createElement('section');
                     empty.className = 'card';
                     empty.innerHTML = `<h2>暂无排行榜</h2><p class="sub">没有可展示的数据。</p>`;
                     wrap.appendChild(empty);
+                    myStatsWrap.innerHTML = '<div style="text-align:center;color:var(--muted)">暂无数据</div>';
                     return;
                 }
 
+                // 渲染排行榜卡片
                 for (const code of codes) {
-                    const items = boards[code] || [];
+                    const gameData = games[code];
+                    const items = gameData.leaderboard || [];
                     const card = renderCard(code, items, me.id);
                     wrap.appendChild(card);
                 }
+
+                // 渲染个人成绩
+                renderMyStats(games, data.username);
             }
 
             // 交互

@@ -7,8 +7,23 @@
     <title>数字猜猜乐小游戏</title>
     <link rel="stylesheet" href="/static/base.css" />
     <style>
-        :root {
-            --muted: #7d9ac2;
+        /* 使用 base.css 的主题变量，自动适配亮色/暗色模式 */
+        .card,
+        .card *,
+        .card h2,
+        .card p,
+        .card div,
+        .card span {
+            color: var(--text) !important;
+        }
+
+        .card .sub {
+            color: var(--muted) !important;
+        }
+
+        .card .muted,
+        .card small.muted {
+            color: var(--muted) !important;
         }
 
         body {
@@ -28,6 +43,8 @@
         .brand h1 {
             margin: 0;
             font-size: 1.35rem;
+            color: var(--text) !important;
+            font-weight: 600;
         }
 
         .userbox {
@@ -92,11 +109,13 @@
         .card h2 {
             margin: 0 0 6px;
             font-size: 1.22rem;
+            font-weight: 600;
         }
 
-        .sub {
-            margin: 0;
-            color: var(--muted);
+        .card hr {
+            border: none;
+            border-top: 1px solid rgba(255, 255, 255, .1);
+            margin: 16px 0;
         }
 
         .row {
@@ -127,6 +146,7 @@
             border-radius: 10px;
             font-size: 1rem;
             font-weight: 600;
+            color: #ffffff !important;
         }
 
         #btnGuess {
@@ -143,6 +163,7 @@
         #btnClear {
             background: #6b7280;
             border-color: #6b7280;
+            color: #ffffff !important;
         }
 
         #btnClear:hover {
@@ -157,33 +178,54 @@
         }
 
         .chip {
-            border: 1px solid rgba(255, 255, 255, .12);
-            background: rgba(255, 255, 255, .05);
+            border: 1px solid rgba(0, 0, 0, .1);
+            background: rgba(0, 0, 0, .02);
             padding: 6px 12px;
             border-radius: 999px;
             font-size: .94rem;
+            color: var(--muted) !important;
         }
 
+        .chip b {
+            color: var(--text) !important;
+            font-weight: 600;
+        }
+
+        /* 覆盖 base.css 的 .msg 样式 */
         .msg {
-            padding: 14px 16px;
-            border-radius: 12px;
-            line-height: 1.6;
-            background: rgba(255, 255, 255, .04);
-            border: 1px solid rgba(255, 255, 255, .1);
-            min-height: 52px;
+            padding: 14px 16px !important;
+            border-radius: 12px !important;
+            line-height: 1.6 !important;
+            background: rgba(0, 0, 0, .03) !important;
+            border: 1px solid rgba(0, 0, 0, .1) !important;
+            min-height: 52px !important;
+            color: var(--text) !important;
+            font-size: 1.05rem !important;
+            font-weight: 500 !important;
+            text-align: center !important;
+            display: block !important;
+            margin-top: 10px !important;
         }
 
         .msg.low {
-            border-color: rgba(59, 130, 246, .35);
+            border-color: #3b82f6 !important;
+            background: rgba(59, 130, 246, .12) !important;
+            color: #2563eb !important;
+            font-weight: 600 !important;
         }
 
         .msg.high {
-            border-color: rgba(245, 158, 11, .35);
+            border-color: #f59e0b !important;
+            background: rgba(245, 158, 11, .12) !important;
+            color: #d97706 !important;
+            font-weight: 600 !important;
         }
 
         .msg.correct {
-            border-color: rgba(34, 197, 94, .45);
-            background: rgba(34, 197, 94, .08);
+            border-color: #22c55e !important;
+            background: rgba(34, 197, 94, .12) !important;
+            color: #16a34a !important;
+            font-weight: 700 !important;
         }
 
         .progress {
@@ -310,8 +352,8 @@
                 </div>
             </div>
 
-            <div class="stat">
-                <span class="chip muted">提示：完成三轮后会自动开启新的一局。</span>
+            <div class="stat" style="justify-content: center;">
+                <span class="chip" style="color: #94a3b8;">💡 提示：完成三轮后会自动开启新的一局。</span>
             </div>
         </section>
     </main>

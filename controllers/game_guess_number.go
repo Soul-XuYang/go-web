@@ -275,11 +275,11 @@ func saveGameScore(uid uint, username string, score int) (err error) {
 		return err
 	}
 
-	defer func() {
+	defer func() {  //在最后才回退
 		if p := recover(); p != nil {
 			_ = tx.Rollback()
 			panic(p)
-		} else if err != nil {
+		} else if err != nil { //有错误就回退
 			_ = tx.Rollback()
 		} else {
 			err = tx.Commit().Error
@@ -302,7 +302,7 @@ func saveGameScore(uid uint, username string, score int) (err error) {
 		}
 		// 新增成功后更新 redis 排行（事务提交完毕后也会执行，因为 defer commit 在后）
 		// 为避免事务未提交即更新 redis，先尝试更新（若想更严格可在事务外再调用）
-		_ = updateTop10BestAfterDB(uid, username, score)
+		_ = updateTop10BestAfterDB(config.RedisKeyTop10Best,config.RedisKeyUsernames,uid, username, score) //更新缓存
 		return
 	}
 
@@ -317,7 +317,7 @@ func saveGameScore(uid uint, username string, score int) (err error) {
 			rec := models.Game_Guess_Score{UserID: uid, Score: score, UserName: username}
 			err = tx.Create(&rec).Error
 			if err == nil {
-				_ = updateTop10BestAfterDB(uid, username, score)
+				_ = updateTop10BestAfterDB(config.RedisKeyTop10Best,config.RedisKeyUsernames,uid, username, score) //创建用户
 			}
 			return
 		}
@@ -335,16 +335,16 @@ func saveGameScore(uid uint, username string, score int) (err error) {
 	}
 
 	// 更新 redis 排行
-	_ = updateTop10BestAfterDB(uid, username, score)
+	_ = updateTop10BestAfterDB(config.RedisKeyTop10Best,config.RedisKeyUsernames,uid, username, score)
 
 	return
 }
 
 
 //--------------------------------------------------
-// lua 脚本，用于更新排行榜（保留 topK，并保存用户名哈希）
+// lua 脚本保证原子性，用于更新排行榜（保留 topK，并保存用户名哈希）
 // 这里获取当前玩家再排行榜的分数，不沉溺在或者分数更高则更新玩家的分数
-// 删除多余的排名，确保只保留 topK
+// 删除多余的排名，确保只保留 topK -
 var luaUpdateTop10Best = redis.NewScript(`
 local key     = KEYS[1]
 local hname   = KEYS[2]
@@ -369,13 +369,13 @@ end
 return 1
 `)
 
-func updateTop10BestAfterDB(userID uint, username string, finalScore int) error {
+func updateTop10BestAfterDB(redisgameKey string, redisUserKey string,userID uint, username string, finalScore int) error {
 	if userID == 0 || finalScore < 0 || global.RedisDB == nil {
 		return nil
 	}
 	member := strconv.FormatUint(uint64(userID), 10) //这里的member是字符串类型，传入的id是分数表中的userID
-	_, err := luaUpdateTop10Best.Run(global.RedisDB,
-		[]string{config.RedisKeyTop10Best, config.RedisKeyUsernames},
+	_, err := luaUpdateTop10Best.Run(global.RedisDB,  //数据库连接池对象-Redis的两个表-各个参数
+		[]string{redisgameKey, redisUserKey},
 		member,     // ARGV[1]
 		finalScore, // ARGV[2]
 		10,         // ARGV[3] TopK=10

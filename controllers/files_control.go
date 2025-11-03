@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -129,18 +128,24 @@ func UploadFile(c *gin.Context) {
 	}
 	defer out.Close()
 
-	//每个文件有对应的Hash值
-	fileHash, written, err := utils.CopyWithHash(out, reader, maxLoad, header.Size) //边写入文件边读取其Hash值
-	if err != nil {                                                                 //依据结果写错误情况
+	// 直接拷贝文件，不计算hash（已移除去重功能）
+	written, err := io.Copy(out, io.LimitReader(reader, maxLoad+1))
+	if err != nil {
 		_ = os.Remove(tmpRel)
-		switch {
-		case errors.Is(err, utils.ErrSizeExceeded):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "file size exceeded limit"})
-		case errors.Is(err, utils.ErrSizeMismatch):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "file size mismatch or exceeded"})
-		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "write file failed"})
-		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "write file failed"})
+		return
+	}
+
+	// 检查文件大小
+	if written > maxLoad {
+		_ = os.Remove(tmpRel)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file size exceeded limit"})
+		return
+	}
+
+	if header.Size > 0 && written != header.Size {
+		_ = os.Remove(tmpRel)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file size mismatch"})
 		return
 	}
 
@@ -156,14 +161,14 @@ func UploadFile(c *gin.Context) {
 	// 相对 key（存库/对外） - 这个易错保证所有系统上的路径分割符一致 - 易错这个
 	finalKey := filepath.ToSlash(filepath.Join(relDir, baseName)) //不包括主的相对路径
 
-	// 入库
+	// 入库（不进行哈希去重检查，允许上传相同内容的文件）
 	newFile := models.Files{
 		UserID:   userID,
 		Filename: baseName,
 		FileType: contentType,
 		FilePath: finalKey, // 相对 key
 		FileSize: written,
-		Hash:     fileHash,
+		Hash:     "",                    // 不存储hash，避免唯一索引冲突
 		FileInfo: c.PostForm("content"), //上传的的文本信息内容
 	}
 	if err := global.DB.Create(&newFile).Error; err != nil {
@@ -360,9 +365,6 @@ func DeleteFile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"msg": "deleted"})
 }
 
-
-
-
 // DTO结构
 type FileItem struct {
 	ID          uint      `json:"id"`
@@ -372,8 +374,8 @@ type FileItem struct {
 	Hash        string    `json:"hash"`
 	Path        string    `json:"path"` // 相对 key（不暴露真实磁盘根）
 	CreatedAt   time.Time `json:"created_at"`
-	Downloads    uint    `json:"downloads"`
-	FileInfo     string  `json:"fileinfo"`
+	Downloads   uint      `json:"downloads"`
+	FileInfo    string    `json:"fileinfo"`
 }
 
 type ListFilesResponse struct {
@@ -382,6 +384,7 @@ type ListFilesResponse struct {
 	PageSize int        `json:"page_size"`
 	Items    []FileItem `json:"items"`
 }
+
 // ListMyFiles godoc
 // @Summary      列出当前用户的文件
 // @Description  支持按关键字、扩展名、MIME、时间范围、大小范围筛选，分页返回；按 created_at 排序。
@@ -400,11 +403,16 @@ type ListFilesResponse struct {
 // @Param        order        query  string false "排序：共四种组合，两种排序方式-上传日期和文件大小 created_desc（默认）/created_asc/size_desc/size_asc"
 // @Success      200  {object}  ListFilesResponse
 // @Failure      401  {object}  ErrorResponse
-// @Router       /files/lists [get]  
+// @Router       /files/lists [get]
 func ListMyFiles(c *gin.Context) { //这里是展示用户的所有文件-并加有限制参数
 	userID := c.GetUint("user_id")
 	if userID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	// 查找前先校准数据库
+	if err := syncFileWithDB(userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to sync files"})
 		return
 	}
 
@@ -517,8 +525,8 @@ func ListMyFiles(c *gin.Context) { //这里是展示用户的所有文件-并加
 			Hash:        r.Hash,
 			Path:        r.FilePath, // 相对 key，前端需要拼下载接口或你提供的 URL
 			CreatedAt:   r.CreatedAt,
-			Downloads:    r.Downloads, //下载数
-			FileInfo: r.FileInfo,
+			Downloads:   r.Downloads, //下载数
+			FileInfo:    r.FileInfo,
 		})
 	}
 
@@ -528,4 +536,29 @@ func ListMyFiles(c *gin.Context) { //这里是展示用户的所有文件-并加
 		PageSize: size,  //每页的大小
 		Items:    items, //数据
 	})
+}
+
+// 校准数据函数
+func syncFileWithDB(userID uint) error { //依据传来的用户id校准
+	// 获取该用户的所有文件记录
+	var files []models.Files
+	if err := global.DB.Where("user_id = ?", userID).Find(&files).Error; err != nil {
+		return err
+	}
+	baseRel := config.AppConfig.Upload.Storagepath
+	for _, f := range files { //一一查询遍历
+		// 构建完整文件路径
+		relPath, err := utils.SafeJoinRel(baseRel, f.FilePath)
+		if err != nil {
+			continue
+		}
+
+		// 检查文件是否存在
+		if _, err := os.Stat(relPath); os.IsNotExist(err) { //获得错误如果是不存在文件的错误-删除对应的数据
+			if err := global.DB.Delete(&f).Error; err != nil { //GORM会以这个建构提的主键即ID字段来删除
+				return err
+			}
+		}
+	}
+	return nil
 }

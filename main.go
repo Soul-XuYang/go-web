@@ -11,9 +11,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// @title       Go_project API
+// @title       Go-Web项目 API
 // @version     0.0.1
-// @description 接口文档
+// @description Go-Web 综合性Web应用接口文档
 // @BasePath    /api
 func main() {
 	//初始化日志以及监控代码程序
@@ -23,7 +23,7 @@ func main() {
 	defer log.Sync() //确保日志写入
 	Monitor := log.NewMonitor()
 	dir, err := os.Getwd()
-	if err != nil { 
+	if err != nil {
 		log.L().Error("Failed to get Path", zap.Error(err))
 	}
 	Monitor.StartMonitor(dir)

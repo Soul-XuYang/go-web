@@ -116,15 +116,17 @@ type completeMapGameResp struct { // 返回完成游戏的数据
 	GameComplete bool    `json:"gameComplete"` // 是否完成全部三轮
 }
 
-/********* Handlers *********/
+type resetMapGameResp struct { // 返回重置游戏状态的数据
+	Message string `json:"message"`
+	Reset   bool   `json:"reset"`
+}
 
 // GameMapStart godoc
 // @Summary     开始地图游戏
 // @Tags        Game
 // @Security    Bearer
 // @Produce     json
-// @Param       body  body      startMapGameReq  true  "请求参数"
-// @Success     200   {object}  startMapGameResp  "响应数据"
+// @Success     200  {object}  startMapGameResp  "响应数据"
 // @Router      /api/game/map/start [post]
 func GameMapStart(c *gin.Context) { //开始游戏
 	// 不用请求参数-因为用户一点击按钮就开始游戏了
@@ -135,7 +137,7 @@ func GameMapStart(c *gin.Context) { //开始游戏
 	}
 
 	mapGame.mu.Lock() //加锁
-	
+
 	// 取/建玩家状态
 	p, ok := mapGame.Players[uid] // 取玩家状态
 	if !ok {
@@ -155,8 +157,8 @@ func GameMapStart(c *gin.Context) { //开始游戏
 	startPoint.X, startPoint.Y = start_index(arr)
 
 	// 简化路径生成 - 直接生成足够的路径-依据难度升级计算
-	randNumber := rand.Intn(difficulty+1) //这里易错不能用0一定会出问题
-	switch  {
+	randNumber := rand.Intn(difficulty + 1) //这里易错不能用0一定会出问题
+	switch {
 	case randNumber <= 1:
 		go_next(arr, startPoint, size, difficulty) //difficulty保证我们的go_next肯定初始的步数不会出错
 	case randNumber == 2:
@@ -293,7 +295,7 @@ func GameMapComplete(c *gin.Context) {
 // @Tags        Game
 // @Security    Bearer
 // @Produce     json
-// @Success     200   {object}  gin.H{"message": "当前用户的地图游戏状态已重置，可以重新开始游戏", "reset":true}  "响应数据"
+// @Success     200   {object}  resetMapGameResp  "响应数据"
 // @Router      /api/game/map/reset [post]
 func GameMapReset(c *gin.Context) { // 重置按钮-清空当前用户的游戏状态-注意清空要一个个来
 	uid := c.GetUint("user_id")
@@ -323,7 +325,7 @@ type DisplayResp struct {
 // @Tags        Game
 // @Security    Bearer
 // @Produce     json
-// @Success     200   {object}  DisplayResp{ MapData:rows, StartPoint: startPoint,EndPoint:endPoint, Ok:ok,Path:path,}
+// @Success     200   {object}  DisplayResp  "响应数据"
 // @Router      /api/game/map/display [get]
 func Display_Map(c *gin.Context) {
 	grid := array_init(displayNum, displayNum+8)

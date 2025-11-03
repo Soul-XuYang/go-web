@@ -262,6 +262,42 @@
             top: 0;
         }
 
+        /* 新方块出现动画 */
+        @keyframes appear {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .tile-new {
+            animation: appear 0.2s ease-in-out;
+        }
+
+        /* 合并动画 */
+        @keyframes merge {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .tile-merged {
+            animation: merge 0.2s ease-in-out;
+        }
+
         /* 数字方块颜色 */
         .tile-2 {
             background: #eee4da;
@@ -497,7 +533,8 @@
                 <p class="game-intro">
                     <strong>使用方向键移动方块！</strong><br>
                     当两个相同数字的方块碰撞时，它们会合并成一个。<br>
-                    目标是达到 <strong>2048</strong>！
+                    目标是达到 <strong>2048</strong> 或更高分数！<br>
+                    <strong>游戏结束条件：</strong>棋盘满且无法移动时
                 </p>
             </div>
 
@@ -508,6 +545,17 @@
                     <button class="btn btn-primary" id="newGameBtn">新游戏</button>
                     <button class="btn btn-success" id="saveScoreBtn" style="display: none;">保存分数</button>
                     <button class="btn btn-secondary" id="backBtn">返回游戏中心</button>
+                </div>
+                <div
+                    style="margin-top: 16px; padding: 12px; background: rgba(255, 255, 255, 0.5); border-radius: 8px; text-align: center;">
+                    <label
+                        style="display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="timerToggle" checked style="width: auto; height: auto;">
+                        <span style="font-size: 0.9rem; color: var(--muted);">启用倒计时 (90秒)</span>
+                    </label>
+                    <div id="timerDisplay"
+                        style="font-size: 1.3rem; font-weight: 700; color: var(--primary); margin-top: 8px;">
+                        01:30</div>
                 </div>
             </div>
         </div>
@@ -521,6 +569,10 @@
             let bestScore = 0;
             let gameOver = false;
             let gameWon = false;
+            let timeLeft = 90; // 90秒倒计时（1分半）
+            let timerInterval = null;
+            let mergedCells = []; // 记录本次合并的位置
+            let newTiles = []; // 记录新生成的方块位置
 
             // DOM 元素
             const gridEl = document.getElementById('grid');
@@ -531,6 +583,8 @@
             const messageTextEl = document.getElementById('messageText');
             const finalScoreEl = document.getElementById('finalScore');
             const saveScoreBtnEl = document.getElementById('saveScoreBtn');
+            const timerToggleEl = document.getElementById('timerToggle');
+            const timerDisplayEl = document.getElementById('timerDisplay');
 
             // 获取token
             function getStoredToken() {
@@ -576,19 +630,91 @@
                 }
             }
 
+            // 倒计时函数
+            function startTimer() {
+                // 只有启用倒计时才启动
+                if (!timerToggleEl.checked) {
+                    timerDisplayEl.style.display = 'none';
+                    return;
+                }
+
+                timerDisplayEl.style.display = 'block';
+                if (timerInterval) clearInterval(timerInterval);
+                timeLeft = 90; // 90秒倒计时
+                updateTimer();
+
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateTimer();
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        if (!gameOver) {
+                            gameOver = true;
+                            showMessage('时间到！', `游戏结束！最终分数: ${score}`);
+                            saveScoreBtnEl.style.display = 'inline-block';
+                        }
+                    }
+                }, 1000);
+            }
+
+            function updateTimer() {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                timerDisplayEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+                // 最后10秒变红色提示
+                if (timeLeft <= 10) {
+                    timerDisplayEl.style.color = '#ef4444';
+                } else {
+                    timerDisplayEl.style.color = 'var(--primary)';
+                }
+            }
+
+            function stopTimer() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+            }
+
+            // 倒计时开关事件
+            timerToggleEl.addEventListener('change', () => {
+                if (!gameOver) {
+                    if (timerToggleEl.checked) {
+                        startTimer();
+                    } else {
+                        stopTimer();
+                        timerDisplayEl.style.display = 'none';
+                    }
+                }
+            });
+
             // 初始化游戏
             function initGame() {
+                console.log('=== 初始化游戏 ===');
                 board = Array(gridSize).fill(null).map(() => Array(gridSize).fill(0));
                 score = 0;
                 gameOver = false;
                 gameWon = false;
+                mergedCells = [];
+                newTiles = [];
                 updateScore();
                 clearTiles();
                 hideMessage();
+
+                console.log('添加第一个随机方块');
                 addRandomTile();
+                console.log('棋盘状态1:', JSON.parse(JSON.stringify(board)));
+
+                console.log('添加第二个随机方块');
                 addRandomTile();
+                console.log('棋盘状态2:', JSON.parse(JSON.stringify(board)));
+
                 renderBoard();
                 saveScoreBtnEl.style.display = 'none';
+                startTimer(); // 启动倒计时
             }
 
             // 添加随机方块
@@ -602,9 +728,14 @@
                     }
                 }
 
+                console.log('空格子数量:', emptyCells.length);
+
                 if (emptyCells.length > 0) {
                     const { row, col } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-                    board[row][col] = Math.random() < 0.9 ? 2 : 4;
+                    const value = Math.random() < 0.9 ? 2 : 4;
+                    board[row][col] = value;
+                    newTiles.push({ row, col }); // 记录新生成的方块
+                    console.log(`新方块生成: [${row}, ${col}] = ${value}`);
                 }
             }
 
@@ -620,6 +751,9 @@
                 const cellSize = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
                 const cellGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-gap'));
 
+                // 调试：打印棋盘状态
+                console.log('渲染棋盘:', board);
+
                 for (let i = 0; i < gridSize; i++) {
                     for (let j = 0; j < gridSize; j++) {
                         if (board[i][j] !== 0) {
@@ -627,6 +761,8 @@
                         }
                     }
                 }
+
+                console.log('渲染完成，方块数量:', gridEl.querySelectorAll('.tile').length);
             }
 
             // 创建方块
@@ -634,9 +770,27 @@
                 const tile = document.createElement('div');
                 tile.className = `tile tile-${value > 2048 ? 'super' : value}`;
                 tile.textContent = value;
+
+                // 检查是否是新生成的方块
+                const isNew = newTiles.some(t => t.row === row && t.col === col);
+                if (isNew) {
+                    tile.classList.add('tile-new');
+                }
+
+                // 检查是否是合并后的方块
+                const isMerged = mergedCells.some(t => t.row === row && t.col === col);
+                if (isMerged) {
+                    tile.classList.add('tile-merged');
+                }
+
                 // 关键修复：数字方块的位置要相对于grid容器，不包含grid-container的padding
-                tile.style.left = `${col * (cellSize + cellGap)}px`;
-                tile.style.top = `${row * (cellSize + cellGap)}px`;
+                const leftPos = col * (cellSize + cellGap);
+                const topPos = row * (cellSize + cellGap);
+                tile.style.left = `${leftPos}px`;
+                tile.style.top = `${topPos}px`;
+
+                console.log(`创建方块: value=${value}, pos=[${row},${col}], left=${leftPos}px, top=${topPos}px`);
+
                 gridEl.appendChild(tile);
             }
 
@@ -655,20 +809,35 @@
                 if (gameOver) return false;
 
                 let moved = false;
+                mergedCells = []; // 重置合并记录
+                newTiles = []; // 重置新方块记录
 
                 if (direction === 'left') {
                     for (let i = 0; i < gridSize; i++) {
-                        const row = slideAndMerge(board[i]);
-                        board[i] = row.tiles;
-                        if (row.moved) moved = true;
-                        score += row.scoreGained;
+                        const result = slideAndMerge(board[i]);
+                        board[i] = result.tiles;
+                        if (result.moved) moved = true;
+                        score += result.scoreGained;
+                        // 记录合并位置
+                        for (let j = 0; j < gridSize; j++) {
+                            if (result.mergedFlags[j]) {
+                                mergedCells.push({ row: i, col: j });
+                            }
+                        }
                     }
                 } else if (direction === 'right') {
                     for (let i = 0; i < gridSize; i++) {
-                        const row = slideAndMerge(board[i].slice().reverse());
-                        board[i] = row.tiles.reverse();
-                        if (row.moved) moved = true;
-                        score += row.scoreGained;
+                        const result = slideAndMerge(board[i].slice().reverse());
+                        const reversedTiles = result.tiles.slice().reverse();
+                        board[i] = reversedTiles;
+                        if (result.moved) moved = true;
+                        score += result.scoreGained;
+                        // 记录合并位置
+                        for (let j = 0; j < gridSize; j++) {
+                            if (result.mergedFlags[gridSize - 1 - j]) {
+                                mergedCells.push({ row: i, col: j });
+                            }
+                        }
                     }
                 } else if (direction === 'up') {
                     for (let j = 0; j < gridSize; j++) {
@@ -679,16 +848,29 @@
                         }
                         if (result.moved) moved = true;
                         score += result.scoreGained;
+                        // 记录合并位置
+                        for (let i = 0; i < gridSize; i++) {
+                            if (result.mergedFlags[i]) {
+                                mergedCells.push({ row: i, col: j });
+                            }
+                        }
                     }
                 } else if (direction === 'down') {
                     for (let j = 0; j < gridSize; j++) {
                         const col = board.map(row => row[j]).reverse();
                         const result = slideAndMerge(col);
+                        const reversedTiles = result.tiles.slice().reverse();
                         for (let i = 0; i < gridSize; i++) {
-                            board[i][j] = result.tiles.reverse()[i];
+                            board[i][j] = reversedTiles[i];
                         }
                         if (result.moved) moved = true;
                         score += result.scoreGained;
+                        // 记录合并位置
+                        for (let i = 0; i < gridSize; i++) {
+                            if (result.mergedFlags[gridSize - 1 - i]) {
+                                mergedCells.push({ row: i, col: j });
+                            }
+                        }
                     }
                 }
 
@@ -697,19 +879,22 @@
                     addRandomTile();
                     renderBoard();
 
-                    // 检查是否达到2048
+                    // 达到2048只是显示祝贺消息，但游戏继续
                     if (!gameWon && checkWin()) {
                         gameWon = true;
-                        showMessage('恭喜获胜！', `您达到了 2048！分数: ${score}`);
-                        saveScoreBtnEl.style.display = 'inline-block';
+                        // 不停止游戏，只显示提示
+                        setTimeout(() => {
+                            alert('🎉 恭喜达到 2048！游戏继续，挑战更高分数！');
+                        }, 200);
                     }
+                }
 
-                    // 检查游戏是否结束
-                    if (isGameOver()) {
-                        gameOver = true;
-                        showMessage('游戏结束！', `最终分数: ${score}`);
-                        saveScoreBtnEl.style.display = 'inline-block';
-                    }
+                // 在每次移动尝试后检查游戏是否结束（无法继续移动）
+                if (!gameOver && isGameOver()) {
+                    gameOver = true;
+                    stopTimer();
+                    showMessage('游戏结束！', `无法继续移动！最终分数: ${score}`);
+                    saveScoreBtnEl.style.display = 'inline-block';
                 }
 
                 return moved;
@@ -721,24 +906,33 @@
                 let moved = false;
                 const original = [...tiles];
 
+                console.log('合并前:', original);
+
                 // 移除0
                 let filtered = tiles.filter(x => x !== 0);
 
                 // 合并相同的
                 const merged = [];
+                const mergedFlags = []; // 记录哪些位置发生了合并
+
                 for (let i = 0; i < filtered.length; i++) {
                     if (i < filtered.length - 1 && filtered[i] === filtered[i + 1]) {
-                        merged.push(filtered[i] * 2);
-                        scoreGained += filtered[i] * 2;
-                        i++;
+                        const mergedValue = filtered[i] * 2;
+                        merged.push(mergedValue);
+                        mergedFlags.push(true); // 标记这个位置发生了合并
+                        scoreGained += mergedValue;
+                        console.log(`合并: ${filtered[i]} + ${filtered[i]} = ${mergedValue}`);
+                        i++; // 跳过下一个已合并的方块
                     } else {
                         merged.push(filtered[i]);
+                        mergedFlags.push(false);
                     }
                 }
 
                 // 填充0
                 while (merged.length < gridSize) {
                     merged.push(0);
+                    mergedFlags.push(false);
                 }
 
                 // 检查是否有移动
@@ -749,7 +943,9 @@
                     }
                 }
 
-                return { tiles: merged, moved, scoreGained };
+                console.log('合并后:', merged, '移动:', moved);
+
+                return { tiles: merged, moved, scoreGained, mergedFlags };
             }
 
             // 检查是否获胜
@@ -815,8 +1011,10 @@
 
                     const data = await response.json();
                     if (response.ok) {
-                        alert('分数保存成功！');
+                        alert('分数保存成功！已更新排行榜');
                         saveScoreBtnEl.style.display = 'none';
+                        // 可选：保存后跳转到排行榜
+                        // setTimeout(() => { location.href = '/page/game/leaderboards'; }, 1000);
                     } else {
                         alert(data.error || '保存失败');
                     }

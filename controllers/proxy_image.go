@@ -27,10 +27,10 @@ var proxyAllowedHosts = map[string]bool{
 // @Success 200 {file} file "图片字节流"
 // @Header 200 {string} Content-Type "image/jpeg | image/png | image/webp | image/avif"
 // @Header 200 {string} Cache-Control "public, max-age=3600"
-// @Failure 400 {object} gin.H "missing url parameter / invalid url / url too long"
-// @Failure 403 {object} gin.H "host is not allowed"
-// @Failure 502 {object} gin.H "fetch failed / upstream non-200"
-// @Failure 500 {object} gin.H "internal"
+// @Failure 400 {object} ErrorResponse "missing url parameter / invalid url / url too long"
+// @Failure 403 {object} ErrorResponse "host is not allowed"
+// @Failure 502 {object} ErrorResponse "fetch failed / upstream non-200"
+// @Failure 500 {object} ErrorResponse "internal"
 // @Router /proxy [get]
 func ProxyImage(c *gin.Context) {
 	raw := c.Query("url") //查询客户端对应的url参数，例如http://yourserver.com/proxy?url=https://mat1.gtimg.com/some/image.jpg中url为后续的网页

@@ -13,15 +13,15 @@ import (
 // 设置redis表的key
 const (
 	// redis的用户表名
-	RedisKeyUsernames = "game:usernames"
+	RedisKeyUsernames = "game:usernames" //统一的用户表名
 	//这里是redis中各个游戏的表名
 	RedisKeyTop10Best       = "game:guess:top10:best"  // 猜数字的游戏排行榜
 	RedisKeyTop10FastestMap = "game:map:top10:fastest" // 地图游戏排行榜（用时最短）
-	RedisKeyTop10game2048   = "game:2048:top10:best"   // 用best表示分数好
+	RedisKeyTop10Game2048   = "game:2048:top10:best"   // 用best表示分数好
 	Cache_RateKey = "rmb_top10:cny"
 )
 const (
-	CacheTTL     = 120 * time.Minute // 缓存时间
+	CacheTTL      = 120 * time.Minute // 缓存时间
 	LockTTL       = 10 * time.Second  
 	WaitWarmup    = 5 * time.Second 
 	PollInterval  = 120 * time.Millisecond
