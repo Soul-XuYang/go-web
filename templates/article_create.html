@@ -1,350 +1,84 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>创建文章</title>
-    <link rel="stylesheet" href="/static/base.css" />
-    <style>
-        body.create-page {
-            display: block !important;
-            background: #f8fafc;
-            min-height: 100vh;
-            padding: 20px 0;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        .top-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 12px 0;
-        }
-
-        .nav-left {
-            display: flex;
-            gap: 12px;
-        }
-
-        .btn {
-            padding: 10px 24px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-        }
-
-        .btn-back {
-            background: #64748b;
-            color: white;
-        }
-
-        .btn-back:hover {
-            background: #475569;
-        }
-
-        .user-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 14px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .user-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: #2563eb;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            font-weight: 700;
-        }
-
-        .form-card {
-            background: white;
-            border-radius: 16px;
-            padding: 40px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
-
-        .form-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0 0 30px 0;
-            text-align: center;
-        }
-
-        .form-group {
-            margin-bottom: 24px;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            color: #334155;
-            margin-bottom: 8px;
-            font-size: 1rem;
-        }
-
-        .form-label .required {
-            color: #ef4444;
-        }
-
-        .form-input,
-        .form-textarea {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-family: inherit;
-            transition: border-color 0.2s;
-        }
-
-        .form-input:focus,
-        .form-textarea:focus {
-            outline: none;
-            border-color: #2563eb;
-        }
-
-        .form-textarea {
-            min-height: 120px;
-            resize: vertical;
-        }
-
-        .form-textarea.content {
-            min-height: 400px;
-            font-family: 'Courier New', monospace;
-            line-height: 1.6;
-        }
-
-        .form-hint {
-            font-size: 0.85rem;
-            color: #64748b;
-            margin-top: 6px;
-        }
-
-        .char-count {
-            float: right;
-            color: #94a3b8;
-        }
-
-        .char-count.warning {
-            color: #f59e0b;
-        }
-
-        .char-count.error {
-            color: #ef4444;
-        }
-
-        .form-actions {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .btn-submit {
-            background: #2563eb;
-            color: white;
-            padding: 12px 48px;
-            font-size: 1.1rem;
-        }
-
-        .btn-submit:hover {
-            background: #1d4ed8;
-        }
-
-        .btn-submit:disabled {
-            background: #94a3b8;
-            cursor: not-allowed;
-        }
-
-        .btn-cancel {
-            background: #e2e8f0;
-            color: #475569;
-            padding: 12px 32px;
-        }
-
-        .btn-cancel:hover {
-            background: #cbd5e1;
-        }
-
-        .btn-preview {
-            background: #f59e0b;
-            color: white;
-            padding: 12px 32px;
-        }
-
-        .btn-preview:hover {
-            background: #d97706;
-        }
-
-        .preview-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            overflow-y: auto;
-        }
-
-        .preview-modal.show {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
-        }
-
-        .preview-content {
-            background: white;
-            border-radius: 16px;
-            padding: 40px;
-            max-width: 900px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .preview-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1e293b;
-        }
-
-        .preview-close {
-            background: #64748b;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-        }
-
-        .preview-body {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: #334155;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        .error-message {
-            background: #fee2e2;
-            border: 1px solid #ef4444;
-            color: #991b1b;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .success-message {
-            background: #d1fae5;
-            border: 1px solid #10b981;
-            color: #065f46;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/article_detail.css">
 </head>
 
-<body class="create-page">
-    <div class="container">
-        <!-- 顶部导航 -->
-        <div class="top-nav">
-            <div class="nav-left">
-                <button class="btn btn-back" onclick="goBack()">← 返回</button>
+<body>
+    <!-- 顶部导航 -->
+    <nav class="zhihu-nav">
+        <div class="zhihu-nav-inner">
+            <div class="zhihu-nav-left">
+                <button class="zhihu-btn" onclick="goBack()">← 返回</button>
+                <a href="/page/shell" class="zhihu-btn">返回主界面</a>
             </div>
-            <div class="user-chip">
-                <div class="user-avatar" id="userAvatar">U</div>
-                <span id="username">加载中...</span>
+            <div class="zhihu-nav-right">
+                <div class="zhihu-user-info">
+                    <div class="zhihu-user-avatar" id="userAvatar">U</div>
+                    <span class="zhihu-username" id="username">加载中...</span>
+                </div>
             </div>
         </div>
+    </nav>
 
-        <!-- 表单 -->
-        <div class="form-card">
-            <h1 class="form-title">✍️ 创建新文章</h1>
+    <!-- 主容器 -->
+    <div class="zhihu-container">
+        <div class="zhihu-form-card">
+            <h1 class="zhihu-form-title">创建新文章</h1>
 
             <div id="messageBox"></div>
 
             <form id="articleForm">
-                <div class="form-group">
-                    <label class="form-label">
-                        文章标题 <span class="required">*</span>
+                <div class="zhihu-form-group">
+                    <label class="zhihu-form-label">
+                        文章标题
                         <span class="char-count" id="titleCount">0/200</span>
                     </label>
-                    <input type="text" class="form-input" id="title" name="title" required maxlength="200"
+                    <input type="text" class="zhihu-form-input" id="title" maxlength="200" required
                         placeholder="请输入文章标题（1-200字）" />
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">
-                        文章摘要 <span class="required">*</span>
+                <div class="zhihu-form-group">
+                    <label class="zhihu-form-label">
+                        文章摘要
                         <span class="char-count" id="previewCount">0/500</span>
                     </label>
-                    <textarea class="form-textarea" id="preview" name="preview" required maxlength="500"
-                        placeholder="请输入文章摘要或简介（将显示在文章列表中）"></textarea>
-                    <div class="form-hint">摘要将显示在文章列表中，帮助读者快速了解文章内容</div>
+                    <textarea class="zhihu-form-textarea" id="preview" maxlength="500" required
+                        placeholder="请输入文章摘要或简介"></textarea>
+                    <div class="zhihu-form-hint">摘要将显示在文章列表中，帮助读者快速了解内容</div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">
-                        文章内容 <span class="required">*</span>
+                <div class="zhihu-form-group">
+                    <label class="zhihu-form-label">
+                        文章内容
                         <span class="char-count" id="contentCount">0</span>
                     </label>
-                    <textarea class="form-textarea content" id="content" name="content" required
-                        placeholder="请输入文章正文内容..."></textarea>
-                    <div class="form-hint">支持纯文本格式，换行将被保留</div>
+                    <textarea class="zhihu-form-textarea content-area" id="content" required
+                        placeholder="请输入文章正文..."></textarea>
+                    <div class="zhihu-form-hint">支持纯文本格式，换行将被保留</div>
                 </div>
 
-                <div class="form-actions">
-                    <button type="button" class="btn btn-cancel" onclick="goBack()">取消</button>
-                    <button type="button" class="btn btn-preview" id="btnPreview">预览</button>
-                    <button type="submit" class="btn btn-submit" id="btnSubmit">发布文章</button>
+                <div class="zhihu-form-actions">
+                    <button type="button" class="zhihu-btn" onclick="goBack()">取消</button>
+                    <button type="button" class="zhihu-btn" id="btnPreview">预览</button>
+                    <button type="submit" class="zhihu-btn zhihu-btn-submit" id="btnSubmit">发布文章</button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- 预览模态框 -->
-    <div class="preview-modal" id="previewModal">
-        <div class="preview-content">
-            <div class="preview-header">
-                <h2 class="preview-title" id="previewTitleText">标题</h2>
-                <button class="preview-close" onclick="closePreview()">关闭</button>
+    <div class="zhihu-preview-modal" id="previewModal">
+        <div class="zhihu-preview-content">
+            <div class="zhihu-preview-header">
+                <h2 class="zhihu-preview-title" id="previewTitle">标题</h2>
+                <button class="zhihu-btn" onclick="closePreview()">关闭</button>
             </div>
-            <div class="preview-body" id="previewBodyText"></div>
+            <div class="zhihu-preview-body" id="previewBody"></div>
         </div>
     </div>
 
@@ -389,10 +123,13 @@
         function updateCharCount(inputId, countId, maxLength) {
             const input = $(inputId);
             const counter = $(countId);
+            if (!input || !counter) return;
+
             const length = input.value.length;
 
             if (maxLength) {
                 counter.textContent = `${length}/${maxLength}`;
+                counter.classList.remove('warning', 'error');
                 if (length > maxLength * 0.9) {
                     counter.classList.add('warning');
                 }
@@ -411,7 +148,7 @@
         // 显示消息
         function showMessage(message, isError = false) {
             const box = $('#messageBox');
-            box.className = isError ? 'error-message' : 'success-message';
+            box.className = isError ? 'zhihu-message zhihu-message-error' : 'zhihu-message zhihu-message-success';
             box.textContent = message;
             setTimeout(() => {
                 box.textContent = '';
@@ -429,8 +166,8 @@
                 return;
             }
 
-            $('#previewTitleText').textContent = title || '(无标题)';
-            $('#previewBodyText').textContent = content || '(无内容)';
+            $('#previewTitle').textContent = title || '(无标题)';
+            $('#previewBody').textContent = content || '(无内容)';
             $('#previewModal').classList.add('show');
         };
 
@@ -488,15 +225,11 @@
 
         function goBack() {
             if (confirm('确定要离开吗？未保存的内容将丢失。')) {
-                if (document.referrer && document.referrer.includes(location.host)) {
-                    history.back();
-                } else {
-                    location.href = '/page/articles';
-                }
+                location.href = '/page/articles';
             }
         }
 
-        // 关闭预览窗口的快捷键
+        // 快捷键
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && $('#previewModal').classList.contains('show')) {
                 closePreview();

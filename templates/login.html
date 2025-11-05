@@ -85,27 +85,39 @@
         }
 
         .actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
             margin-top: 6px;
         }
 
         #btn {
+            width: 100%;
             height: var(--control-h);
             border-radius: 10px;
         }
 
         .msg {
-            font-size: 12px;
+            display: none;
+            /* 默认隐藏 */
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            text-align: center;
         }
 
         .msg.ok {
-            color: #22c55e;
+            display: block;
+            /* 有内容时显示 */
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            color: #0369a1;
         }
 
         .msg.error {
-            color: #ef4444;
+            display: block;
+            /* 有内容时显示 */
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
         }
 
         .footer {
@@ -130,19 +142,22 @@
             <form id="form" autocomplete="on">
                 <label for="username">用户名</label>
                 <div class="input">
-                    <input id="username" name="username" autocomplete="username" required autofocus />
+                    <input id="username" name="username" autocomplete="username" placeholder="请用户输入用户名" required
+                        autofocus />
                 </div>
 
                 <label for="password">密码</label>
                 <div class="input">
-                    <input id="password" name="password" type="password" autocomplete="current-password" required />
+                    <input id="password" name="password" type="password" autocomplete="current-password"
+                        placeholder="请用户输入密码" required />
                     <span class="toggle" id="togglePwd">显示</span>
                 </div>
 
                 <div class="actions">
                     <button id="btn" type="submit" class="btn-primary">登录</button>
-                    <div class="msg" id="msg" role="status" aria-live="polite"></div>
                 </div>
+
+                <div class="msg" id="msg" role="status" aria-live="polite"></div>
             </form>
 
             <div class="footer">

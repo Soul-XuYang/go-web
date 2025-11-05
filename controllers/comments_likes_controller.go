@@ -14,9 +14,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
 
-	"errors"
-
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 //这里点赞包有redis的缓存
@@ -38,111 +37,104 @@ import (
 func ToggleLike(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "login required"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no permission, user does not log in"})
 		return
 	}
 
-	articleID, err := strconv.ParseUint(c.Param("article_id"), 10, 32)
+	articleID, err := strconv.ParseUint(c.Param("article_id"), 10, 64)
 	if err != nil || articleID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid article id"})
 		return
 	}
+	aid := uint(articleID)
 
-	//文章存在性检验
-	IDkey := fmt.Sprintf(config.RedisArticleKey, articleID)
-	cacheValue, err := global.RedisDB.Get(IDkey).Result()
-	if err == nil {
-		// 缓存命中
-		if cacheValue == "0" {
+	//文章存在性（带缓存）
+	IDKey := fmt.Sprintf(config.RedisArticleKey, aid)
+	if val, err := global.RedisDB.Get(IDKey).Result(); err == nil {
+		if val == "0" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
 			return
-		} // 缓存值为"1"，文章存在，继续执行后续逻辑
+		}
 	} else if err == redis.Nil {
-		// 缓存未命中，查询数据库
-		var articleExists bool
-		if err := global.DB.Model(&models.Article{}).Unscoped().
-			Select("1").
-			Where("id = ?", articleID).
-			Scan(&articleExists).Error; err != nil {
+		var cnt int64
+		if err := global.DB.Model(&models.Article{}).Where("id = ?", aid).Count(&cnt).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
 			return
 		}
-		// 设置缓存值
-		cacheValue = "0"
-		if articleExists {
-			cacheValue = "1"
-		}
-		global.RedisDB.Set(IDkey, cacheValue, config.Article_TTL)
-		if !articleExists { //确实没有找到设置为0
+		if cnt == 0 {
+			_ = global.RedisDB.Set(IDKey, "0", config.Article_TTL).Err()
 			c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
 			return
 		}
+		_ = global.RedisDB.Set(IDKey, "1", config.Article_TTL).Err()
 	} else {
-		// Redis错误
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "cache error"})
 		return
 	}
 
-	likeKey := fmt.Sprintf(config.RedisLikeKey, articleID)
-	userLikeKey := fmt.Sprintf(config.RedisUserLikeKey, articleID, userID)
-	var likeFlag bool
-	var newTotalLikes uint
-	//  MySQL 事务：保证点赞关系 + 文章计数一致性
-	err = global.DB.Transaction(func(tx *gorm.DB) error {
-		var likeRecord models.UserLikeArticle
-		err := tx.Where("user_id = ? AND article_id = ?", userID, articleID).First(&likeRecord).Error
 
-		if errors.Is(err, gorm.ErrRecordNotFound) { // 点赞
+
+	likeKey := fmt.Sprintf(config.RedisLikeKey, aid)
+	userLikeKey := fmt.Sprintf(config.RedisUserLikeKey, aid, userID)
+	var (
+		likeFlag      bool  // true=点过赞（操作后状态）
+		newTotalLikes int64 // 最新总数
+	)
+	err = global.DB.Transaction(func(tx *gorm.DB) error {
+		// 尝试插入点赞（并发安全）：若不存在则插入成功 => 点赞
+		res := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&models.UserLikeArticle{
+			UserID:    userID,
+			ArticleID: aid,
+		}) //如果冲突就啥也不做
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 1 { //成功插入了一条记录-记录受影响的行数
 			likeFlag = true
-			if err := tx.Create(&models.UserLikeArticle{
-				UserID:    userID,
-				ArticleID: uint(articleID),
-			}).Error; err != nil {
-				return err
-			}
-		} else if err == nil { // 取消点赞
-			likeFlag = false
-			if err := tx.Delete(&likeRecord).Error; err != nil {
+			if err := tx.Model(&models.Article{}).
+				Where("id = ?", aid).
+				UpdateColumn("likes", gorm.Expr("likes + 1")).Error; err != nil {
 				return err
 			}
 		} else {
-			return err
+			del := tx.Where("user_id = ? AND article_id = ?", userID, aid).Delete(&models.UserLikeArticle{})
+			if del.Error != nil {
+				return del.Error
+			}
+			if del.RowsAffected == 1 {
+				likeFlag = false
+				// 防止负数，带保护条件（也可在 DB 约束层做 CHECK）
+				if err := tx.Model(&models.Article{}).
+					Where("id = ? AND likes > 0", aid).
+					UpdateColumn("likes", gorm.Expr("likes - 1")).Error; err != nil {
+					return err
+				}
+			} else {
+				// 理论上不应发生：插入说已存在，但删除又删不到。这里当作仍然点赞状态返回。
+				likeFlag = true
+			}
 		}
 
-		delta := map[bool]int{true: 1, false: -1}[likeFlag] //更新的+-
+		// 读取最新总数（只取该列）
 		if err := tx.Model(&models.Article{}).
-			Where("id = ?", articleID).
-			UpdateColumn("likes", gorm.Expr("likes + ?", delta)).Error; err != nil {
+			Where("id = ?", aid).
+			Pluck("likes", &newTotalLikes).Error; err != nil {
 			return err
 		}
-
-		var article models.Article
-		if err := tx.Select("likes").Where("id = ?", articleID).First(&article).Error; err != nil {
-			return err
-		}
-		newTotalLikes = uint(article.Likes)
 		return nil
 	})
-	//数据库事务报错
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "operation failed"})
-		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "operation failed"})
 		return
 	}
 
-	// 尽力更新 Redis（允许失败，不影响主流程）
 	if likeFlag {
-		global.RedisDB.Set(userLikeKey, "1", 7*24*time.Hour).Err() // 7天过期
-		global.RedisDB.Set(likeKey, newTotalLikes, 7*24*time.Hour).Err()
+		_ = global.RedisDB.Set(userLikeKey, "1", 24*time.Hour).Err()
 	} else {
-		global.RedisDB.Del(userLikeKey).Err()
-		global.RedisDB.Set(likeKey, newTotalLikes, 7*24*time.Hour).Err()
+		_ = global.RedisDB.Del(userLikeKey).Err()
 	}
+	_ = global.RedisDB.Set(likeKey, strconv.FormatInt(newTotalLikes, 10), 24*time.Hour).Err() //默认设置总点赞数的缓存
 
-	// 返回结果（直接用 newTotalLikes，避免再查 Redis/DB）
 	c.JSON(http.StatusOK, gin.H{
 		"like_flag":   likeFlag,
 		"total_likes": newTotalLikes,
@@ -202,9 +194,9 @@ func CreateComment(c *gin.Context) {
 	global.RedisDB.Set(rateKey, "1", 10*time.Second)
 
 	//文章存在性检验
+	// 这里先缓存查询文章的存在性，再通ID查询Mysql里是否有这个文章-带有缓存
 	IDkey := fmt.Sprintf(config.RedisArticleKey, req.ArticleID)
-	cacheValue, err := global.RedisDB.Get(IDkey).Result()
-	if err == nil {
+	if cacheValue, err := global.RedisDB.Get(IDkey).Result(); err == nil {
 		// 缓存命中
 		if cacheValue == "0" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
@@ -212,30 +204,24 @@ func CreateComment(c *gin.Context) {
 		} // 缓存值为"1"，文章存在，继续执行后续逻辑
 	} else if err == redis.Nil {
 		// 缓存未命中，查询数据库
-		var articleExists bool
-		if err := global.DB.Model(&models.Article{}).Unscoped().
-			Select("1").
+		var cnt int64
+		if err := global.DB.Model(&models.Article{}).
 			Where("id = ?", req.ArticleID).
-			Scan(&articleExists).Error; err != nil {
+			Count(&cnt).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
 			return
 		}
-		// 设置缓存值
-		cacheValue = "0"
-		if articleExists {
-			cacheValue = "1"
-		}
-		global.RedisDB.Set(IDkey, cacheValue, config.Article_TTL)
-		if !articleExists { //确实没有找到设置为0
+		if cnt == 0 {
+			_ = global.RedisDB.Set(IDkey, "0", config.Article_TTL).Err()
 			c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
 			return
 		}
+		global.RedisDB.Set(IDkey, "1", config.Article_TTL) // 缓存文章存在性
 	} else {
 		// Redis错误
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "cache error"})
 		return
 	}
-
 	// 🔍 校验父评论（如果提供）
 	if req.ParentID != nil {
 		var parent models.Comment
@@ -249,7 +235,7 @@ func CreateComment(c *gin.Context) {
 
 	//在事务中创建评论并更新文章评论数
 	var newComment models.Comment
-	err = global.DB.Transaction(func(tx *gorm.DB) error {
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
 		newComment = models.Comment{
 			Content:   req.Content,
 			UserID:    userID,
@@ -313,35 +299,30 @@ func GetArticleComments(c *gin.Context) { //依据文章id获取对应的所有�
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid article id"})
 		return
 	}
-	//文章存在性检验
-	IDkey := fmt.Sprintf(config.RedisArticleKey, articleID) //获取对应文章的ID检验
-	cacheValue, err := global.RedisDB.Get(IDkey).Result()
-	if err == nil {
-		// 缓存命中但是值为0
+
+	// 这里先缓存查询文章的存在性，再通ID查询Mysql里是否有这个文章-带有缓存
+	IDkey := fmt.Sprintf(config.RedisArticleKey, articleID)
+	if cacheValue, err := global.RedisDB.Get(IDkey).Result(); err == nil {
+		// 缓存命中
 		if cacheValue == "0" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
 			return
 		} // 缓存值为"1"，文章存在，继续执行后续逻辑
 	} else if err == redis.Nil {
 		// 缓存未命中，查询数据库
-		var articleExists bool
-		if err := global.DB.Model(&models.Article{}).Unscoped().
-			Select("1").
+		var cnt int64
+		if err := global.DB.Model(&models.Article{}).
 			Where("id = ?", articleID).
-			Scan(&articleExists).Error; err != nil {
+			Count(&cnt).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
 			return
 		}
-		// 设置缓存值
-		cacheValue = "0"
-		if articleExists {
-			cacheValue = "1"
-		}
-		global.RedisDB.Set(IDkey, cacheValue, config.Article_TTL)
-		if !articleExists { //确实没有找到设置为0
+		if cnt == 0 {
+			_ = global.RedisDB.Set(IDkey, "0", config.Article_TTL).Err()
 			c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
 			return
 		}
+		global.RedisDB.Set(IDkey, "1", config.Article_TTL) // 缓存文章存在性
 	} else {
 		// Redis错误
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "cache error"})

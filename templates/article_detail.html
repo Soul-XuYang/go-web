@@ -1,369 +1,65 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文章详情</title>
-    <link rel="stylesheet" href="/static/base.css" />
-    <style>
-        body.article-detail-page {
-            display: block !important;
-            background: #f8fafc;
-            min-height: 100vh;
-            padding: 20px 0;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* 顶部导航 */
-        .top-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 12px 0;
-        }
-
-        .nav-left,
-        .nav-right {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .btn {
-            padding: 8px 18px;
-            border-radius: 8px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .btn-back {
-            background: #64748b;
-            color: white;
-        }
-
-        .btn-back:hover {
-            background: #475569;
-        }
-
-        .btn-edit {
-            background: #f59e0b;
-            color: #111827;
-        }
-
-        .btn-edit:hover {
-            background: #d97706;
-        }
-
-        .btn-delete {
-            background: #ef4444;
-            color: white;
-        }
-
-        .btn-delete:hover {
-            background: #dc2626;
-        }
-
-        .user-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 14px;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .user-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: #2563eb;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            font-weight: 700;
-        }
-
-        /* 文章卡片 */
-        .article-card {
-            background: white;
-            border-radius: 16px;
-            padding: 40px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            margin-bottom: 30px;
-        }
-
-        .article-header {
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-
-        .article-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin: 0 0 16px 0;
-            line-height: 1.3;
-        }
-
-        .article-meta {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            color: #64748b;
-            font-size: 0.9rem;
-        }
-
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .article-content {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: #334155;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        /* 点赞按钮 */
-        .like-section {
-            display: flex;
-            justify-content: center;
-            padding: 30px 0;
-            border-top: 1px solid #e2e8f0;
-            margin-top: 30px;
-        }
-
-        .like-btn {
-            padding: 12px 32px;
-            font-size: 1.1rem;
-            border-radius: 30px;
-            border: 2px solid #e2e8f0;
-            background: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s;
-        }
-
-        .like-btn:hover {
-            background: #fef3c7;
-            border-color: #fbbf24;
-            transform: scale(1.05);
-        }
-
-        .like-btn.liked {
-            background: #fee2e2;
-            border-color: #ef4444;
-            color: #dc2626;
-        }
-
-        .like-btn.liked:hover {
-            background: #fecaca;
-        }
-
-        .like-icon {
-            font-size: 1.5rem;
-        }
-
-        /* 评论区 */
-        .comment-section {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
-
-        .comment-header {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .comment-count {
-            color: #64748b;
-            font-size: 1rem;
-            font-weight: 400;
-        }
-
-        /* 评论输入框 */
-        .comment-input-box {
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #f8fafc;
-            border-radius: 12px;
-        }
-
-        .comment-textarea {
-            width: 100%;
-            min-height: 100px;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-            resize: vertical;
-            font-family: inherit;
-        }
-
-        .comment-textarea:focus {
-            outline: none;
-            border-color: #2563eb;
-        }
-
-        .comment-submit {
-            margin-top: 10px;
-            padding: 10px 24px;
-            background: #2563eb;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .comment-submit:hover {
-            background: #1d4ed8;
-        }
-
-        .comment-submit:disabled {
-            background: #94a3b8;
-            cursor: not-allowed;
-        }
-
-        /* 评论列表 */
-        .comment-list {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .comment-item {
-            padding: 16px;
-            background: #f8fafc;
-            border-radius: 10px;
-            border-left: 3px solid #cbd5e1;
-        }
-
-        .comment-item.reply {
-            margin-left: 40px;
-            background: #f1f5f9;
-            border-left-color: #94a3b8;
-        }
-
-        .comment-author {
-            font-weight: 700;
-            color: #2563eb;
-            margin-bottom: 6px;
-        }
-
-        .comment-time {
-            font-size: 0.85rem;
-            color: #94a3b8;
-            margin-left: 12px;
-        }
-
-        .comment-content {
-            color: #334155;
-            line-height: 1.6;
-            margin-top: 8px;
-        }
-
-        .comment-reply-btn {
-            margin-top: 10px;
-            padding: 4px 12px;
-            background: transparent;
-            color: #2563eb;
-            border: 1px solid #2563eb;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-
-        .comment-reply-btn:hover {
-            background: #eff6ff;
-        }
-
-        .loading,
-        .error-msg {
-            text-align: center;
-            padding: 40px;
-            color: #64748b;
-        }
-
-        .error-msg {
-            color: #ef4444;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/article_detail.css">
 </head>
 
-<body class="article-detail-page">
-    <div class="container">
-        <!-- 顶部导航 -->
-        <div class="top-nav">
-            <div class="nav-left">
-                <button class="btn btn-back" onclick="goBack()">← 返回</button>
-                <button class="btn btn-edit" id="btnEdit" style="display:none;">编辑文章</button>
-                <button class="btn btn-delete" id="btnDelete" style="display:none;">删除文章</button>
+<body>
+    <!-- 顶部导航 -->
+    <nav class="zhihu-nav">
+        <div class="zhihu-nav-inner">
+            <div class="zhihu-nav-left">
+                <a href="/page/articles" class="zhihu-btn">← 返回列表</a>
+                <a href="/page/shell" class="zhihu-btn">返回主界面</a>
+                <button class="zhihu-btn" id="btnEdit" style="display:none;">编辑</button>
+                <button class="zhihu-btn zhihu-btn-delete" id="btnDelete" style="display:none;">删除</button>
             </div>
-            <div class="nav-right">
-                <div class="user-chip">
-                    <div class="user-avatar" id="userAvatar">U</div>
-                    <span id="username">加载中...</span>
+            <div class="zhihu-nav-right">
+                <div class="zhihu-user-info">
+                    <div class="zhihu-user-avatar" id="userAvatar">U</div>
+                    <span class="zhihu-username" id="username">加载中...</span>
                 </div>
             </div>
         </div>
+    </nav>
 
-        <!-- 文章内容 -->
-        <div class="article-card" id="articleCard">
-            <div class="loading">加载中...</div>
-        </div>
+    <!-- 主容器 -->
+    <div class="zhihu-container">
+        <!-- 文章详情 -->
+        <article class="zhihu-article-detail">
+            <div id="articleContent">
+                <div class="zhihu-loading">加载中...</div>
+            </div>
+        </article>
 
         <!-- 评论区 -->
-        <div class="comment-section">
-            <div class="comment-header">
-                评论 <span class="comment-count" id="commentCount">(0)</span>
+        <section class="zhihu-comment-section">
+            <h2 class="zhihu-comment-header">
+                评论 <span class="zhihu-comment-count" id="commentCount">(0)</span>
+            </h2>
+
+            <div class="zhihu-comment-input">
+                <textarea class="zhihu-comment-textarea" id="commentInput" placeholder="写下你的评论..."></textarea>
+                <button class="zhihu-comment-submit" id="btnSubmitComment">发表评论</button>
             </div>
 
-            <!-- 评论输入框 -->
-            <div class="comment-input-box">
-                <textarea class="comment-textarea" id="commentInput" placeholder="写下你的评论..."></textarea>
-                <button class="comment-submit" id="btnSubmitComment">发表评论</button>
+            <div class="zhihu-comment-list" id="commentList">
+                <div class="zhihu-loading">加载评论中...</div>
             </div>
-
-            <!-- 评论列表 -->
-            <div class="comment-list" id="commentList">
-                <div class="loading">加载评论中...</div>
-            </div>
-        </div>
+        </section>
     </div>
 
     <script>
         const $ = s => document.querySelector(s);
         const $$ = s => Array.from(document.querySelectorAll(s));
+        const articleId = location.pathname.split('/').pop();
+
+        let currentUserId = null;
+        let currentArticle = null;
 
         function getStoredToken() {
             const t = localStorage.getItem('token');
@@ -392,11 +88,6 @@
             return div.innerHTML;
         }
 
-        // 获取文章ID
-        const articleId = location.pathname.split('/').pop();
-        let currentUserId = null;
-        let currentArticle = null;
-
         // 加载用户信息
         async function loadMe() {
             try {
@@ -414,8 +105,7 @@
         // 加载文章详情
         async function loadArticle() {
             try {
-                // 注意：后端没有单独的获取文章详情的API，我们使用列表API
-                const r = await authFetch(`/api/articles`, { cache: 'no-store' });
+                const r = await authFetch('/api/articles', { cache: 'no-store' });
                 const articles = await r.json();
                 currentArticle = articles.find(a => a.id == articleId);
 
@@ -424,63 +114,73 @@
                 }
 
                 renderArticle(currentArticle);
+                checkArticleOwnership();
             } catch (e) {
-                $('#articleCard').innerHTML = `<div class="error-msg">加载失败：${e.message}</div>`;
+                $('#articleContent').innerHTML = `<div class="zhihu-error">加载失败：${e.message}</div>`;
             }
         }
 
         // 渲染文章
         function renderArticle(article) {
-            const html = `
-                <div class="article-header">
-                    <h1 class="article-title">${escapeHTML(article.title)}</h1>
-                    <div class="article-meta">
-                        <span class="meta-item">👤 作者：${escapeHTML(article.username)}</span>
-                        <span class="meta-item">👍 点赞：<span id="likeCount">${article.likes || 0}</span></span>
-                        <span class="meta-item">💬 评论：<span id="articleCommentCount">${article.commentcount || 0}</span></span>
+            const avatar = (article.username || 'U')[0].toUpperCase();
+
+            $('#articleContent').innerHTML = `
+                <div class="zhihu-article-header">
+                    <h1 class="zhihu-article-title">${escapeHTML(article.title)}</h1>
+                    <div class="zhihu-article-meta">
+                        <div class="zhihu-article-author">
+                            <div class="zhihu-article-author-avatar">${avatar}</div>
+                            <span>${escapeHTML(article.username)}</span>
+                        </div>
+                        <span>·</span>
+                        <span id="likeCount">${article.likes || 0} 赞同</span>
+                        <span>·</span>
+                        <span id="articleCommentCount">${article.commentcount || 0} 评论</span>
+                        <span>·</span>
+                        <span>${article.repost_count || 0} 分享</span>
                     </div>
                 </div>
-                <div class="article-content">${escapeHTML(article.preview || '')}</div>
-                <div class="like-section">
-                    <button class="like-btn" id="likeBtn">
-                        <span class="like-icon" id="likeIcon">👍</span>
-                        <span id="likeBtnText">点赞</span>
+                <div class="zhihu-article-content">${escapeHTML(article.preview || '')}</div>
+                <div class="zhihu-article-actions">
+                    <button class="zhihu-action-btn" id="likeBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                        </svg>
+                        <span id="likeBtnText">赞同</span>
+                    </button>
+                    <button class="zhihu-action-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                        <span>分享</span>
                     </button>
                 </div>
             `;
-            $('#articleCard').innerHTML = html;
 
-            // 绑定点赞按钮
             $('#likeBtn').onclick = toggleLike;
-
-            // 如果是作者，显示编辑和删除按钮
-            checkArticleOwnership(article);
         }
 
         // 检查文章所有权
-        function checkArticleOwnership(article) {
-            // 这里需要从文章数据中判断是否是当前用户的文章
-            // 由于列表API没有返回user_id，我们可以通过个人文章列表API来判断
-            loadMyArticles().then(myArticles => {
+        async function checkArticleOwnership() {
+            try {
+                const r = await authFetch('/api/articles/me', { cache: 'no-store' });
+                const myArticles = await r.json();
                 const isOwner = myArticles.some(a => a.id == articleId);
+
                 if (isOwner) {
                     $('#btnEdit').style.display = 'inline-flex';
                     $('#btnDelete').style.display = 'inline-flex';
                 }
-            });
-        }
-
-        // 加载我的文章列表（用于判断所有权）
-        async function loadMyArticles() {
-            try {
-                const r = await authFetch('/api/articles/me', { cache: 'no-store' });
-                return await r.json();
             } catch (e) {
-                return [];
+                console.error('检查所有权失败:', e);
             }
         }
 
-        // 点赞/取消点赞
+        // 点赞
         async function toggleLike() {
             try {
                 const r = await authFetch(`/api/articles/${articleId}/like`, {
@@ -488,17 +188,16 @@
                 });
                 const data = await r.json();
 
+                const btn = $('#likeBtn');
                 if (data.like_flag) {
-                    $('#likeBtn').classList.add('liked');
-                    $('#likeBtnText').textContent = '已点赞';
-                    $('#likeIcon').textContent = '❤️';
+                    btn.classList.add('active');
+                    $('#likeBtnText').textContent = '已赞同';
                 } else {
-                    $('#likeBtn').classList.remove('liked');
-                    $('#likeBtnText').textContent = '点赞';
-                    $('#likeIcon').textContent = '👍';
+                    btn.classList.remove('active');
+                    $('#likeBtnText').textContent = '赞同';
                 }
 
-                $('#likeCount').textContent = data.total_likes;
+                $('#likeCount').textContent = `${data.total_likes} 赞同`;
             } catch (e) {
                 alert('点赞失败：' + (e.message || '未知错误'));
             }
@@ -511,14 +210,14 @@
                 const comments = await r.json();
                 renderComments(comments);
             } catch (e) {
-                $('#commentList').innerHTML = `<div class="error-msg">加载评论失败：${e.message}</div>`;
+                $('#commentList').innerHTML = `<div class="zhihu-error">加载评论失败：${e.message}</div>`;
             }
         }
 
-        // 渲染评论（递归渲染树形结构）
+        // 渲染评论
         function renderComments(comments) {
             if (!Array.isArray(comments) || comments.length === 0) {
-                $('#commentList').innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px;">暂无评论，快来抢沙发吧！</div>';
+                $('#commentList').innerHTML = '<div style="text-align:center;color:#8590a6;padding:40px 20px;">暂无评论，快来抢沙发吧！</div>';
                 $('#commentCount').textContent = '(0)';
                 return;
             }
@@ -534,7 +233,7 @@
             }
             countComments(comments);
             $('#commentCount').textContent = `(${totalCount})`;
-            $('#articleCommentCount').textContent = totalCount;
+            $('#articleCommentCount').textContent = `${totalCount} 评论`;
 
             $('#commentList').innerHTML = '';
             comments.forEach(comment => {
@@ -545,17 +244,19 @@
         // 创建评论元素
         function createCommentElement(comment, isReply = false) {
             const div = document.createElement('div');
-            div.className = 'comment-item' + (isReply ? ' reply' : '');
+            div.className = 'zhihu-comment-item' + (isReply ? ' reply' : '');
 
+            const avatar = (comment.username || 'U')[0].toUpperCase();
             const time = comment.created_at || '-';
 
             div.innerHTML = `
-                <div class="comment-author">
-                    ${escapeHTML(comment.username)}
-                    <span class="comment-time">${time}</span>
+                <div class="zhihu-comment-user">
+                    <div class="zhihu-comment-avatar">${avatar}</div>
+                    <span class="zhihu-comment-username">${escapeHTML(comment.username)}</span>
+                    <span class="zhihu-comment-time">${time}</span>
                 </div>
-                <div class="comment-content">${escapeHTML(comment.content)}</div>
-                <button class="comment-reply-btn" onclick="replyToComment(${comment.id})">回复</button>
+                <div class="zhihu-comment-content">${escapeHTML(comment.content)}</div>
+                <button class="zhihu-comment-reply-btn" onclick="replyToComment(${comment.id})">回复</button>
             `;
 
             // 递归渲染子评论
@@ -603,7 +304,6 @@
                     delete $('#commentInput').dataset.parentId;
                     $('#btnSubmitComment').textContent = '发表评论';
                     await loadComments();
-                    alert('评论成功！');
                 } else {
                     const err = await r.json();
                     alert('评论失败：' + (err.error || '未知错误'));
@@ -616,12 +316,12 @@
         }
 
         // 编辑文章
-        $('#btnEdit')?.addEventListener('click', () => {
+        $('#btnEdit').addEventListener('click', () => {
             location.href = `/page/articles/edit/${articleId}`;
         });
 
         // 删除文章
-        $('#btnDelete')?.addEventListener('click', async () => {
+        $('#btnDelete').addEventListener('click', async () => {
             if (!confirm('确定要删除这篇文章吗？此操作不可恢复！')) {
                 return;
             }
@@ -643,19 +343,8 @@
             }
         });
 
-        // 返回
-        function goBack() {
-            if (document.referrer && document.referrer.includes(location.host)) {
-                history.back();
-            } else {
-                location.href = '/page/articles';
-            }
-        }
-
-        // 绑定提交评论按钮
         $('#btnSubmitComment').onclick = submitComment;
 
-        // 页面加载
         loadMe();
         loadArticle();
         loadComments();

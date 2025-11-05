@@ -46,6 +46,10 @@ func runMigrations() {
 		&models.Article{},
 		&models.Comment{},
 		&models.UserLikeArticle{},
+		&models.UserArticleRepost{},
+		&models.Collection{},
+		&models.CollectionItem{},
+		&models.UserArticleRepost{},
 	); err != nil {
 		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
 	}

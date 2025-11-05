@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 	"project/config"
-	_ "project/docs" // 👈 swag init 后会生成
+	_ "project/docs" //  swag init 后会生成对应的文文档
 	"project/log"
 	"project/router"
 

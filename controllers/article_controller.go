@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,9 +11,6 @@ import (
 	"project/utils"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/go-redis/redis"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -48,6 +46,7 @@ type ArticleListResp struct {
 	Preview      string `json:"preview"`
 	Likes        uint   `json:"likes"`
 	Commentcount uint   `json:"commentcount"`
+	RepostCount  uint   `json:"repost_count"`
 }
 
 // CreateArticle godoc
@@ -176,7 +175,7 @@ func UpdateArticle(c *gin.Context) {
 // @Param        title            query  string false "关键字（匹配文件名，模糊）"
 // @Param        page         query  int    false "页码（默认1）"
 // @Param        page_size    query  int    false "每页的条数（默认20，最大100）"
-// @Param        order        query  string false "排序：共6种组合，两种排序方式-上传日期 created_desc（默认）/created_asc/likes_desc/likes_asc/comments_desc/comments/asc
+// @Param        order        query  string false "排序：共8种组合，两种排序方式-上传日期 created_desc（默认）/created_asc/likes_desc/likes_asc/comments_desc/comments_asc/reposts_desc/reposts_asc
 // @Success      200  {array}   controllers.ArticleListResp
 // @Failure      401  {object}  map[string]string
 // @Failure      500  {object}  map[string]string
@@ -197,8 +196,7 @@ func Get_All_Articles(c *gin.Context) {
 	if size > 100 {
 		size = 100
 	}
-
-	// 是否使用缓存：仅限无搜索、第一页、默认排序
+	// 是否使用缓存：仅限无搜索、第一页、默认排序-这里是无筛选是
 	useCache := (title == "" && page == 1 && (order == "" || order == "created_desc"))
 	cacheKey := config.RedisHomePage
 	if useCache { //默认主页使用缓存
@@ -222,59 +220,42 @@ func Get_All_Articles(c *gin.Context) {
 	case "likes_asc":
 		db = db.Order("likes ASC")
 	case "comments_desc":
-		db = db.Order("commentcount DESC")
+		db = db.Order("comment_count DESC")
 	case "comments_asc":
-		db = db.Order("commentcount ASC")
+		db = db.Order("comment_count ASC")
+	case "reposts_desc":
+		db = db.Order("repost_count DESC")
+	case "reposts_asc":
+		db = db.Order("repost_count ASC")
 	default:
 		db = db.Order("created_at DESC")
 	}
-
+	db = db.Select("id, user_id, title, preview, likes, repost_count, comment_count, created_at, updated_at") // 只查询这几个字段
 	var articles []models.Article
-	if err := db.Preload("User").Offset((page - 1) * size).Limit(size).Find(&articles).Error; err != nil {
+	if err := db.Preload("User", func(tx *gorm.DB) *gorm.DB {
+		return tx.Select("id, username")
+	}).Offset((page - 1) * size).Limit(size).Find(&articles).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 		return
 	}
 
-	// redis管道获取对应的点赞数
-	pipe := global.RedisDB.Pipeline()
-	likeCmds := make([]*redis.StringCmd, len(articles))
-	for i, a := range articles {
-		likeCmds[i] = pipe.Get(fmt.Sprintf(config.RedisLikeKey, a.ID))
-	}
-	_, _ = pipe.Exec()
-
-	// 构建响应
 	items := make([]ArticleListResp, 0, len(articles))
-	for i, a := range articles {
-		realLikes := int64(a.Likes) // 默认用 DB 值兜底
-		if likeVal, err := likeCmds[i].Result(); err == nil {
-			if v, err := strconv.ParseInt(likeVal, 10, 64); err == nil {
-				realLikes = v
-			}
-		} else {
-			// Redis 无数据，异步回填（可选）
-			go func(id uint, likes uint) {
-				global.RedisDB.Set(
-					fmt.Sprintf(config.RedisLikeKey, id),
-					likes,
-					7*24*time.Hour,
-				)
-			}(a.ID, a.Likes)
-		}
-
+	for _, a := range articles {
 		items = append(items, ArticleListResp{
 			ID:           a.ID,
 			Username:     a.User.Username,
 			Title:        a.Title,
 			Preview:      a.Preview,
-			Likes:        uint(realLikes),
-			Commentcount: a.Commentcount,
+			Likes:        a.Likes,       // 直接 DB
+			RepostCount:  a.RepostCount, // 直接 DB
+			Commentcount: a.CommentCount,
 		})
 	}
-
-	// 写入缓存（仅首页）
+	// 写入缓存（仅首页）-明确给出缓存
 	if useCache {
-		global.RedisDB.Set(cacheKey, items, config.CacheTTL)
+		if b, err := json.Marshal(items); err == nil {
+			_ = global.RedisDB.Set(cacheKey, b, config.CacheTTL).Err()
+		}
 	}
 
 	c.JSON(http.StatusOK, items)
@@ -286,9 +267,10 @@ type MyArticleItem struct {
 	Title        string `json:"title"`
 	Preview      string `json:"preview"`
 	Likes        uint   `json:"likes"`
-	CommentCount uint   `json:"comment_count"`
 	CreatedAt    string `json:"created_at"`
 	UpdatedAt    string `json:"updated_at"`
+	CommentCount uint   `json:"comment_count"`
+	RepostCount  uint   `json:"repost_count"`
 }
 
 // GetMyArticles godoc
@@ -305,6 +287,7 @@ type MyArticleItem struct {
 // @Router       /api/articles/me [get]
 func GetMyArticles(c *gin.Context) {
 	userID := c.GetUint("user_id") // 从中间件获取
+	userName := c.GetString("username")
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
@@ -328,85 +311,40 @@ func GetMyArticles(c *gin.Context) {
 		db = db.Order("created_at ASC")
 	case "likes_desc":
 		db = db.Order("likes DESC")
-	case "updated_desc":
-		db = db.Order("updated_at DESC")
-	case "updated_asc":
-		db = db.Order("updated_at ASC")
+	case "likes_asc":
+		db = db.Order("likes ASC")
+	case "comments_desc":
+		db = db.Order("comment_count DESC")
+	case "comments_asc":
+		db = db.Order("comment_count ASC")
+	case "reposts_desc":
+		db = db.Order("repost_count DESC")
+	case "reposts_asc":
+		db = db.Order("repost_count ASC")
 	default:
-		db = db.Order("created_at DESC") // 默认按创建时间倒序
+		db = db.Order("created_at DESC")
 	}
-
+	db = db.Select("id, user_id, title, preview, likes, repost_count, comment_count, created_at, updated_at") // 只查询这几个字段
 	var articles []models.Article
-	if err := db.Offset((page - 1) * size).Limit(size).Find(&articles).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query articles"})
+	if err := db.Preload("User", func(tx *gorm.DB) *gorm.DB {
+		return tx.Select("id")
+	}).Offset((page - 1) * size).Limit(size).Find(&articles).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
 		return
 	}
 
-	// 使用 Redis Pipeline 批量获取点赞数并构建命令
-	// 修改切片类型声明
-	pipe := global.RedisDB.Pipeline()
-	likeCmds := make([]*redis.StringCmd, len(articles))
-	for i, article := range articles {
-		likeKey := fmt.Sprintf(config.RedisLikeKey, article.ID)
-		likeCmds[i] = pipe.Get(likeKey)
-	}
-	_, _ = pipe.Exec()
-
-	// 收集需要从数据库获取的文章ID
-	var missingIDs []uint
-	for i, cmd := range likeCmds {
-		if cmd.Err() != nil { // Redis中没有数据
-			missingIDs = append(missingIDs, articles[i].ID)
-		}
-	}
-
-	// 批量从数据库获取缺失的点赞数
-	var dbLikes []struct {
-		ID    uint `gorm:"column:id"`
-		Likes uint `gorm:"column:likes"`
-	}
-	if len(missingIDs) > 0 {
-		global.DB.Model(&models.Article{}).
-			Select("id, likes").
-			Where("id IN ?", missingIDs).
-			Find(&dbLikes)
-	}
-
-	// 创建ID到点赞数的映射
-	likesMap := make(map[uint]uint)
-	for _, like := range dbLikes {
-		likesMap[like.ID] = like.Likes
-	}
-
-	// 转换为响应 DTO
-	items := make([]MyArticleItem, 0, len(articles))
-	for i, a := range articles {
-		var likes int64
-		if err := likeCmds[i].Err(); err != nil {
-			// Redis中没有，使用数据库的值
-			likes = int64(likesMap[a.ID])
-			// 同步回填 Redis
-			global.RedisDB.Set(
-				fmt.Sprintf(config.RedisLikeKey, a.ID),
-				likes,
-				7*24*time.Hour,
-			)
-		} else {
-			// Redis中有数据，直接使用
-			likes, _ = likeCmds[i].Int64()
-		}
-
-		items = append(items, MyArticleItem{
+	items := make([]ArticleListResp, 0, len(articles))
+	for _, a := range articles {
+		items = append(items, ArticleListResp{
 			ID:           a.ID,
+			Username:     userName,      //可减少查询和录入的速度
 			Title:        a.Title,
 			Preview:      a.Preview,
-			Likes:        uint(likes),
-			CommentCount: a.Commentcount, //只有点赞数
-			CreatedAt:    a.CreatedAt.Format(utils.FormatTime_specific),
-			UpdatedAt:    a.UpdatedAt.Format(utils.FormatTime_specific),
+			Likes:        a.Likes,       // 直接 DB
+			RepostCount:  a.RepostCount, // 直接 DB
+			Commentcount: a.CommentCount,
 		})
 	}
-
 	c.JSON(http.StatusOK, items)
 }
 

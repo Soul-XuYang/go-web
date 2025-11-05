@@ -19,11 +19,14 @@ const (
 	RedisKeyTop10FastestMap = "game:map:top10:fastest" // 地图游戏排行榜（用时最短）
 	RedisKeyTop10Game2048   = "game:2048:top10:best"   // 用best表示分数好
 	Cache_RateKey           = "rmb_top10:cny"
-
-	RedisLikeKey     = "articles:%d:likes"              //该文章的点赞数
-	RedisUserLikeKey = "articles:%d:user:%d:like"       //关联性点赞
-	RedisHomePage    = "articles:list:homepage:default" //主页缓存
-	RedisArticleKey  = "articles:%d"                    //判断文章是否存在-bool
+    //文章缓存
+	RedisHomePage          = "articles:list:homepage:default" //主页缓存
+	// 交互式的缓存 - 读取文章
+	RedisLikeKey           = "articles:%d:likes"              //该文章的点赞数
+	RedisUserLikeKey       = "articles:%d:user:%d:like"       //关联性点赞
+	RedisArticleKey        = "articles:%d"                    //判断文章是否存在-bool
+	RedisRepostKey         = "articles:%d:reposts"            //该文章的转发数
+	RedisUserRepostKey = "articles:%d:user:%d:repost"     //关联性转发
 )
 const (
 	CacheTTL      = 120 * time.Minute // 缓存时间
@@ -33,6 +36,7 @@ const (
 	Datasaved_TTL = 12 * time.Hour
 	Article_TTL   = 24 * time.Hour
 )
+
 func initRedis() {
 	RedisClient := redis.NewClient(&redis.Options{ //配置选项Options是结构体
 		Addr:         AppConfig.Redis.Addr,

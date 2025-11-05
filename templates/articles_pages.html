@@ -1,301 +1,81 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>全部文章</title>
-    <link rel="stylesheet" href="/static/base.css" />
-    <style>
-        /* 就地兜底：覆盖 base.css 的全局布局与按钮 100% 宽 */
-        body.ap-page {
-            display: block !important;
-            place-items: initial !important;
-            padding: 0 !important;
-        }
-
-        .ap-page .ap-btn {
-            width: auto !important;
-        }
-
-        :root {
-            --muted: #64748b;
-            --primary: #2563eb;
-            --secondary: #475569;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --page-max: 960px;
-            /* 标题/广告/按钮 的居中窄列 */
-            --edge-pad: 18px;
-            /* 表格全宽时的左右安全边距 */
-        }
-
-        /* 顶部：标题 + 用户名在同一行并整体居中 */
-        header.ap-top {
-            max-width: var(--page-max);
-            margin: 10px auto 0 !important;
-            padding: 0 var(--edge-pad) !important;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .ap-titlebar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .ap-title {
-            margin: 0 !important;
-            line-height: 1.18;
-            font-size: 1.28rem;
-        }
-
-        /* 标题右侧用户胶囊 */
-        .ap-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 4px 8px;
-            border-radius: 999px;
-            background: rgba(0, 0, 0, .06);
-            border: 1px solid rgba(0, 0, 0, .08);
-            vertical-align: middle;
-        }
-
-        .ap-chip-avatar {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--primary);
-            color: #fff;
-            font-size: .75rem;
-            font-weight: 700;
-        }
-
-        .ap-chip-name {
-            font-size: .98rem;
-            color: var(--muted);
-        }
-
-        /* 标题下：作者链接 + 四按钮（紧贴） */
-        .ap-stack {
-            max-width: var(--page-max);
-            margin: 6px auto 0 !important;
-            padding: 0 var(--edge-pad) !important;
-            display: grid;
-            justify-items: center;
-            row-gap: 8px;
-        }
-
-        .ap-ad {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin: 0 !important;
-            border: 1px dashed rgba(0, 0, 0, .15);
-            background: rgba(0, 0, 0, .03);
-            border-radius: 10px;
-            padding: 8px 12px;
-            font-size: .96rem;
-        }
-
-        .ap-ad strong {
-            color: var(--muted);
-        }
-
-        .ap-link {
-            color: var(--primary);
-            font-weight: 600;
-            text-decoration: none;
-            padding: 2px 6px;
-            border-radius: 6px;
-            background: rgba(0, 0, 0, .04);
-            border: 1px solid rgba(0, 0, 0, .08);
-        }
-
-        .ap-link:hover {
-            text-decoration: underline;
-        }
-
-        .ap-toolbar {
-            margin: 0 !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 24px;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            padding-bottom: 4px;
-        }
-
-        .ap-btn {
-            height: 38px;
-            padding: 0 18px;
-            border-radius: 12px;
-            border: 1px solid transparent;
-            color: #fff;
-            font-weight: 600;
-            white-space: nowrap;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, .08);
-        }
-
-        .ap-btn:disabled {
-            opacity: .9;
-            cursor: not-allowed;
-        }
-
-        .ap-btn.back {
-            background: #475569;
-        }
-
-        .ap-btn.primary {
-            background: #2563eb;
-        }
-
-        .ap-btn.warn {
-            background: #f59e0b;
-            color: #111827;
-        }
-
-        .ap-btn.danger {
-            background: #ef4444;
-        }
-
-        /* 表格全宽铺开，与按钮仅 8px 间距 */
-        .ap-list {
-            width: calc(100vw - var(--edge-pad)*2);
-            margin: 8px auto 22px !important;
-            padding: 0;
-        }
-
-        .ap-card {
-            border: 1px solid rgba(0, 0, 0, .08);
-            border-radius: 14px;
-            background: rgba(0, 0, 0, .02);
-            padding: 12px 12px 6px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, .08);
-            width: 100%;
-        }
-
-        .ap-card h2 {
-            margin: 0 0 8px !important;
-            font-size: 1.06rem;
-        }
-
-        .ap-table-wrap {
-            overflow-x: auto;
-        }
-
-        table.ap-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .ap-table thead th {
-            text-align: left;
-            font-weight: 700;
-            color: #475569;
-            border-bottom: 1px solid rgba(0, 0, 0, .1);
-            padding: 10px 8px;
-        }
-
-        .ap-table tbody td {
-            border-bottom: 1px solid rgba(0, 0, 0, .06);
-            padding: 10px 8px;
-            vertical-align: top;
-            word-break: break-word;
-        }
-
-        .ap-table tbody tr:hover {
-            background: rgba(0, 0, 0, .03);
-        }
-
-        .ap-id {
-            width: 110px;
-        }
-
-        .ap-check {
-            width: 46px;
-            text-align: center;
-        }
-
-        .ap-created {
-            white-space: nowrap;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章列表 - 论坛系统</title>
+    <link rel="stylesheet" href="/static/article_list.css">
 </head>
 
-<body class="ap-page">
-    <!-- 标题 + 用户名在同一行 -->
-    <header class="ap-top">
-        <div class="ap-titlebar">
-            <h1 class="ap-title">本系统的全部文章</h1>
-            <span class="ap-chip">
-                <span class="ap-chip-avatar" id="avatar">U</span>
-                <span class="ap-chip-name" id="username">加载中…</span>
-            </span>
+<body>
+    <!-- 顶部导航栏 -->
+    <header class="zhihu-header">
+        <div class="zhihu-header-inner">
+            <a href="/page/shell" class="zhihu-logo">
+                <div class="zhihu-logo-icon">论</div>
+                <span>论坛社区</span>
+            </a>
+            <div class="zhihu-user-chip">
+                <div class="zhihu-user-avatar" id="avatar">U</div>
+                <span class="zhihu-user-name" id="username">加载中...</span>
+            </div>
         </div>
     </header>
 
-    <!-- 作者链接 + 四个按钮 -->
-    <section class="ap-stack">
-        <div class="ap-ad" id="adbar" hidden>
-            <strong>作者博客：</strong>
-            <a id="adlink" class="ap-link" href="#" target="_blank" rel="noopener" title="">本本Soul-XuYang作者的的博客链接 ↗</a>
-        </div>
+    <!-- 主内容区域 -->
+    <main class="zhihu-main">
+        <!-- 搜索和排序区域 -->
+        <div class="zhihu-search-bar">
+            <div class="zhihu-search-input-wrap">
+                <input type="text" class="zhihu-search-input" id="searchInput" placeholder="搜索感兴趣的内容..." />
+                <button class="zhihu-search-btn" id="btnSearch">搜索</button>
+            </div>
 
-        <div class="ap-toolbar">
-            <button id="btnBack" type="button" class="ap-btn back">返回页面主菜单</button>
-            <button id="btnCreate" type="button" class="ap-btn primary" style="background:#10b981;">创建文章</button>
-            <button id="btnMyArticles" type="button" class="ap-btn primary" style="background:#f59e0b;">我的文章</button>
-            <button id="btnRefresh" type="button" class="ap-btn primary">刷新列表</button>
-        </div>
-    </section>
-
-    <!-- 全宽表格 -->
-    <section class="ap-list">
-        <div class="ap-card">
-            <h2>全部的文章列表</h2>
-            <div class="ap-table-wrap">
-                <table class="ap-table" id="tbl">
-                    <thead>
-                        <tr>
-                            <th class="ap-id">文章ID</th>
-                            <th>作者</th>
-                            <th>文章标题</th>
-                            <th>文章摘要</th>
-                            <th>点赞数</th>
-                            <th>评论数</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody">
-                        <tr>
-                            <td colspan="6" style="color:#64748b;">加载中…</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- 排序标签 -->
+            <div class="zhihu-sort-tabs">
+                <button class="zhihu-sort-tab active" data-sort="created_desc">最新</button>
+                <button class="zhihu-sort-tab" data-sort="likes_desc">最热</button>
+                <button class="zhihu-sort-tab" data-sort="comments_desc">最多评论</button>
+                <button class="zhihu-sort-tab" data-sort="reposts_desc">最多转发</button>
             </div>
         </div>
-    </section>
+
+        <!-- 操作按钮组 -->
+        <div class="zhihu-action-bar">
+            <button class="zhihu-btn" id="btnBack">返回主菜单</button>
+            <button class="zhihu-btn zhihu-btn-primary" id="btnCreate">写文章</button>
+            <button class="zhihu-btn" id="btnMyArticles">我的文章</button>
+            <button class="zhihu-btn" id="btnRefresh">刷新</button>
+        </div>
+
+        <!-- 文章列表容器 -->
+        <div class="zhihu-article-container">
+            <div id="articleList">
+                <div class="zhihu-loading">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="zhihu-pagination">
+            <button class="zhihu-page-btn" id="btnPrev" disabled>上一页</button>
+            <span class="zhihu-page-info">第 <span id="pageNum">1</span> 页</span>
+            <button class="zhihu-page-btn" id="btnNext">下一页</button>
+        </div>
+    </main>
 
     <script>
+        // ========== 工具函数 ==========
         const $ = s => document.querySelector(s);
         const $$ = s => Array.from(document.querySelectorAll(s));
 
+        // 获取 Token
         function getStoredToken() {
             const t = localStorage.getItem('token');
             return t ? (t.toLowerCase().startsWith('bearer ') ? t : 'Bearer ' + t) : null;
         }
+
+        // 带认证的 fetch
         async function authFetch(url, opts = {}) {
             const token = getStoredToken();
             const headers = Object.assign(
@@ -305,88 +85,212 @@
             );
             const r = await fetch(url, { ...opts, headers });
             if (r.status === 401) {
-                localStorage.removeItem('token'); location.href = '/auth/login';
+                localStorage.removeItem('token');
+                location.href = '/auth/login';
                 throw new Error('Unauthorized');
             }
             return r;
         }
 
-        async function loadMe() {
-            try {
-                const r = await authFetch('/api/me', { cache: 'no-store' });
-                const d = await r.json().catch(() => ({}));
-                const u = d.username || 'unknown';
-                $('#username').textContent = u;
-                $('#avatar').textContent = (u?.trim?.()[0] || 'U').toUpperCase();
-            } catch { }
-        }
-
-        // 把链接文字固定为“访问作者博客 ↗”，href/tooltip 用接口返回的 URL
-        async function loadAd() {
-            try {
-                const r = await authFetch('/api/ad', { cache: 'no-store' });
-                const d = await r.json().catch(() => ({}));
-                const url = d.author_url || d.authorurl;
-                if (url && typeof url === 'string') {
-                    const a = $('#adlink');
-                    a.href = url;
-                    a.title = url;
-                    a.textContent = '本作者的一个基于HEXO框架的博客';
-                    $('#adbar').hidden = false;
-                }
-            } catch { }
-        }
-
+        // HTML 转义
         function escapeHTML(s) {
             const div = document.createElement('div');
             div.textContent = s ?? '';
             return div.innerHTML;
         }
 
-        function renderRows(list) {
-            const tb = $('#tbody');
-            if (!Array.isArray(list) || list.length === 0) {
-                tb.innerHTML = `<tr><td colspan="6" style="color:#64748b;">暂无数据</td></tr>`;
+        // ========== 状态管理 ==========
+        let currentPage = 1;
+        let currentSort = 'created_desc';
+        let currentSearch = '';
+
+        // ========== 加载用户信息 ==========
+        async function loadUser() {
+            try {
+                const r = await authFetch('/api/me', { cache: 'no-store' });
+                const data = await r.json().catch(() => ({}));
+                const username = data.username || 'unknown';
+                $('#username').textContent = username;
+                $('#avatar').textContent = (username?.trim?.()[0] || 'U').toUpperCase();
+            } catch (e) {
+                console.error('加载用户信息失败:', e);
+            }
+        }
+
+        // ========== 渲染文章列表 ==========
+        function renderArticles(articles) {
+            const container = $('#articleList');
+
+            if (!Array.isArray(articles) || articles.length === 0) {
+                container.innerHTML = '<div class="zhihu-empty">暂无文章</div>';
                 return;
             }
-            tb.innerHTML = '';
-            for (const it of list) {
-                const tr = document.createElement('tr');
-                tr.dataset.id = it.id;
-                tr.style.cursor = 'pointer';
-                tr.innerHTML = `
-          <td class="ap-id">${it.id}</td>
-          <td>${escapeHTML(it.username || '-')}</td>
-          <td style="color:#2563eb;font-weight:600;">${escapeHTML(it.title)}</td>
-          <td style="color:#64748b;">${escapeHTML(it.preview || '')}</td>
-          <td>${it.likes ?? 0}</td>
-          <td>${it.commentcount ?? 0}</td>
-        `;
-                tr.onclick = () => location.href = '/page/articles/' + tr.dataset.id;
-                tr.onmouseover = () => tr.style.background = 'rgba(0,0,0,0.03)';
-                tr.onmouseout = () => tr.style.background = '';
-                tb.appendChild(tr);
-            }
+
+            container.innerHTML = '';
+
+            articles.forEach(article => {
+                const card = document.createElement('div');
+                card.className = 'zhihu-article-card';
+                card.onclick = () => location.href = '/page/articles/' + article.id;
+
+                // 用户头像
+                const avatar = (article.username || 'U')[0].toUpperCase();
+
+                // 格式化数字显示
+                const formatCount = (count, unit) => {
+                    if (!count || count === 0) return unit;
+                    if (count >= 10000) return `${(count / 10000).toFixed(1)}万 ${unit}`;
+                    return `${count} ${unit}`;
+                };
+
+                const likesText = formatCount(article.likes, '赞同');
+                const commentsText = formatCount(article.commentcount, '评论');
+                const repostsText = formatCount(article.repost_count, '分享');
+
+                card.innerHTML = `
+                    <div class="zhihu-card-user">
+                        <div class="zhihu-card-avatar">${avatar}</div>
+                        <span class="zhihu-card-username">${escapeHTML(article.username || '匿名用户')}</span>
+                    </div>
+                    <h2 class="zhihu-card-title">${escapeHTML(article.title)}</h2>
+                    <p class="zhihu-card-preview">${escapeHTML(article.preview || '')}</p>
+                    <div class="zhihu-card-actions">
+                        <div class="zhihu-card-action" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                            </svg>
+                            <span class="zhihu-card-action-text">${likesText}</span>
+                        </div>
+                        <div class="zhihu-card-action" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <span class="zhihu-card-action-text">${commentsText}</span>
+                        </div>
+                        <div class="zhihu-card-action" onclick="event.stopPropagation()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <circle cx="18" cy="5" r="3"></circle>
+                                <circle cx="6" cy="12" r="3"></circle>
+                                <circle cx="18" cy="19" r="3"></circle>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                            </svg>
+                            <span class="zhihu-card-action-text">${repostsText}</span>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
         }
 
-        async function loadArticles(force = false) {
-            const tb = $('#tbody');
-            tb.innerHTML = `<tr><td colspan="6" style="color:#64748b;">加载中…</td></tr>`;
+        // ========== 加载文章列表 ==========
+        async function loadArticles() {
+            const container = $('#articleList');
+            container.innerHTML = '<div class="zhihu-loading">加载中...</div>';
+
             try {
-                const url = '/api/articles' + (force ? ('?t=' + Date.now()) : '');
+                // 构建查询参数
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    page_size: 20,
+                    order: currentSort
+                });
+
+                if (currentSearch.trim()) {
+                    params.set('title', currentSearch.trim());
+                }
+
+                const url = '/api/articles?' + params.toString();
                 const r = await authFetch(url, { cache: 'no-store' });
-                renderRows(await r.json());
+                const articles = await r.json();
+
+                renderArticles(articles);
+                updatePagination(articles.length);
+
             } catch (e) {
-                tb.innerHTML = `<tr><td colspan="6" style="color:#64748b;">加载失败：${e?.message || 'unknown'}</td></tr>`;
+                console.error('加载文章失败:', e);
+                container.innerHTML = `<div class="zhihu-error">加载失败：${e.message || '未知错误'}</div>`;
             }
         }
 
-        $('#btnBack').onclick = () => location.href = '/page/shell';
-        $('#btnCreate').onclick = () => location.href = '/page/articles/create';
-        $('#btnMyArticles').onclick = () => location.href = '/page/articles/my/list';
-        $('#btnRefresh').onclick = () => loadArticles(true);
+        // ========== 更新分页按钮 ==========
+        function updatePagination(articleCount) {
+            $('#pageNum').textContent = currentPage;
+            $('#btnPrev').disabled = currentPage === 1;
+            $('#btnNext').disabled = articleCount < 20;
+        }
 
-        loadMe(); loadAd(); loadArticles();
+        // ========== 排序切换 ==========
+        function setupSortTabs() {
+            $$('.zhihu-sort-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // 移除所有激活状态
+                    $$('.zhihu-sort-tab').forEach(t => t.classList.remove('active'));
+                    // 激活当前标签
+                    tab.classList.add('active');
+                    // 更新排序并重新加载
+                    currentSort = tab.dataset.sort;
+                    currentPage = 1;
+                    loadArticles();
+                });
+            });
+        }
+
+        // ========== 事件绑定 ==========
+        function setupEventListeners() {
+            // 返回按钮
+            $('#btnBack').onclick = () => location.href = '/page/shell';
+
+            // 写文章
+            $('#btnCreate').onclick = () => location.href = '/page/articles/create';
+
+            // 我的文章
+            $('#btnMyArticles').onclick = () => location.href = '/page/articles/my/list';
+
+            // 刷新
+            $('#btnRefresh').onclick = () => {
+                currentPage = 1;
+                loadArticles();
+            };
+
+            // 搜索
+            $('#btnSearch').onclick = () => {
+                currentSearch = $('#searchInput').value;
+                currentPage = 1;
+                loadArticles();
+            };
+
+            // 回车搜索
+            $('#searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    $('#btnSearch').click();
+                }
+            });
+
+            // 分页
+            $('#btnPrev').onclick = () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    loadArticles();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            };
+
+            $('#btnNext').onclick = () => {
+                currentPage++;
+                loadArticles();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+        }
+
+        // ========== 初始化 ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUser();
+            setupSortTabs();
+            setupEventListeners();
+            loadArticles();
+        });
     </script>
 </body>
 
