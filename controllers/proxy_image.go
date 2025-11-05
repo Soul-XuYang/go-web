@@ -18,7 +18,7 @@ var proxyAllowedHosts = map[string]bool{
 	// "cdn.example.com": true,
 }
 
-// ProxyImage 代理拉取并透传图片
+// ProxyImage 代理前端拉取并透传图片
 // @Summary 代理获取图片（透传 Content-Type，缓存 1 小时）
 // @Description 从白名单中的图片源以浏览器头伪装拉取资源，透传 Content-Type，并设置 Cache-Control: public, max-age=3600。
 // @Tags image, proxy

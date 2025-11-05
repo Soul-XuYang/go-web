@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>创建文章</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        body.create-page {
+            display: block !important;
+            background: #f8fafc;
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 12px 0;
+        }
+
+        .nav-left {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-back {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-back:hover {
+            background: #475569;
+        }
+
+        .user-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .user-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .form-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0 0 30px 0;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .form-label .required {
+            color: #ef4444;
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-textarea.content {
+            min-height: 400px;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+        }
+
+        .form-hint {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 6px;
+        }
+
+        .char-count {
+            float: right;
+            color: #94a3b8;
+        }
+
+        .char-count.warning {
+            color: #f59e0b;
+        }
+
+        .char-count.error {
+            color: #ef4444;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .btn-submit {
+            background: #2563eb;
+            color: white;
+            padding: 12px 48px;
+            font-size: 1.1rem;
+        }
+
+        .btn-submit:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-submit:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .btn-cancel {
+            background: #e2e8f0;
+            color: #475569;
+            padding: 12px 32px;
+        }
+
+        .btn-cancel:hover {
+            background: #cbd5e1;
+        }
+
+        .btn-preview {
+            background: #f59e0b;
+            color: white;
+            padding: 12px 32px;
+        }
+
+        .btn-preview:hover {
+            background: #d97706;
+        }
+
+        .preview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .preview-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .preview-content {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .preview-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .preview-close {
+            background: #64748b;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .preview-body {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #334155;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body class="create-page">
+    <div class="container">
+        <!-- 顶部导航 -->
+        <div class="top-nav">
+            <div class="nav-left">
+                <button class="btn btn-back" onclick="goBack()">← 返回</button>
+            </div>
+            <div class="user-chip">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <span id="username">加载中...</span>
+            </div>
+        </div>
+
+        <!-- 表单 -->
+        <div class="form-card">
+            <h1 class="form-title">✍️ 创建新文章</h1>
+
+            <div id="messageBox"></div>
+
+            <form id="articleForm">
+                <div class="form-group">
+                    <label class="form-label">
+                        文章标题 <span class="required">*</span>
+                        <span class="char-count" id="titleCount">0/200</span>
+                    </label>
+                    <input type="text" class="form-input" id="title" name="title" required maxlength="200"
+                        placeholder="请输入文章标题（1-200字）" />
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        文章摘要 <span class="required">*</span>
+                        <span class="char-count" id="previewCount">0/500</span>
+                    </label>
+                    <textarea class="form-textarea" id="preview" name="preview" required maxlength="500"
+                        placeholder="请输入文章摘要或简介（将显示在文章列表中）"></textarea>
+                    <div class="form-hint">摘要将显示在文章列表中，帮助读者快速了解文章内容</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        文章内容 <span class="required">*</span>
+                        <span class="char-count" id="contentCount">0</span>
+                    </label>
+                    <textarea class="form-textarea content" id="content" name="content" required
+                        placeholder="请输入文章正文内容..."></textarea>
+                    <div class="form-hint">支持纯文本格式，换行将被保留</div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-cancel" onclick="goBack()">取消</button>
+                    <button type="button" class="btn btn-preview" id="btnPreview">预览</button>
+                    <button type="submit" class="btn btn-submit" id="btnSubmit">发布文章</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 预览模态框 -->
+    <div class="preview-modal" id="previewModal">
+        <div class="preview-content">
+            <div class="preview-header">
+                <h2 class="preview-title" id="previewTitleText">标题</h2>
+                <button class="preview-close" onclick="closePreview()">关闭</button>
+            </div>
+            <div class="preview-body" id="previewBodyText"></div>
+        </div>
+    </div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            return t ? (t.toLowerCase().startsWith('bearer ') ? t : 'Bearer ' + t) : null;
+        }
+
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign(
+                { 'Content-Type': 'application/json' },
+                token ? { 'Authorization': token } : {},
+                opts.headers || {}
+            );
+            const r = await fetch(url, { ...opts, headers });
+            if (r.status === 401) {
+                localStorage.removeItem('token');
+                location.href = '/auth/login';
+                throw new Error('Unauthorized');
+            }
+            return r;
+        }
+
+        // 加载用户信息
+        async function loadMe() {
+            try {
+                const r = await authFetch('/api/me', { cache: 'no-store' });
+                const d = await r.json().catch(() => ({}));
+                const u = d.username || 'unknown';
+                $('#username').textContent = u;
+                $('#userAvatar').textContent = (u?.trim?.()[0] || 'U').toUpperCase();
+            } catch (e) {
+                console.error('加载用户信息失败:', e);
+            }
+        }
+
+        // 字符计数
+        function updateCharCount(inputId, countId, maxLength) {
+            const input = $(inputId);
+            const counter = $(countId);
+            const length = input.value.length;
+
+            if (maxLength) {
+                counter.textContent = `${length}/${maxLength}`;
+                if (length > maxLength * 0.9) {
+                    counter.classList.add('warning');
+                }
+                if (length >= maxLength) {
+                    counter.classList.add('error');
+                }
+            } else {
+                counter.textContent = length;
+            }
+        }
+
+        $('#title').oninput = () => updateCharCount('#title', '#titleCount', 200);
+        $('#preview').oninput = () => updateCharCount('#preview', '#previewCount', 500);
+        $('#content').oninput = () => updateCharCount('#content', '#contentCount');
+
+        // 显示消息
+        function showMessage(message, isError = false) {
+            const box = $('#messageBox');
+            box.className = isError ? 'error-message' : 'success-message';
+            box.textContent = message;
+            setTimeout(() => {
+                box.textContent = '';
+                box.className = '';
+            }, 5000);
+        }
+
+        // 预览
+        $('#btnPreview').onclick = () => {
+            const title = $('#title').value.trim();
+            const content = $('#content').value.trim();
+
+            if (!title) {
+                alert('请输入文章标题');
+                return;
+            }
+
+            $('#previewTitleText').textContent = title || '(无标题)';
+            $('#previewBodyText').textContent = content || '(无内容)';
+            $('#previewModal').classList.add('show');
+        };
+
+        window.closePreview = () => {
+            $('#previewModal').classList.remove('show');
+        };
+
+        // 提交表单
+        $('#articleForm').onsubmit = async (e) => {
+            e.preventDefault();
+
+            const title = $('#title').value.trim();
+            const preview = $('#preview').value.trim();
+            const content = $('#content').value.trim();
+
+            if (!title || !preview || !content) {
+                showMessage('请填写所有必填项', true);
+                return;
+            }
+
+            if (title.length < 1 || title.length > 200) {
+                showMessage('标题长度必须在1-200字之间', true);
+                return;
+            }
+
+            const data = { title, preview, content };
+
+            try {
+                $('#btnSubmit').disabled = true;
+                $('#btnSubmit').textContent = '发布中...';
+
+                const r = await authFetch('/api/create_articles', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                if (r.ok) {
+                    const result = await r.json();
+                    showMessage('文章发布成功！即将跳转...');
+                    setTimeout(() => {
+                        location.href = `/page/articles/${result.id}`;
+                    }, 1000);
+                } else {
+                    const err = await r.json();
+                    showMessage('发布失败：' + (err.error || '未知错误'), true);
+                    $('#btnSubmit').disabled = false;
+                    $('#btnSubmit').textContent = '发布文章';
+                }
+            } catch (e) {
+                showMessage('发布失败：' + (e.message || '网络错误'), true);
+                $('#btnSubmit').disabled = false;
+                $('#btnSubmit').textContent = '发布文章';
+            }
+        };
+
+        function goBack() {
+            if (confirm('确定要离开吗？未保存的内容将丢失。')) {
+                if (document.referrer && document.referrer.includes(location.host)) {
+                    history.back();
+                } else {
+                    location.href = '/page/articles';
+                }
+            }
+        }
+
+        // 关闭预览窗口的快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && $('#previewModal').classList.contains('show')) {
+                closePreview();
+            }
+        });
+
+        loadMe();
+    </script>
+</body>
+
+</html>

@@ -44,7 +44,19 @@ var (
 	historyLimitPerUser  = 50
 )
 
-// TranslateText 处理翻译请求并保存历史（同步保存，带短超时）-这里不加缓存因为翻译请求都是独特的文本
+// TranslateText godoc
+// @Summary     翻译文本
+// @Description 使用AI模型翻译文本，支持自动检测源语言，翻译结果会保存到历史记录
+// @Tags        Translation
+// @Security    Bearer
+// @Accept      json
+// @Produce     json
+// @Param       request  body      TranslationRequest   true  "翻译请求参数"
+// @Success     200      {object}  TranslationResponse  "翻译成功响应"
+// @Failure     400      {object}  map[string]string    "请求参数错误"
+// @Failure     429      {object}  map[string]string    "服务繁忙，请稍后重试"
+// @Failure     500      {object}  map[string]string    "服务器内部错误"
+// @Router      /api/translate [post]
 func TranslateText(c *gin.Context) {
 	//并发限制-select 的规则是：只在“就绪”的分支里随机选一个
 	select {
@@ -147,7 +159,14 @@ Do NOT add any commentary, labels, or extra text. Preserve original formatting (
 
 // 这里是依据请求内容获得翻译内容
 
-// GetSupportedLanguages 返回支持的语言列表
+// GetSupportedLanguages godoc
+// @Summary     获取支持的语言列表
+// @Description 返回翻译服务支持的所有语言及其代码
+// @Tags        Translation
+// @Security    Bearer
+// @Produce     json
+// @Success     200  {object}  map[string]string  "语言代码与名称的映射表"
+// @Router      /api/translate/languages [get]
 func GetSupportedLanguages(c *gin.Context) {
 	languages := gin.H{
 		"auto":  "Auto Detect",
@@ -177,7 +196,18 @@ func GetSupportedLanguages(c *gin.Context) {
 	c.JSON(http.StatusOK, languages)
 }
 
-// GetTranslationHistory 获取用户的翻译历史记录（分页）
+// GetTranslationHistory godoc
+// @Summary     获取翻译历史记录
+// @Description 分页查询当前用户的翻译历史记录
+// @Tags        Translation
+// @Security    Bearer
+// @Produce     json
+// @Param       page       query     int  false  "页码，默认为1"                default(1)
+// @Param       page_size  query     int  false  "每页记录数，默认10，最大100"  default(10)
+// @Success     200        {object}  map[string]interface{}  "历史记录列表及分页信息"
+// @Failure     401        {object}  map[string]string       "用户未授权"
+// @Failure     500        {object}  map[string]string       "查询失败"
+// @Router      /api/translate/history [get]
 func GetTranslationHistory(c *gin.Context) { //查询历史记录
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -225,7 +255,19 @@ func GetTranslationHistory(c *gin.Context) { //查询历史记录
 	})
 }
 
-// DeleteTranslationHistory 删除指定的历史记录
+// DeleteTranslationHistory godoc
+// @Summary     删除指定翻译历史记录
+// @Description 根据记录ID删除当前用户的一条翻译历史记录
+// @Tags        Translation
+// @Security    Bearer
+// @Produce     json
+// @Param       id   path      int                 true  "历史记录ID"
+// @Success     200  {object}  map[string]string  "删除成功消息"
+// @Failure     400  {object}  map[string]string  "无效的ID参数"
+// @Failure     401  {object}  map[string]string  "用户未授权"
+// @Failure     404  {object}  map[string]string  "记录不存在"
+// @Failure     500  {object}  map[string]string  "删除失败"
+// @Router      /api/translate/history/{id} [delete]
 func DeleteTranslationHistory(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -254,7 +296,16 @@ func DeleteTranslationHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "翻译历史记录已删除"})
 }
 
-// ClearTranslationHistory 清空用户的翻译历史记录
+// ClearTranslationHistory godoc
+// @Summary     清空翻译历史记录
+// @Description 删除当前用户的所有翻译历史记录
+// @Tags        Translation
+// @Security    Bearer
+// @Produce     json
+// @Success     200  {object}  map[string]string  "清空成功消息"
+// @Failure     401  {object}  map[string]string  "用户未授权"
+// @Failure     500  {object}  map[string]string  "清空失败"
+// @Router      /api/translate/history/clear [delete]
 func ClearTranslationHistory(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID <= 0 {

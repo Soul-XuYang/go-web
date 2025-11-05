@@ -256,9 +256,9 @@
 
         <div class="ap-toolbar">
             <button id="btnBack" type="button" class="ap-btn back">返回页面主菜单</button>
-            <button id="btnRefresh" type="button" class="ap-btn primary">更新文章</button>
-            <button id="btnEdit" type="button" class="ap-btn warn" disabled>修改文章</button>
-            <button id="btnDelete" type="button" class="ap-btn danger" disabled>删除文章</button>
+            <button id="btnCreate" type="button" class="ap-btn primary" style="background:#10b981;">创建文章</button>
+            <button id="btnMyArticles" type="button" class="ap-btn primary" style="background:#f59e0b;">我的文章</button>
+            <button id="btnRefresh" type="button" class="ap-btn primary">刷新列表</button>
         </div>
     </section>
 
@@ -270,12 +270,12 @@
                 <table class="ap-table" id="tbl">
                     <thead>
                         <tr>
-                            <th class="ap-check"><input type="checkbox" id="checkAll"></th>
                             <th class="ap-id">文章ID</th>
+                            <th>作者</th>
                             <th>文章标题</th>
                             <th>文章摘要</th>
                             <th>点赞数</th>
-                            <th>文章的创建时间</th>
+                            <th>评论数</th>
                         </tr>
                     </thead>
                     <tbody id="tbody">
@@ -353,18 +353,20 @@
             for (const it of list) {
                 const tr = document.createElement('tr');
                 tr.dataset.id = it.id;
+                tr.style.cursor = 'pointer';
                 tr.innerHTML = `
-          <td class="ap-check"><input type="checkbox" class="rowSel"></td>
           <td class="ap-id">${it.id}</td>
-          <td>${escapeHTML(it.title)}</td>
+          <td>${escapeHTML(it.username || '-')}</td>
+          <td style="color:#2563eb;font-weight:600;">${escapeHTML(it.title)}</td>
           <td style="color:#64748b;">${escapeHTML(it.preview || '')}</td>
           <td>${it.likes ?? 0}</td>
-          <td class="ap-created">${it.created ? new Date(it.created * 1000).toLocaleString('zh-CN') : '-'}</td>
+          <td>${it.commentcount ?? 0}</td>
         `;
-                tr.ondblclick = () => alert('TODO: 编辑：ID=' + tr.dataset.id);
+                tr.onclick = () => location.href = '/page/articles/' + tr.dataset.id;
+                tr.onmouseover = () => tr.style.background = 'rgba(0,0,0,0.03)';
+                tr.onmouseout = () => tr.style.background = '';
                 tb.appendChild(tr);
             }
-            bindRowSelection();
         }
 
         async function loadArticles(force = false) {
@@ -376,31 +378,13 @@
                 renderRows(await r.json());
             } catch (e) {
                 tb.innerHTML = `<tr><td colspan="6" style="color:#64748b;">加载失败：${e?.message || 'unknown'}</td></tr>`;
-            } finally {
-                updateToolbar();
             }
         }
 
-        function bindRowSelection() {
-            const all = $('#checkAll');
-            const rows = $$('.rowSel');
-            all.onchange = () => { rows.forEach(ch => ch.checked = all.checked); updateToolbar(); };
-            rows.forEach(ch => ch.onchange = () => {
-                const any = rows.some(x => x.checked), allck = rows.every(x => x.checked);
-                all.checked = allck && any; updateToolbar();
-            });
-        }
-        const getIds = () => $$('.rowSel').filter(ch => ch.checked).map(ch => ch.closest('tr').dataset.id);
-        function updateToolbar() {
-            const ids = getIds();
-            $('#btnEdit').disabled = (ids.length !== 1);
-            $('#btnDelete').disabled = (ids.length < 1);
-        }
-
         $('#btnBack').onclick = () => location.href = '/page/shell';
+        $('#btnCreate').onclick = () => location.href = '/page/articles/create';
+        $('#btnMyArticles').onclick = () => location.href = '/page/articles/my/list';
         $('#btnRefresh').onclick = () => loadArticles(true);
-        $('#btnEdit').onclick = () => { const ids = getIds(); if (ids.length !== 1) return; alert('TODO: 编辑ID=' + ids[0]); };
-        $('#btnDelete').onclick = () => { const ids = getIds(); if (!ids.length) return; alert('TODO: 删除ID=' + ids.join(',')); };
 
         loadMe(); loadAd(); loadArticles();
     </script>

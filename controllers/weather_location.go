@@ -52,8 +52,16 @@ type CitySummary struct {
 	Error       string `json:"error,omitempty"` // 错误信息
 }
 
-// 这里只需取一个用的数据
-// GetUser_info - 返回统一结构，方便前端只调用一个接口拿到 name + loc + weather
+// GetUser_Info godoc
+// @Summary     获取用户信息及天气
+// @Description 返回当前用户的名称、位置信息及对应城市的天气数据
+// @Tags        Weather
+// @Security    Bearer
+// @Produce     json
+// @Success     200  {object}  map[string]interface{}  "用户信息、位置和天气数据"
+// @Failure     401  {object}  map[string]string       "用户未授权"
+// @Failure     500  {object}  map[string]string       "获取失败"
+// @Router      /api/weather/user [get]
 func GetUser_Info(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	uname := c.GetString("username")
@@ -92,7 +100,15 @@ func GetUser_Info(c *gin.Context) {
 	})
 }
 
-// 对于请求的循环最好用并行循环-取10个地区的数据
+// GetWeatherData_top10 godoc
+// @Summary     获取热门城市天气
+// @Description 并行获取10个热门城市的天气数据，包括温度、天气状况、空气质量等信息
+// @Tags        Weather
+// @Security    Bearer
+// @Produce     json
+// @Success     200  {array}   CitySummary         "10个城市的天气数据数组"
+// @Failure     401  {object}  map[string]string  "用户未授权"
+// @Router      /api/weather/top10 [get]
 func GetWeatherData_top10(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	uname := c.GetString("username")

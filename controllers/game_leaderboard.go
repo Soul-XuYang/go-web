@@ -75,7 +75,7 @@ func myBestAndRank(zsetKey string, uid uint, isLowerBetter bool) (best int, rank
 // @Description 返回指定游戏的公共排行榜Top10和当前用户在该游戏中的成绩与排名
 // @Description 不传game参数时，返回所有游戏的排行榜和个人数据
 // @Description 传game参数时，只返回指定游戏的排行榜和个人数据
-// @Tags 游戏排行榜
+// @Tags GameLeaderboard
 // @Accept json
 // @Produce json
 // @Param game query string false "游戏代号（可选值：guess_game, map_game, 2048_game）不传则返回所有游戏"
@@ -95,7 +95,6 @@ func GameLeaderboardMe(c *gin.Context) {
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many requests"})
 		return
 	}
-
 
 	uid := c.GetUint("user_id")
 	uname := c.GetString("username")

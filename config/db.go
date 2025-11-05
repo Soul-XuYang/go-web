@@ -34,15 +34,18 @@ func initDB() { //注意这个是小写只能在当前包使用，大写才能�
 func runMigrations() {
 	if err := global.DB.AutoMigrate(
 		&models.Users{},
-		&models.Article{},
 		&models.ExchangeRate{},
 		// 新增游戏数据表
-	    &models.Game_Guess_Score{}, 
+		&models.Game_Guess_Score{},
 		&models.Game_Map_Time{},
 		// 新增翻译历史记录表
 		&models.TranslationHistory{},
 		&models.Files{},
 		&models.Game_2048_Score{}, // 新增2048游戏分数表
+		// 博客系统表
+		&models.Article{},
+		&models.Comment{},
+		&models.UserLikeArticle{},
 	); err != nil {
 		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
 	}

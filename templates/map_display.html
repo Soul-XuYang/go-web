@@ -255,11 +255,14 @@
     <main class="wrap">
         <section class="card">
             <h2 style="margin:0 0 8px;">地图寻路可视化展示</h2>
+            <p style="margin:0 0 12px;color:var(--muted);font-size:.9rem;">选择不同的地图生成算法，查看从起点到终点的最优路径动画</p>
             <div class="row">
-                <button id="btnLoad" class="btn btn-primary">加载地图并播放动画</button>
+                <button id="btnAlgo1" class="btn btn-primary">🎲 类BFS的DFS路径算法</button>
+                <button id="btnAlgo2" class="btn btn-primary">🌲 Prim迷宫算法</button>
+                <button id="btnAlgo3" class="btn btn-primary">🔍 DFS回溯迷宫算法</button>
             </div>
 
-            <div id="tip" class="msg info" style="margin-top:10px;">请用户点击上方按钮加载对应的动画</div>
+            <div id="tip" class="msg info" style="margin-top:10px;">请选择上方任意一种算法生成地图并播放寻路动画</div>
 
             <div class="map-legend" style="margin-top:10px;">
                 规则：从起点到终点
@@ -288,7 +291,7 @@
     <!-- 逻辑封装：单文件即可运行 -->
     <script>
         (() => {
-            const CFG = { endpoint: '/api/game/map/display', stepMs: 200, apiMe: '/api/me' };
+            const CFG = { baseEndpoint: '/api/game/map/display', stepMs: 200, apiMe: '/api/me' };
             const $ = s => document.querySelector(s);
             const sleep = ms => new Promise(r => setTimeout(r, ms));
             const toPoint = p => (!p ? null :
@@ -391,7 +394,10 @@
 
             async function animatePath(steps) {
                 if (!steps || steps.length < 2) return;
-                const btn = $('#btnLoad'); btn.disabled = true;
+                // 禁用所有算法按钮
+                const btns = [$('#btnAlgo1'), $('#btnAlgo2'), $('#btnAlgo3')];
+                btns.forEach(b => { if (b) b.disabled = true; });
+
                 const first = steps[0]; const c0 = getCell(first.x, first.y);
                 if (c0) { c0.className = 'map-cell start player'; c0.textContent = '🔵'; }
                 for (let i = 1; i < steps.length; i++) {
@@ -408,14 +414,21 @@
                     }
                     await sleep(CFG.stepMs);
                 }
-                btn.disabled = false;
+
+                // 恢复所有按钮
+                btns.forEach(b => { if (b) b.disabled = false; });
             }
 
             // ====== flow ======
-            async function loadAndPlay() {
-                const tip = $('#tip'); tip.className = 'msg info'; tip.textContent = '请求：' + CFG.endpoint;
+            async function loadAndPlay(choice = 1) {
+                const tip = $('#tip');
+                const algoNames = { 1: '简单路径算法', 2: 'Prim迷宫算法', 3: 'DFS迷宫算法' };
+                tip.className = 'msg info';
+                tip.textContent = `正在使用 ${algoNames[choice] || '默认算法'} 生成地图...`;
+
                 try {
-                    const r = await fetch(CFG.endpoint, { credentials: 'include' });
+                    const endpoint = `${CFG.baseEndpoint}?choice=${choice}`;
+                    const r = await fetch(endpoint, { credentials: 'include' });
                     const d = await r.json();
                     const mapData = d.mapData;
                     const sp = toPoint(d.startPoint) || findChar(mapData || [], '+');
@@ -431,7 +444,7 @@
                     }
 
                     if (steps && steps.length > 1) {
-                        tip.textContent = `地图已渲染，路径 ${steps.length} 步，开始播放…`;
+                        tip.textContent = `地图已渲染，搜索到的路径共${steps.length} 步，开始播放…`;
                         await animatePath(steps);
                         tip.textContent = '播放完成。';
                     } else {
@@ -455,8 +468,10 @@
                 } catch { }
             }
 
-            // 事件
-            $('#btnLoad').onclick = loadAndPlay;
+            // 事件绑定
+            $('#btnAlgo1').onclick = () => loadAndPlay(1);  // 简单路径算法
+            $('#btnAlgo2').onclick = () => loadAndPlay(2);  // Prim迷宫算法
+            $('#btnAlgo3').onclick = () => loadAndPlay(3);  // DFS迷宫算法
             $('#backHome').onclick = () => location.href = '/page/shell';
             $('#backGame').onclick = () => location.href = '/page/game/map';
             window.addEventListener('resize', () => { if (state.cols) fitCellSize(state.rows, state.cols); });
