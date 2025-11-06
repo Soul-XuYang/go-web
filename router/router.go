@@ -76,6 +76,8 @@ func SetupRouter() *gin.Engine {
 		// 汇率模块
 		api.GET("/exchangeRates", controllers.GetExchangeRates)
 		api.POST("/exchangeRates", controllers.CreateExchangeRate)
+		api.PUT("/exchangeRates/:id", controllers.UpdataRate)
+		api.DELETE("/exchangeRates/:id", controllers.DeleteExchangeRate)
 		api.POST("/rmb-top10/refresh", controllers.RefreshRmbTop10) // 手动刷新
 		api.GET("/rmb-top10", controllers.GetRmbTop10)              // 读取快照
 

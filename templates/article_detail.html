@@ -13,8 +13,8 @@
     <nav class="zhihu-nav">
         <div class="zhihu-nav-inner">
             <div class="zhihu-nav-left">
-                <a href="/page/articles" class="zhihu-btn">← 返回列表</a>
-                <a href="/page/shell" class="zhihu-btn">返回主界面</a>
+                <a href="/page/articles" class="zhihu-btn">返回论坛界面</a>
+                <a href="/page/shell" class="zhihu-btn">返回主应用界面</a>
                 <button class="zhihu-btn" id="btnEdit" style="display:none;">编辑</button>
                 <button class="zhihu-btn zhihu-btn-delete" id="btnDelete" style="display:none;">删除</button>
             </div>
@@ -233,7 +233,10 @@
             }
             countComments(comments);
             $('#commentCount').textContent = `(${totalCount})`;
-            $('#articleCommentCount').textContent = `${totalCount} 评论`;
+            const articleCountEl = $('#articleCommentCount');
+            if (articleCountEl) {
+                articleCountEl.textContent = `${totalCount} 评论`;
+            }
 
             $('#commentList').innerHTML = '';
             comments.forEach(comment => {
@@ -256,8 +259,15 @@
                     <span class="zhihu-comment-time">${time}</span>
                 </div>
                 <div class="zhihu-comment-content">${escapeHTML(comment.content)}</div>
-                <button class="zhihu-comment-reply-btn" onclick="replyToComment(${comment.id})">回复</button>
+                <div class="zhihu-comment-actions">
+                    <button class="zhihu-comment-reply-btn" type="button">回复</button>
+                </div>
             `;
+
+            const replyBtn = div.querySelector('.zhihu-comment-reply-btn');
+            if (replyBtn) {
+                replyBtn.addEventListener('click', () => toggleReplyForm(div, comment));
+            }
 
             // 递归渲染子评论
             if (comment.children && comment.children.length > 0) {
@@ -269,12 +279,77 @@
             return div;
         }
 
-        // 回复评论
-        window.replyToComment = function (parentId) {
-            $('#commentInput').value = '';
-            $('#commentInput').focus();
-            $('#commentInput').dataset.parentId = parentId;
-            $('#btnSubmitComment').textContent = '回复评论';
+        function toggleReplyForm(container, comment) {
+            const existing = container.querySelector('.zhihu-reply-form');
+            if (existing) {
+                existing.remove();
+                return;
+            }
+            const form = createReplyForm(comment);
+            container.appendChild(form);
+            const textarea = form.querySelector('textarea');
+            if (textarea) textarea.focus();
+        }
+
+        function createReplyForm(comment) {
+            const form = document.createElement('div');
+            form.className = 'zhihu-reply-form';
+            form.innerHTML = `
+                <textarea class="zhihu-reply-textarea" placeholder="回复 ${escapeHTML(comment.username)}..."></textarea>
+                <div class="zhihu-reply-actions">
+                    <button type="button" class="zhihu-reply-cancel">取消</button>
+                    <button type="button" class="zhihu-reply-submit">发布</button>
+                </div>
+            `;
+
+            const textarea = form.querySelector('.zhihu-reply-textarea');
+            const submitBtn = form.querySelector('.zhihu-reply-submit');
+            const cancelBtn = form.querySelector('.zhihu-reply-cancel');
+
+            cancelBtn.addEventListener('click', () => form.remove());
+
+            submitBtn.addEventListener('click', async () => {
+                const content = textarea.value.trim();
+                if (!content) {
+                    alert('请输入回复内容');
+                    textarea.focus();
+                    return;
+                }
+                submitBtn.disabled = true;
+                cancelBtn.disabled = true;
+                submitBtn.textContent = '发送中...';
+                try {
+                    await postComment(content, comment.id);
+                    form.remove();
+                    await loadComments();
+                } catch (e) {
+                    alert('回复失败：' + (e.message || '未知错误'));
+                } finally {
+                    submitBtn.disabled = false;
+                    cancelBtn.disabled = false;
+                    submitBtn.textContent = '发布';
+                }
+            });
+
+            return form;
+        }
+
+        async function postComment(content, parentId = null) {
+            const payload = {
+                article_id: parseInt(articleId),
+                content,
+                parent_id: parentId
+            };
+
+            const r = await authFetch('/api/comments', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) {
+                throw new Error(data.error || '未知错误');
+            }
+            return data;
         }
 
         // 提交评论
@@ -285,29 +360,11 @@
                 return;
             }
 
-            const parentId = $('#commentInput').dataset.parentId;
-            const data = {
-                article_id: parseInt(articleId),
-                content: content,
-                parent_id: parentId ? parseInt(parentId) : null
-            };
-
             try {
                 $('#btnSubmitComment').disabled = true;
-                const r = await authFetch('/api/comments', {
-                    method: 'POST',
-                    body: JSON.stringify(data)
-                });
-
-                if (r.ok) {
-                    $('#commentInput').value = '';
-                    delete $('#commentInput').dataset.parentId;
-                    $('#btnSubmitComment').textContent = '发表评论';
-                    await loadComments();
-                } else {
-                    const err = await r.json();
-                    alert('评论失败：' + (err.error || '未知错误'));
-                }
+                await postComment(content);
+                $('#commentInput').value = '';
+                await loadComments();
             } catch (e) {
                 alert('评论失败：' + (e.message || '未知错误'));
             } finally {

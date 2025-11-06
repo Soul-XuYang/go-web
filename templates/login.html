@@ -94,30 +94,30 @@
             border-radius: 10px;
         }
 
+        /* 删除了 background, border, padding, 只保留基本文本样式 */
         .msg {
             display: none;
-            /* 默认隐藏 */
             margin-top: 12px;
-            padding: 10px 12px;
-            border-radius: 8px;
             font-size: 13px;
             text-align: center;
+            line-height: 1.4;
+            background: transparent;
+            border: none;
+            padding: 0;
         }
 
         .msg.ok {
             display: block;
-            /* 有内容时显示 */
-            background: #f0f9ff;
-            border: 1px solid #bae6fd;
-            color: #0369a1;
+            color: #0a7d4c;
+            /* 绿色文字表示成功 */
         }
 
         .msg.error {
             display: block;
-            /* 有内容时显示 */
-            background: #fef2f2;
-            border: 1px solid #fecaca;
             color: #dc2626;
+            font-size: 16px;
+            font-weight: 600;
+            /* 红色文字表示错误 */
         }
 
         .footer {
@@ -157,6 +157,7 @@
                     <button id="btn" type="submit" class="btn-primary">登录</button>
                 </div>
 
+                <!-- 提示消息：现在只是纯文本 -->
                 <div class="msg" id="msg" role="status" aria-live="polite"></div>
             </form>
 
@@ -171,21 +172,30 @@
         const pwd = $('#password'), toggle = $('#togglePwd');
         toggle.onclick = () => {
             const t = pwd.type === 'password' ? 'text' : 'password';
-            pwd.type = t; toggle.textContent = t === 'password' ? '显示' : '隐藏';
+            pwd.type = t;
+            toggle.textContent = t === 'password' ? '显示' : '隐藏';
         };
 
         const form = $('#form'), msg = $('#msg'), btn = $('#btn');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            msg.className = 'msg'; msg.textContent = '';
-            btn.disabled = true; btn.textContent = '登录中...';
+            msg.className = 'msg'; // 重置类名
+            msg.textContent = '';
+            btn.disabled = true;
+            btn.textContent = '登录中...';
 
-            const payload = { username: $('#username').value.trim(), password: $('#password').value };
+            const payload = {
+                username: $('#username').value.trim(),
+                password: $('#password').value
+            };
 
             try {
                 const res = await fetch('/api/auth/login', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload)
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
                 });
                 const data = await res.json().catch(() => ({}));
 
@@ -193,18 +203,22 @@
                     msg.classList.add('error');
                     msg.textContent = data.error || '登录失败';
                 } else {
-                    if (typeof data.token === 'string' && data.token.length > 0) localStorage.setItem('token', data.token);
+                    if (typeof data.token === 'string' && data.token.length > 0) {
+                        localStorage.setItem('token', data.token);
+                    }
                     let dest = (data.result_url || '').toString().trim();
                     if (!dest) dest = '/';
-                    if (dest === '/admin/dashborad') dest = '/admin/dashboard';
-                    msg.classList.add('ok'); msg.textContent = '登录成功，正在跳转...';
+                    if (dest === '/admin/dashborad') dest = '/admin/dashboard'; // 拼写修正
+
                     location.assign(dest);
                 }
-            } catch {
+            } catch (err) {
+                console.error(err);
                 msg.classList.add('error');
-                msg.textContent = '网络错误';
+                msg.textContent = '网络错误，请检查连接';
             } finally {
-                btn.disabled = false; btn.textContent = '登录';
+                btn.disabled = false;
+                btn.textContent = '登录';
             }
         });
     </script>

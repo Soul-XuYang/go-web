@@ -14,7 +14,7 @@
         <div class="zhihu-header-inner">
             <a href="/page/shell" class="zhihu-logo">
                 <div class="zhihu-logo-icon">论</div>
-                <span>论坛社区</span>
+                <span>Go-Web论坛社区</span>
             </a>
             <div class="zhihu-user-chip">
                 <div class="zhihu-user-avatar" id="avatar">U</div>
@@ -143,7 +143,7 @@
                     return `${count} ${unit}`;
                 };
 
-                const likesText = formatCount(article.likes, '赞同');
+                const likesText = formatCount(article.likes, '点赞');
                 const commentsText = formatCount(article.commentcount, '评论');
                 const repostsText = formatCount(article.repost_count, '分享');
 

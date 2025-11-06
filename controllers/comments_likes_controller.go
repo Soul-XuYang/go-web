@@ -72,8 +72,6 @@ func ToggleLike(c *gin.Context) {
 		return
 	}
 
-
-
 	likeKey := fmt.Sprintf(config.RedisLikeKey, aid)
 	userLikeKey := fmt.Sprintf(config.RedisUserLikeKey, aid, userID)
 	var (
@@ -185,8 +183,8 @@ func CreateComment(c *gin.Context) {
 		return
 	}
 
-	// 🔒 防刷：限制用户评论频率（10秒/次）
-	rateKey := fmt.Sprintf("comment:rate:user:%d", userID)
+	// 安全防刷：限制用户评论频率（10秒/次）
+	rateKey := fmt.Sprintf(config.RedisCommentRate, userID)
 	if global.RedisDB.Exists(rateKey).Val() > 0 {
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": "请在10秒后再次评论"})
 		return
@@ -222,7 +220,6 @@ func CreateComment(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "cache error"})
 		return
 	}
-	// 🔍 校验父评论（如果提供）
 	if req.ParentID != nil {
 		var parent models.Comment
 		if err := global.DB.Select("id, article_id").

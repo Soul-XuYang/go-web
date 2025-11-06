@@ -27,6 +27,8 @@ const (
 	RedisArticleKey        = "articles:%d"                    //判断文章是否存在-bool
 	RedisRepostKey         = "articles:%d:reposts"            //该文章的转发数
 	RedisUserRepostKey = "articles:%d:user:%d:repost"     //关联性转发
+	// 时限
+	RedisCommentRate = "comment:rate:user:%d"
 )
 const (
 	CacheTTL      = 120 * time.Minute // 缓存时间

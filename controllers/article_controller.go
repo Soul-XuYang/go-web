@@ -174,7 +174,7 @@ func UpdateArticle(c *gin.Context) {
 // @Produce      json
 // @Param        title            query  string false "关键字（匹配文件名，模糊）"
 // @Param        page         query  int    false "页码（默认1）"
-// @Param        page_size    query  int    false "每页的条数（默认20，最大100）"
+// @Param        page_size    query  int    false "每页的条数（默认10，最大100）"
 // @Param        order        query  string false "排序：共8种组合，两种排序方式-上传日期 created_desc（默认）/created_asc/likes_desc/likes_asc/comments_desc/comments_asc/reposts_desc/reposts_asc
 // @Success      200  {array}   controllers.ArticleListResp
 // @Failure      401  {object}  map[string]string
@@ -399,7 +399,6 @@ func DeleteArticle(c *gin.Context) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete article and related data"})
 		return

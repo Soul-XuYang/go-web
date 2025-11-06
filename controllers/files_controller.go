@@ -67,7 +67,7 @@ func UploadFile(c *gin.Context) {
 	maxTotal := int64(config.AppConfig.Upload.TotalSize) * 1024 * 1024
 
 	// 取文件
-	file, header, err := c.Request.FormFile("file")
+	file, header, err := c.Request.FormFile("file") //file是含有io接口，header是文件的元信息
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no file or invalid form"})
 		return
