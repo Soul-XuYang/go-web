@@ -19,16 +19,18 @@ const (
 	RedisKeyTop10FastestMap = "game:map:top10:fastest" // 地图游戏排行榜（用时最短）
 	RedisKeyTop10Game2048   = "game:2048:top10:best"   // 用best表示分数好
 	Cache_RateKey           = "rmb_top10:cny"
-    //文章缓存
-	RedisHomePage          = "articles:list:homepage:default" //主页缓存
+	//文章缓存
+	RedisHomePage = "articles:list:homepage:default" //主页缓存
 	// 交互式的缓存 - 读取文章
-	RedisLikeKey           = "articles:%d:likes"              //该文章的点赞数
-	RedisUserLikeKey       = "articles:%d:user:%d:like"       //关联性点赞
-	RedisArticleKey        = "articles:%d"                    //判断文章是否存在-bool
-	RedisRepostKey         = "articles:%d:reposts"            //该文章的转发数
-	RedisUserRepostKey = "articles:%d:user:%d:repost"     //关联性转发
+	RedisLikeKey       = "articles:%d:likes"          //该文章的点赞数
+	RedisUserLikeKey   = "articles:%d:user:%d:like"   //关联性点赞
+	RedisArticleKey    = "articles:%d"                //判断文章是否存在-bool
+	RedisRepostKey     = "articles:%d:reposts"        //该文章的转发数
+	RedisUserRepostKey = "articles:%d:user:%d:repost" //关联性转发
 	// 时限
-	RedisCommentRate = "comment:rate:user:%d"
+	RedisCommentRate          = "comment:rate:user:%d"
+	RedisRepostRate           = "repost:rate:user:%d"
+	RedisCreateCollectionRate = "collection:rate:user:%d"
 )
 const (
 	CacheTTL      = 120 * time.Minute // 缓存时间

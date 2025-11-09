@@ -156,6 +156,17 @@
             transform: translateY(-1px);
         }
 
+        .action-btn.edit {
+            background: linear-gradient(180deg, var(--primary), var(--primary-strong));
+            border-color: rgba(77, 163, 255, .6);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(77, 163, 255, .35);
+        }
+
+        .action-btn.edit:hover {
+            background: linear-gradient(180deg, var(--primary-strong), #125fb8);
+        }
+
         .action-btn.delete {
             border-color: rgba(220, 38, 38, .35);
             background: rgba(220, 38, 38, .12);
@@ -168,17 +179,30 @@
 
         #cancelEdit {
             display: none;
-            background: rgba(255, 255, 255, .12);
-            border: 1px solid rgba(255, 255, 255, .18);
-            color: #e8eefc;
-            padding: 0 16px;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, #f8fafc, #e2e8f0);
+            border: 1px solid rgba(15, 23, 42, .12);
+            color: #1e293b;
+            padding: 0 22px;
             border-radius: 999px;
             height: 42px;
             cursor: pointer;
+            font-weight: 600;
+            letter-spacing: .02em;
+            box-shadow: 0 10px 18px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255, 255, 255, .6);
+            transition: all .2s ease;
         }
 
         #cancelEdit:hover {
-            background: rgba(255, 255, 255, .22);
+            background: linear-gradient(180deg, #e2e8f0, #cbd5f5);
+            transform: translateY(-1px);
+            box-shadow: 0 14px 22px rgba(15, 23, 42, .12), inset 0 1px 0 rgba(255, 255, 255, .75);
+        }
+
+        #cancelEdit:active {
+            transform: translateY(0);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, .1);
         }
 
         .editing-hint {

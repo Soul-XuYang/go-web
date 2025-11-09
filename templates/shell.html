@@ -156,6 +156,15 @@
             line-height: 42px;
             width: 100%;
         }
+        #deleteAccount {
+            height: 42px;
+            padding: 0 16px;
+            min-width: 120px;
+            font-size: 1rem;
+            border-radius: 999px;
+            line-height: 42px;
+            width: 100%;
+        }
     </style>
 </head>
 
@@ -207,10 +216,13 @@
         </section>
     </main>
 
-    <!-- 底部：退出登录 -->
+    <!-- 底部：退出登录和注销账户 -->
     <div class="footer">
         <div class="footer-card">
             <button id="logout">退出登录</button>
+        </div>
+        <div class="footer-card">
+            <button id="deleteAccount">注销账户</button>
         </div>
     </div>
 
@@ -288,6 +300,11 @@
                     localStorage.removeItem('token');
                     location.href = '/auth/login';
                 }
+            });
+
+            // 注销账户：跳转到注销页面
+            bind('deleteAccount', () => {
+                location.href = '/page/logout';
             });
 
             // 首屏

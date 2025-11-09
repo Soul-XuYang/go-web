@@ -36,6 +36,10 @@
                 <div class="zhihu-stat-label">💬 总评论数</div>
                 <div class="zhihu-stat-value" id="statComments">0</div>
             </div>
+            <div class="zhihu-stat-card">
+                <div class="zhihu-stat-label">📌 收藏次数</div>
+                <div class="zhihu-stat-value" id="statCollections">0</div>
+            </div>
         </div>
 
         <!-- 操作工具栏 -->
@@ -44,6 +48,7 @@
                 <a href="/page/articles" class="zhihu-btn">返回论坛界面</a>
                 <a href="/page/shell" class="zhihu-btn">返回主应用界面</a>
                 <a href="/page/articles/create" class="zhihu-btn zhihu-btn-primary">✏️ 创建新文章</a>
+                <button class="zhihu-btn" id="btnCollections">📁 我的收藏夹</button>
                 <button class="zhihu-btn" id="btnRefresh">🔄 刷新</button>
             </div>
             <div class="zhihu-toolbar-right">
@@ -65,8 +70,35 @@
         </div>
     </div>
 
+    <!-- 收藏夹 Modal -->
+    <div class="collections-modal-backdrop" id="collectionsModal">
+        <div class="collections-modal">
+            <div class="collections-modal-header">
+                <h2>我的收藏夹</h2>
+                <div class="collections-modal-actions">
+                    <button class="collections-modal-refresh" id="collectionsRefresh">刷新</button>
+                    <button class="collections-modal-close" id="collectionsCloseBtn" aria-label="关闭">×</button>
+                </div>
+            </div>
+            <div class="collections-modal-body">
+                <aside class="collections-list-panel">
+                    <div class="collections-list-inner" id="collectionNav">
+                        <div class="collections-modal-loading">加载中...</div>
+                    </div>
+                </aside>
+                <section class="collections-items-panel">
+                    <div class="collections-modal-items" id="collectionItemsView">
+                        <div class="collections-modal-empty">请选择左侧收藏夹以查看内容</div>
+                    </div>
+                </section>
+            </div>
+            <div class="collections-modal-footer" id="collectionsFooterMessage"></div>
+        </div>
+    </div>
+
     <script>
         const $ = s => document.querySelector(s);
+        const $$ = s => Array.from(document.querySelectorAll(s));
 
         function getStoredToken() {
             const t = localStorage.getItem('token');
@@ -142,7 +174,26 @@
             const container = $('#articleList');
             container.innerHTML = '';
 
+            const formatCount = (value) => {
+                if (!value || value === 0) return '0';
+                if (value >= 10000) {
+                    return `${(value / 10000).toFixed(1)}万`;
+                }
+                return `${value}`;
+            };
+
+            const formatDateTime = (value) => {
+                if (!value) return '';
+                const date = new Date(value);
+                if (Number.isNaN(date.getTime())) {
+                    return typeof value === 'string' ? value : '';
+                }
+                return date.toLocaleString();
+            };
+
             articles.forEach(article => {
+                const createdText = formatDateTime(article.created_at);
+                const updatedText = formatDateTime(article.updated_at);
                 const card = document.createElement('div');
                 card.className = 'zhihu-my-article-card';
 
@@ -158,13 +209,19 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                         <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
                                     </svg>
-                                    <span>${article.likes || 0}</span>
+                                    <span>点赞 ${formatCount(article.likes || 0)}</span>
                                 </div>
                                 <div class="zhihu-meta-item">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                                     </svg>
-                                    <span>${article.commentcount || 0}</span>
+                                    <span>评论 ${formatCount(article.commentcount || 0)}</span>
+                                </div>
+                                <div class="zhihu-meta-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path d="M6 4h12a1 1 0 0 1 1 1v14l-7-4-7 4V5a1 1 0 0 1 1-1z"></path>
+                                    </svg>
+                                    <span>收藏 ${formatCount(article.collection_count || 0)}</span>
                                 </div>
                                 <div class="zhihu-meta-item">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -174,13 +231,10 @@
                                         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
                                         <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
                                     </svg>
-                                    <span>${article.repost_count || 0}</span>
+                                    <span>转发</span>
                                 </div>
-                                <span>·</span>
-                                <span>创建于 ${article.created_at || '-'}</span>
-                                ${article.updated_at && article.updated_at !== article.created_at
-                        ? `<span>·</span><span>更新于 ${article.updated_at}</span>`
-                        : ''}
+                                ${createdText ? `<span>·</span><span>创建于 ${createdText}</span>` : ''}
+                                ${updatedText && updatedText !== createdText ? `<span>·</span><span>更新于 ${updatedText}</span>` : ''}
                             </div>
                         </div>
                         <div class="zhihu-article-actions">
@@ -215,10 +269,217 @@
             const total = articles.length;
             const likes = articles.reduce((sum, a) => sum + (a.likes || 0), 0);
             const comments = articles.reduce((sum, a) => sum + (a.commentcount || 0), 0);
+            const collections = articles.reduce((sum, a) => sum + (a.collection_count || 0), 0);
 
             $('#statTotal').textContent = total;
             $('#statLikes').textContent = likes;
             $('#statComments').textContent = comments;
+            $('#statCollections').textContent = collections;
+        }
+
+        // ================= 收藏夹 Modal =================
+        const collectionsModal = {
+            backdrop: $('#collectionsModal'),
+            nav: $('#collectionNav'),
+            items: $('#collectionItemsView'),
+            footer: $('#collectionsFooterMessage'),
+            refreshBtn: $('#collectionsRefresh'),
+            closeBtn: $('#collectionsCloseBtn'),
+            openBtn: $('#btnCollections'),
+        };
+        let collectionsCache = [];
+        let activeCollectionId = null;
+        let collectionsLoading = false;
+
+        function setCollectionsMessage(type, text) {
+            if (!collectionsModal.footer) return;
+            collectionsModal.footer.textContent = text || '';
+            collectionsModal.footer.className = 'collections-modal-footer';
+            if (type && text) {
+                collectionsModal.footer.classList.add(`msg-${type}`);
+            }
+        }
+
+        function normalizeCollections(data) {
+            const lists = data?.lists ?? data?.Lists ?? [];
+            if (!Array.isArray(lists)) return [];
+            return lists.map(col => {
+                const items = col.items ?? col.Items ?? [];
+                return {
+                    id: col.id ?? col.ID ?? 0,
+                    name: col.name ?? col.Name ?? '未命名收藏夹',
+                    itemCount: col.item_count ?? col.ItemCount ?? 0,
+                    items: Array.isArray(items)
+                        ? items.map(item => ({
+                            itemId: item.item_id ?? item.ItemID ?? 0,
+                            articleId: item.article_id ?? item.ArticleID ?? 0,
+                            title: item.title ?? item.Title ?? '',
+                            authorName: item.author_name ?? item.AuthorName ?? '',
+                            preview: item.preview ?? item.Preview ?? '',
+                            createdAt: item.created_at ?? item.CreatedAt ?? 0,
+                        }))
+                        : []
+                };
+            });
+        }
+
+        function formatTime(ts) {
+            if (!ts) return '-';
+            try {
+                const date = new Date(ts * 1000);
+                if (Number.isNaN(date.getTime())) return '-';
+                return date.toLocaleString();
+            } catch {
+                return '-';
+            }
+        }
+
+        function openCollectionsModal() {
+            if (!collectionsModal.backdrop) return;
+            collectionsModal.backdrop.classList.add('show');
+            document.body.classList.add('modal-open');
+            setCollectionsMessage('', '');
+            loadCollectionsModal(true);
+        }
+
+        function closeCollectionsModal() {
+            if (!collectionsModal.backdrop) return;
+            collectionsModal.backdrop.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            activeCollectionId = null;
+        }
+
+        async function loadCollectionsModal(force = false) {
+            if (collectionsLoading) return;
+            collectionsLoading = true;
+            try {
+                if (collectionsModal.nav) {
+                    collectionsModal.nav.innerHTML = '<div class="collections-modal-loading">加载中...</div>';
+                }
+                if (collectionsModal.items && force) {
+                    collectionsModal.items.innerHTML = '<div class="collections-modal-loading">正在加载数据...</div>';
+                }
+                const res = await authFetch('/api/collections/all_items', { cache: 'no-store' });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '加载失败');
+                }
+                collectionsCache = normalizeCollections(data);
+                renderCollectionNav(collectionsCache);
+                if (collectionsCache.length === 0) {
+                    collectionsModal.items.innerHTML = '<div class="collections-modal-empty">还没有收藏夹，快去收藏文章吧！</div>';
+                    return;
+                }
+                const initial = collectionsCache.find(col => col.id === activeCollectionId) || collectionsCache[0];
+                if (initial) {
+                    setActiveCollection(initial.id);
+                }
+            } catch (e) {
+                if (collectionsModal.nav) {
+                    collectionsModal.nav.innerHTML = `<div class="collections-modal-empty">加载失败：${e.message}</div>`;
+                }
+                if (collectionsModal.items && force) {
+                    collectionsModal.items.innerHTML = '';
+                }
+                setCollectionsMessage('error', e.message || '加载收藏夹失败');
+            } finally {
+                collectionsLoading = false;
+            }
+        }
+
+        function renderCollectionNav(collections) {
+            if (!collectionsModal.nav) return;
+            if (!collections || collections.length === 0) {
+                collectionsModal.nav.innerHTML = '<div class="collections-modal-empty">暂无收藏夹</div>';
+                return;
+            }
+            const frag = document.createDocumentFragment();
+            collections.forEach(col => {
+                const item = document.createElement('div');
+                item.className = 'collections-list-item' + (col.id === activeCollectionId ? ' active' : '');
+                item.dataset.id = col.id;
+                item.innerHTML = `
+                    <h3>${escapeHTML(col.name)}</h3>
+                    <span>${col.itemCount || 0} 条内容</span>
+                `;
+                item.addEventListener('click', () => setActiveCollection(col.id));
+                frag.appendChild(item);
+            });
+            collectionsModal.nav.innerHTML = '';
+            collectionsModal.nav.appendChild(frag);
+        }
+
+        function setActiveCollection(collectionId) {
+            activeCollectionId = Number(collectionId);
+            if (collectionsModal.nav) {
+                $$('.collections-list-item').forEach(el => {
+                    el.classList.toggle('active', Number(el.dataset.id) === activeCollectionId);
+                });
+            }
+            const collection = collectionsCache.find(col => Number(col.id) === activeCollectionId);
+            if (!collection) {
+                if (collectionsModal.items) {
+                    collectionsModal.items.innerHTML = '<div class="collections-modal-empty">请选择左侧收藏夹</div>';
+                }
+                return;
+            }
+            renderCollectionItems(collection);
+        }
+
+        function renderCollectionItems(collection) {
+            if (!collectionsModal.items) return;
+            if (!collection.items || collection.items.length === 0) {
+                collectionsModal.items.innerHTML = '<div class="collections-modal-empty">该收藏夹暂无文章</div>';
+                return;
+            }
+            const frag = document.createDocumentFragment();
+            collection.items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'collection-item-card';
+                card.innerHTML = `
+                    <div class="collection-item-header">
+                        <div>
+                            <div class="collection-item-title">${escapeHTML(item.title)}</div>
+                            <div class="collection-item-meta">
+                                作者：${escapeHTML(item.authorName || '未知')} · 文章ID：${item.articleId} · 收藏于 ${formatTime(item.createdAt)}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="collection-item-actions">
+                        <a class="collection-item-view" href="/page/articles/${item.articleId}" target="_blank" rel="noopener noreferrer">查看文章</a>
+                        <button class="collection-item-remove" data-collection="${collection.id}" data-article="${item.articleId}">移除</button>
+                    </div>
+                `;
+                frag.appendChild(card);
+            });
+            collectionsModal.items.innerHTML = '';
+            collectionsModal.items.appendChild(frag);
+        }
+
+        async function removeCollectionItem(collectionId, articleId) {
+            if (!collectionId || !articleId) return;
+            if (!confirm('确定要将该文章移出收藏夹吗？')) {
+                return;
+            }
+            try {
+                setCollectionsMessage('info', '正在移除...');
+                const res = await authFetch('/api/collections/item', {
+                    method: 'DELETE',
+                    body: JSON.stringify({
+                        collection_id: Number(collectionId),
+                        article_id: Number(articleId)
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '移除失败');
+                }
+                setCollectionsMessage('success', '已移除收藏');
+                await loadCollectionsModal(true);
+                await loadArticles();
+            } catch (e) {
+                setCollectionsMessage('error', e.message || '操作失败');
+            }
         }
 
         // 查看文章
@@ -257,6 +518,37 @@
         // 事件绑定
         $('#btnRefresh').onclick = loadArticles;
         $('#orderSelect').onchange = loadArticles;
+        if (collectionsModal.openBtn) {
+            collectionsModal.openBtn.addEventListener('click', openCollectionsModal);
+        }
+        if (collectionsModal.closeBtn) {
+            collectionsModal.closeBtn.addEventListener('click', closeCollectionsModal);
+        }
+        if (collectionsModal.refreshBtn) {
+            collectionsModal.refreshBtn.addEventListener('click', () => loadCollectionsModal(true));
+        }
+        if (collectionsModal.items) {
+            collectionsModal.items.addEventListener('click', (e) => {
+                const btn = e.target.closest('.collection-item-remove');
+                if (btn) {
+                    const collectionId = btn.dataset.collection;
+                    const articleId = btn.dataset.article;
+                    removeCollectionItem(collectionId, articleId);
+                }
+            });
+        }
+        if (collectionsModal.backdrop) {
+            collectionsModal.backdrop.addEventListener('click', (e) => {
+                if (e.target === collectionsModal.backdrop) {
+                    closeCollectionsModal();
+                }
+            });
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && collectionsModal.backdrop?.classList.contains('show')) {
+                closeCollectionsModal();
+            }
+        });
 
         // 页面加载
         loadMe();

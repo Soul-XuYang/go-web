@@ -18,12 +18,26 @@ import (
 	"github.com/go-redis/redis"
 )
 
+// 收藏夹名字的限制
+const (
+	maxCollectionNameLength = 50
+	minCollectionNameLength = 1
+)
+
 func Repost(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "no permission, user does not log in"})
 		return
 	}
+	// 限制用户转发频率（3秒/次）
+	rateKey := fmt.Sprintf(config.RedisRepostRate, userID)
+	if global.RedisDB.Exists(rateKey).Val() > 0 {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "请在3秒后再次转发"})
+		return
+	}
+	global.RedisDB.Set(rateKey, "1", 3*time.Second) //失效期
+
 	//这里转发获取对应文章的ID
 	articleID, err := strconv.ParseUint(c.Param("article_id"), 10, 32)
 	if err != nil || articleID == 0 {
@@ -116,8 +130,6 @@ func Repost(c *gin.Context) {
 	_ = global.RedisDB.Set(userFlagKey, "1", 24*time.Hour).Err() //设定已经进行第一次点赞了
 	totalKey := fmt.Sprintf(config.RedisRepostKey, articleID)
 	_ = global.RedisDB.Set(totalKey, strconv.FormatInt(totalReposts, 10), 24*time.Hour).Err() //设定文章点赞总数
-
-	// ---------- 5) 返回 ----------
 	c.JSON(http.StatusOK, gin.H{
 		"repost_flag":   true,         // 现在（或之前）已经转发过
 		"first_time":    inserted,     // 这次是否首次
@@ -125,7 +137,7 @@ func Repost(c *gin.Context) {
 	})
 }
 
-type createCollectionReq struct {
+type createCollectionReq struct { //对应的文件夹的名字
 	Name string `json:"name" binding:"required"`
 }
 type collectionResp struct {
@@ -135,7 +147,7 @@ type collectionResp struct {
 }
 
 // @Summary      create a collection
-// @Description  给当前登录用户创建一个收藏夹（名称 1~100 字）
+// @Description  给当前登录用户创建一个收藏夹（名称 1~50 字）
 // @Tags         Collections
 // @Security     BearerAuth
 // @Accept       json
@@ -149,260 +161,561 @@ type collectionResp struct {
 func CreateMycollection(c *gin.Context) { //创建个人的收藏夹
 	userID := c.GetUint("user_id")
 	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "no permission, user does not log in"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no permission,the user does not log in"})
 		return
 	}
+	// 限制用户创建收藏夹频率（3秒/次）
+	rateKey := fmt.Sprintf(config.RedisCreateCollectionRate, userID)
+	if global.RedisDB.Exists(rateKey).Val() > 0 {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "请在3秒后再次创建收藏文件夹"})
+		return
+	}
+	global.RedisDB.Set(rateKey, "1", 3*time.Second) //失效期
 
-	var req createCollectionReq //接受发送来的请求
+
+	var req createCollectionReq //接受发送来的请求-只有名字
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid params"})
 		return
 	}
-	name := strings.TrimSpace(req.Name)
-	if name_length := len([]rune(name)); name_length == 0 || name_length > 100 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "name length must be 1~100"})
+	name := strings.TrimSpace(req.Name) // 去除无用的符号
+
+	if name_length := len([]rune(name)); name_length < minCollectionNameLength || name_length > maxCollectionNameLength { //名字的长度验证-一定要用rune来保存验证
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name length must be 1~50"})
 		return
 	}
-	collection := models.Collection{
+	collection := models.Collection{ //创建默认为0
 		Name:      name,
 		UserID:    userID,
 		ItemCount: 0, // 默认为0
 	}
+	// 这里收藏夹可以同名的
 	if err := global.DB.Create(&collection).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "create collecion failed"})
 		return
 	}
-	c.JSON(http.StatusOK, collectionResp{
+	c.JSON(http.StatusOK, collectionResp{ //返回对应的数据即收藏夹数据很关键
 		ID:        collection.ID,
 		Name:      collection.Name,
 		ItemCount: collection.ItemCount,
 	})
 }
 
-type addItemReq struct {
-	ArticleID uint `json:"article_id" binding:"required"`
+// 因为这个要写成嵌套式响应-类似嵌套评论
+type CollectionBriefResp struct {
+	ID        uint   `json:"id"`
+	Name      string `json:"name"`
+	ItemCount uint   `json:"item_count"`
 }
 
-type addItemResp struct {
-	Ok            bool `json:"ok" example:"true"`
-	ItemCount     uint `json:"item_count" example:"5"`        // 夹内数量
-	CollectionCnt uint `json:"collection_count" example:"12"` // 该文章被收藏总次数（可选返回）
+type MyCollectionsResp struct {
+	Lists []CollectionBriefResp `json:"lists"`
+	Sum   int                   `json:"sum"`
 }
 
-// @Summary      add an article to a collection
-// @Description  将一篇文章加入指定收藏夹（同一文章在同一收藏夹内仅出现一次）
+// @Summary      我的收藏夹（不含文章）
+// @Description  返回当前登录用户的所有收藏夹（按创建倒序）
 // @Tags         Collections
 // @Security     BearerAuth
-// @Accept       json
 // @Produce      json
-// @Param        collectionId    path      int          true  "收藏夹ID"
-// @Param        body  body      addItemReq   true  "要收藏的文章"
-// @Success      200   {object}  addItemResp
-// @Failure      400   {object}  gin.H
-// @Failure      401   {object}  gin.H
-// @Failure      404   {object}  gin.H
-// @Failure      500   {object}  gin.H
-// @Router       /collections/{collectionId}/items [post]
-func AddArticleToMyCollection(c *gin.Context) { //一是指定资源二是指定文章--这里映射是对应的文件夹数+1
+// @Success      200  {object}  MyCollectionsResp
+// @Failure      401  {object}  gin.H
+// @Failure      500  {object}  gin.H
+// GET /api/collections/all
+func ListMyCollections(c *gin.Context) { //这个是用户选择加入哪个收藏夹时先给前端的响应
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no permission,the user does not log in"})
+		return
+	}
+
+	var cols []models.Collection
+	if err := global.DB.Where("user_id = ?", userID).
+		Order("id DESC").
+		Find(&cols).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
+		return
+	}
+
+	resp := make([]CollectionBriefResp, 0, len(cols))
+	for _, col := range cols {
+		resp = append(resp, CollectionBriefResp{
+			ID:        col.ID,
+			Name:      col.Name,
+			ItemCount: col.ItemCount,
+		})
+	}
+
+	c.JSON(http.StatusOK, MyCollectionsResp{
+		Lists: resp,
+		Sum:   len(resp),
+	})
+}
+
+// 二级嵌套
+type CollectionItemResp struct { //单个文章item的数据
+	ItemID     uint   `json:"item_id"`
+	ArticleID  uint   `json:"article_id"`
+	Title      string `json:"title"`
+	AuthorID   uint   `json:"author_id"`
+	AuthorName string `json:"author_name"`
+	Preview    string `json:"preview"`
+	CreatedAt  int64  `json:"created_at"`
+}
+
+type CollectionWithItemsResp struct { //同一文件夹下的所有item
+	ID        uint                 `json:"id"`
+	Name      string               `json:"name"`
+	ItemCount uint                 `json:"item_count"`
+	Items     []CollectionItemResp `json:"items"`
+}
+
+type MyCollectionsWithItemsResp struct { //用户对应的所有item
+	Lists []CollectionWithItemsResp `json:"lists"`
+	Sum   int                       `json:"sum"`
+}
+
+// @Summary      我的收藏夹（含各夹内全部文章）
+// @Description  返回当前登录用户的所有收藏夹及各自包含的文章（按加入时间倒序）
+// @Tags         Collections
+// @Security     BearerAuth
+// @Produce      json
+// @Success      200  {object}  MyCollectionsWithItemsResp  "OK"
+// @Failure      401  {object}  gin.H
+// @Failure      500  {object}  gin.H
+// @Router       /api/collections/all_items [get]
+// GET /api/collections/all_items
+func ListMyCollectionsWithItems(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no permission,the user does not log in"})
+		return
+	}
+
+	// 这里先拉用户对应的收藏夹
+	var cols []models.Collection
+	if err := global.DB.Where("user_id = ?", userID).
+		Order("id DESC").
+		Find(&cols).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
+		return
+	}
+	if len(cols) == 0 { //返回全为空
+		c.JSON(http.StatusOK, MyCollectionsWithItemsResp{
+			Lists: []CollectionWithItemsResp{},
+			Sum:   0,
+		})
+		return
+	}
+
+	// 构建映射表
+	colIndex := make(map[uint]int, len(cols)) //收藏夹表
+	resp := make([]CollectionWithItemsResp, len(cols))
+	ids := make([]uint, 0, len(cols)) // 获得该用户的所有收藏表的ID
+	for i, col := range cols {        //初始化最后的响应-这里cols为用户对应的收藏夹ID
+		colIndex[col.ID] = i //收藏夹对应的序列数
+		resp[i] = CollectionWithItemsResp{
+			ID:        col.ID,
+			Name:      col.Name,
+			ItemCount: col.ItemCount,
+			Items:     make([]CollectionItemResp, 0), //构建对应的文章表
+		}
+		ids = append(ids, col.ID)
+	}
+
+	// 一次性拉所有 items + 文章/作者信息，按加入时间倒序-对应CollectionWithItemsResp
+	type row struct {
+		CollectionID uint
+		ItemID       uint
+		ArticleID    uint
+		Title        string
+		AuthorID     uint
+		AuthorName   string
+		Preview      string
+		CreatedAt    time.Time
+	}
+
+	var rows []row
+	if err := global.DB.
+		Table("collection_items AS ci"). //指定主表为item-更改列名加对应的数据写进去
+		Select(`
+			ci.collection_id,
+			ci.id AS item_id, 
+			ci.article_id,
+			a.title,
+			a.user_id AS author_id,
+			u.username AS author_name,
+			a.preview,
+			ci.created_at AS created_at`).
+		Joins(`JOIN articles AS a ON a.id = ci.article_id`).
+		Joins(`LEFT JOIN users AS u ON u.id = a.user_id`).
+		Where("ci.collection_id IN ?", ids). // 注意：GORM v2 用 IN ? 这里用文件夹的ID限制-ID对应rows的表
+		Order("ci.id DESC").
+		Scan(&rows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query items failed"})
+		return
+	}
+
+	// 构建对应的item表
+	for _, r := range rows { //如果 ids 切片中包含多个收藏夹ID，那么每个收藏夹ID都可能对应多个收藏项（row）
+		idx := colIndex[r.CollectionID]                               //哈希表-获得对应的序列数
+		resp[idx].Items = append(resp[idx].Items, CollectionItemResp{ //而这里是可以无限扩大的-指的是收藏夹对应的item扩大
+			ItemID:     r.ItemID,
+			ArticleID:  r.ArticleID,
+			Title:      r.Title,
+			AuthorID:   r.AuthorID,
+			AuthorName: r.AuthorName,
+			Preview:    r.Preview,
+			CreatedAt:  r.CreatedAt.Unix(),
+		})
+	}
+
+	c.JSON(http.StatusOK, MyCollectionsWithItemsResp{
+		Lists: resp,
+		Sum:   len(resp),
+	})
+}
+
+// 添加到一个文章到我的收藏夹里
+type addItemReq struct {
+	CollectionID uint `json:"collection_id" binding:"required"`
+	ArticleID    uint `json:"article_id" binding:"required"`
+}
+
+// @Summary     添加文章到我的收藏夹
+// @Description 将指定文章加入到指定收藏夹；同一收藏夹不可重复加入同一文章
+// @Tags        Collections
+// @Security    BearerAuth
+// @Accept      json
+// @Produce     json
+// @Param       data body addItemReq true "收藏夹ID与文章ID"
+// @Success     200 {object} gin.H "ok: true"
+// @Failure     400 {object} gin.H
+// @Failure     401 {object} gin.H
+// @Failure     500 {object} gin.H
+// @Router      /api/collections/item [post]
+func AddArticleToMyCollection(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no permission,the user does not log in"})
+		return
+	}
+
+	var req addItemReq //获得其请求的数据
+	if err := c.ShouldBindJSON(&req); err != nil || req.CollectionID == 0 || req.ArticleID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid params"})
+		return
+	}
+
+	err := global.DB.Transaction(func(tx *gorm.DB) error { //事务操作
+		// 校验收藏夹归属 & 加锁
+		var coll models.Collection
+		// 这里clause是添加SQL语句
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}). // 添加行级别的锁-锁定查到的行防止其他事务对齐修改
+										Where("id = ? AND user_id = ?", req.CollectionID, userID).
+										First(&coll).Error; err != nil { //获得第一手数据的收藏夹
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("collection not found or not owned by user")
+			}
+			return err
+		}
+
+		// 重复性检查-防止同一收藏夹重复收藏同一文章
+		var exist models.CollectionItem
+		if err := tx.Where("collection_id = ? AND article_id = ?", req.CollectionID, req.ArticleID).
+			First(&exist).Error; err == nil { //查询是否存在
+			return fmt.Errorf("article has already exists in the collection,cant add this article")
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+
+		// 如果不存在那就创建对应的CollectionItem
+		item := models.CollectionItem{
+			CollectionID: req.CollectionID,
+			ArticleID:    req.ArticleID,
+		}
+		if err := tx.Create(&item).Error; err != nil { //创建item
+			return err
+		}
+
+		//  接下来是易错点也是难点
+		// 首先查询关联表这里要收藏加1-分为首次和首次之后
+		var choosenItem models.UserCollectionItem
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}). //先加锁-防止修改
+										Where("user_id = ? AND article_id = ?", userID, req.ArticleID).
+										First(&choosenItem).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) { //找不到记录
+				// 首次收藏
+				item_connection := models.UserCollectionItem{ //创建收藏关联表
+					UserID:    userID,
+					ArticleID: req.ArticleID,
+					ItemCount: 1,
+				}
+				if err := tx.Create(&item_connection).Error; err != nil {
+					return err
+				}
+				if err := tx.Model(&models.Article{}).
+					Where("id = ?", req.ArticleID).
+					Update("collection_count", gorm.Expr("collection_count + 1")).Error; err != nil {
+					return err
+				}
+			} else { //这个就是别的错误了-事务的写法
+				return err
+			}
+		} else {
+			// 之前已在别的收藏夹收藏过，计数 +1 这个其实是兜底操作-防止删除没有删除到总的收藏夹数
+			if err := tx.Model(&models.UserCollectionItem{}).
+				Where("user_id = ? AND article_id = ?", userID, req.ArticleID).
+				Update("item_count", gorm.Expr("item_count + 1")).Error; err != nil {
+				return err
+			}
+		}
+
+		// 对应的收藏夹条目数 +1
+		if err := tx.Model(&models.Collection{}).
+			Where("id = ?", req.CollectionID).
+			Update("item_count", gorm.Expr("item_count + 1")).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+	// 针对事务的操作
+	if err != nil { //错误分开说
+		msg := err.Error()
+		// 针对于字符串的语句
+		if strings.Contains(msg, "not found") ||
+			strings.Contains(msg, "not owned") ||
+			strings.Contains(msg, "already exists") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": msg})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+type removeItemResp struct {
+	Ok        bool `json:"ok" example:"true"`
+	ItemCount uint `json:"item_count" example:"4"`
+}
+type removeItemReq struct {
+	CollectionID uint `json:"collection_id" binding:"required"`
+	ArticleID    uint `json:"article_id" binding:"required"`
+}
+
+// @Summary     从收藏夹移除文章
+// @Description 从指定收藏夹里删除指定文章；若该用户对该文的总收藏数从 1->0，则文章的 collection_count -1|注意:对应的两个参数都在请求里
+// @Tags        Collections
+// @Security    BearerAuth
+// @Accept      json
+// @Produce     json
+// @Param       data body removeItemReq true "收藏夹ID与文章ID"
+// @Success     200 {object} removeItemResp "OK"
+// @Failure     400 {object} gin.H
+// @Failure     401 {object} gin.H
+// @Failure     500 {object} gin.H
+// @Router      /api/collections/item [delete]
+func RemoveArticleFromMyCollection(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "no permission, user does not log in"})
+		return
+	}
+	var req removeItemReq
+	if err := c.ShouldBindJSON(&req); err != nil || req.CollectionID == 0 || req.ArticleID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid params"})
+		return
+	}
+	collectionID := req.CollectionID
+	articleID := req.ArticleID
+
+	var itemCount uint //收藏夹的总个数
+
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		// 检验文件夹是否存在
+		if err := tx.Select("id").Where("id = ? AND user_id = ?", collectionID, userID).First(&models.Collection{}).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("collection has not found or not owned by user")
+			}
+			return err
+		}
+
+		// 这里先查找并删除对应的item
+		res := tx.Where("collection_id = ? AND article_id = ?", collectionID, articleID).Delete(&models.CollectionItem{})
+		if res.Error != nil {
+			return res.Error //错误
+		}
+		if res.RowsAffected == 0 {
+			return fmt.Errorf("article not in the collection") //找不到
+		}
+		// 维护收藏夹和文章的收藏数
+		// 这里是更新收藏夹的个数
+		if err := tx.Model(&models.Collection{}).
+			Where("id = ?", collectionID).
+			UpdateColumn("item_count", gorm.Expr("CASE WHEN item_count > 0 THEN item_count - 1 ELSE 0 END")).Error; err != nil {
+			return err
+		}
+		// 下列是item关联表
+		var item_connection models.UserCollectionItem
+		if err := tx.Where("user_id = ? AND article_id = ?", userID, articleID).First(&item_connection).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("collection item not found")
+			}
+			return err
+		}
+
+		if item_connection.ItemCount <= 1 { //如果小于或则等于1这里我们就直接删除了
+			if err := tx.Where("user_id = ? AND article_id = ?", userID, articleID).Delete(&models.UserCollectionItem{}).Error; err != nil {
+				return err
+			} //并且对应的文章的收藏数-1
+			if err := tx.Model(&models.Article{}).
+				Where("id = ?", articleID).
+				UpdateColumn("collection_count", gorm.Expr("CASE WHEN collection_count > 0 THEN collection_count - 1 ELSE 0 END")).Error; err != nil {
+				return err
+			}
+		} else { //只对关联表操作
+			if err := tx.Model(&models.UserCollectionItem{}).
+				Where("user_id = ? AND article_id = ?", userID, articleID).
+				UpdateColumn("item_count", gorm.Expr("item_count - 1")).Error; err != nil {
+				return err
+			}
+		}
+		// 读取最新总数（只取该列）
+		if err := tx.Model(&models.Collection{}).
+			Where("id = ?", collectionID).
+			Pluck("item_count", &itemCount).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		msg := err.Error()
+		switch {
+		case strings.Contains(msg, "not found"),
+			strings.Contains(msg, "not owned"),
+			strings.Contains(msg, "not in the collection"):
+			c.JSON(http.StatusBadRequest, gin.H{"error": msg})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, removeItemResp{
+		Ok:        true,
+		ItemCount: itemCount,
+	})
+}
+
+// @Summary     删除用户指定的收藏夹
+// @Description 删除指定收藏夹；会逐条移除该夹内的文章，并正确维护计数后再删除收藏夹本身-内部的文章会全部删除
+// @Tags        Collections
+// @Security    BearerAuth
+// @Produce     json
+// @Param       id   path     int  true "收藏夹ID"
+// @Success     200  {object} deleteResp "ok: true"
+// @Failure     400  {object} gin.H
+// @Failure     401  {object} gin.H
+// @Failure     500  {object} gin.H
+// @Router      /api/collections/{id} [delete]
+func DeleteMyCollection(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "no permission, user does not log in"})
 		return
 	}
 
-	collectionId, err := strconv.ParseUint(c.Param("collectionId"), 10, 64)
+	collectionId, err := strconv.ParseUint(c.Param("collectionId"), 10, 64) //获取对应的收藏夹ID
 	if err != nil || collectionId == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid collection id"})
 		return
 	}
 	collectionID := uint(collectionId)
-	var req addItemReq
-	if err := c.ShouldBindJSON(&req); err != nil || req.ArticleID == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid params"})
-		return
-	}
 
-	var (
-		ItemCount          uint //文件夹的个数
-		totalCollectionCnt uint //文章的收藏个数
-		articleExist       bool
-	)
-	IDKey := fmt.Sprintf(config.RedisArticleKey, req.ArticleID)
-	if val, err := global.RedisDB.Get(IDKey).Result(); err == nil {
-		if val == "0" {
-			c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
-			return
-		}
-		articleExist = true
-	}
-	// 收藏夹存在性检查
-	if err := global.DB.Transaction(func(tx *gorm.DB) error {
-		// 1) 校验收藏夹归属
-		var col models.Collection
-		if err := tx.Select("id,user_id,item_count").
-			Where("id=? AND user_id=?", collectionID, userID).
-			First(&col).Error; err != nil {
+	err = global.DB.Transaction(func(tx *gorm.DB) error {
+		var collection models.Collection // 这里查询对应的收藏夹-以用户和文件夹的id
+		// 锁定收藏夹行（防并发新增/删除）
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ? AND user_id = ?", collectionID, userID).
+			First(&collection).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				c.JSON(http.StatusNotFound, gin.H{"error": "collection not found"})
-				return err
+				return fmt.Errorf("collection not found or not owned by user")
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "db error"})
 			return err
 		}
-		// 校验文章是否存在
-		if !articleExist {
-			var cnt int64
-			if err := global.DB.Model(&models.Article{}).Where("id = ?", req.ArticleID).Count(&cnt).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
-				return err
-			}
-			if cnt == 0 {
-				_ = global.RedisDB.Set(IDKey, "0", config.Article_TTL).Err()
-				c.JSON(http.StatusNotFound, gin.H{"error": "article not found"})
-				return err
-			}
-			_ = global.RedisDB.Set(IDKey, "1", config.Article_TTL).Err()
-			//这个之后就是文章存在了
+		//上述为查找文件夹
+
+		// 接受的数据-这里不需要展示这么多-直接按照ID删除就行
+		var items []struct {
+			ID        uint
+			ArticleID uint
 		}
-		// 使用从句创建索引-高并发下更小-这里查的是关系表
-		res := tx.Clauses(clause.OnConflict{DoNothing: true}).
-			Create(&models.CollectionItem{
-				CollectionID: collectionID,
-				ArticleID:    req.ArticleID,
-			}) //res 是 GORM 的 *gorm.DB 类型的结果对象
-		if res.Error != nil {
-			return res.Error
-		}
-        //注意这里是对应的变动关系表的行数-如果变动则是第一个创建-即第一次插入
-		if res.RowsAffected == 1 {
-			if err := tx.Model(&models.Collection{}).
-				Where("id=?", collectionID).
-				UpdateColumn("item_count", gorm.Expr("item_count + 1")).Error; err != nil {
-				return err
-			}
-		}
-		// 读取最新计数用于返回
-		if err := tx.Model(&models.Collection{}). //当前文件夹的个数
-								Where("id=?", collectionID).
-								Pluck("item_count", &ItemCount).Error; err != nil {
+		// var items []models.CollectionItem - 待思考的数据
+		if err := tx.Model(&models.CollectionItem{}).
+			Select("id, article_id").
+			Where("collection_id = ?", collectionID).
+			Order("id DESC").
+			Scan(&items).Error; err != nil {
 			return err
 		}
-		if err := tx.Model(&models.Article{}). //当前文章的收藏数
-							Where("id=?", req.ArticleID).
-							Pluck("collection_count", &totalCollectionCnt).Error; err != nil {
+
+		if len(items) > 0 { //说明有文章item
+			if err := tx.Where("collection_id = ?", collectionID).Delete(&models.CollectionItem{}).Error; err != nil { //删除对应的item
+				return err
+			}
+			for _, item := range items {
+				var uci models.UserCollectionItem //这里是关联表-获取对应的关联表
+				if err := tx.Where("user_id = ? AND article_id = ?", userID, item.ArticleID).First(&uci).Error; err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						continue
+					}
+					return err
+				}
+				// 如果其本身等于1-直接删表-同时对应的文章收藏数-1
+				if uci.ItemCount <= 1 {
+					// 删除关联表
+					if err := tx.Where("user_id = ? AND article_id = ?", userID, item.ArticleID).Delete(&models.UserCollectionItem{}).Error; err != nil {
+						return err
+					}
+					// 删除对应的收藏数
+					if err := tx.Model(&models.Article{}).
+						Where("id = ?", item.ArticleID).
+						UpdateColumn("collection_count", gorm.Expr("CASE WHEN collection_count > 0 THEN collection_count - 1 ELSE 0 END")).Error; err != nil {
+						return err
+					}
+				} else { //对应的关联表数-1
+					if err := tx.Model(&models.UserCollectionItem{}).
+						Where("user_id = ? AND article_id = ?", userID, item.ArticleID).
+						UpdateColumn("item_count", gorm.Expr("item_count - 1")).Error; err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		if err := tx.Where("id = ?", collectionID).Delete(&models.Collection{}).Error; err != nil { //最后删除对应的收藏夹
 			return err
 		}
+
 		return nil
-	}); err != nil {
-		// 统一错误返回（可细分唯一键冲突 -> 200 幂等成功）
-		c.JSON(http.StatusBadRequest, gin.H{"error": "add failed"})
-		return
-	}
-	c.JSON(http.StatusOK, addItemResp{
-		Ok:            true,
-		ItemCount:     ItemCount,
-		CollectionCnt: totalCollectionCnt,
 	})
-}
-
-// -------------------------------------------
-type ArticleBriefResp struct {
-	ID           uint   `json:"id"`
-	Title        string `json:"title"`
-	Preview      string `json:"preview"`
-	Likes        uint   `json:"likes"`
-	RepostCount  uint   `json:"repost_count"`
-	CommentCount uint   `json:"comment_count"`
-}
-
-// 因为这个要写成嵌套式响应-类似嵌套评论
-type CollectionWithItemsResp struct {
-	ID        uint               `json:"id"`
-	Name      string             `json:"name"`
-	ItemCount uint               `json:"item_count"`
-	Items     []ArticleBriefResp `json:"items"`
-}
-
-// @Summary      我的收藏夹（含各夹内全部文章）
-// @Description  返回当前登录用户的所有收藏夹及各自包含的文章（文章按照加入收藏的时间倒序）
-// @Tags         Collections
-// @Security     BearerAuth
-// @Produce      json
-// @Success      200  {array}   CollectionWithItemsResp
-// @Failure      401  {object}  gin.H
-// @Failure      500  {object}  gin.H
-// GET /api/collections/all_items
-func ListmyCollection(c *gin.Context) { //列出当前用的收藏文件夹和对应文件夹收藏的文件
-	userID := c.GetUint("user_id")
-	if userID == 0 {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "no permission"})
+	if err != nil {
+		msg := err.Error()
+		switch {
+		case strings.Contains(msg, "not found"),
+			strings.Contains(msg, "not owned"):
+			c.JSON(http.StatusBadRequest, gin.H{"error": msg})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+		}
 		return
 	}
-	// 1) 所有收藏夹
-	var lists []models.Collection
-	if err := global.DB.Model(&models.Collection{}). //遍历所有收藏夹表-获取对应的id、name和个数
-								Select("id, name, item_count").
-								Where("user_id = ?", userID). //where限制并且按照日期降序
-								Order("created_at DESC").
-								Find(&lists).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "collections query failed"})
-		return
-	}
-	if len(lists) == 0 {
-		c.JSON(http.StatusOK, []CollectionWithItemsResp{}) //返回空接口
-		return
-	}
-	//按照那里的收藏夹文件id找对应的文件-获取对应的文件夹ID
-	IDMaps := make([]uint, 0, len(lists))
-	for _, v := range lists {
-		IDMaps = append(IDMaps, v.ID)
-	}
-
-	//  一次性把所有条目拉出来（JOIN 文章；按加入时间倒序）
-	type article struct {
-		CollectionID uint
-		ID           uint
-		Title        string
-		Preview      string
-		Likes        uint
-		RepostCount  uint
-		CommentCount uint
-	}
-	var list []article
-	if err := global.DB.Table("collection_items AS ci"). //别名
-								Select("ci.collection_id, a.id, a.title, a.preview, a.likes, a.repost_count, a.comment_count"). //查询文章内容和收藏夹名
-								Joins("JOIN articles a ON a.id = ci.article_id").                                               //别名a 内连接 articles
-								Where("ci.collection_id IN (?)", IDMaps).                                                       //对应的文件夹id
-								Order("ci.collection_id, ci.created_at DESC").                                                  //第一个分块，第二个按时间倒序
-								Find(&list).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "items query failed"})
-		return
-	} //获取的数据是文章内容+收藏夹ID，而匹配条件为哈希表中的
-
-	// 内部的映射
-	bucket := make(map[uint][]ArticleBriefResp, len(lists)) //这里是对应收藏文件夹的id->多个文章的id映射
-	for _, r := range list {
-		bucket[r.CollectionID] = append(bucket[r.CollectionID], ArticleBriefResp{
-			ID:           r.ID,
-			Title:        r.Title,
-			Preview:      r.Preview,
-			Likes:        r.Likes,
-			RepostCount:  r.RepostCount,
-			CommentCount: r.CommentCount,
-		})
-	}
-
-	out := make([]CollectionWithItemsResp, 0, len(lists))
-	for _, c0 := range lists {
-		out = append(out, CollectionWithItemsResp{
-			ID:        c0.ID,
-			Name:      c0.Name,
-			ItemCount: c0.ItemCount,
-			Items:     bucket[c0.ID], //对应的映射数据
-		})
-	}
-
-	c.JSON(http.StatusOK, out)
+	c.JSON(http.StatusOK, &deleteResp{Ok: true})
 }
 
-//前端收藏数，因为它+1后续再考虑-因为这个是一个牵一发而动全身的事情
+type deleteResp struct {
+	Ok bool `json:"ok" example:"true"`
+}

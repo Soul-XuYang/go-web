@@ -108,7 +108,7 @@ func DeleteExchangeRate(c *gin.Context) {
 
 	//删除前先判断是否是存在这条记录
 	var exchangeRate models.ExchangeRate
-	if err := global.DB.Where("id = ?", id).First(&exchangeRate).Error; err != nil {
+	if err := global.DB.Where("_id = ?", id).First(&exchangeRate).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "this exchangeRate not found"})
 		return
 	}
@@ -152,7 +152,7 @@ type updateRateResponse struct {
 // @Failure     500   {object}  map[string]interface{}  "服务器内部错误"
 // @Security    ApiKeyAuth
 // @Router      /api/exchangeRates/{id} [put]
-func UpdataRate(c *gin.Context) {
+func UpdataRate(c *gin.Context) { 
 	userID := c.GetUint("user_id")
 	if userID == 0 {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -181,7 +181,8 @@ func UpdataRate(c *gin.Context) {
 	if req.Rate != 0 {
 		map_updateExchangeRate["rate"] = req.Rate
 	}
-	if err := global.DB.Model(&models.ExchangeRate{}).Where("id = ?", id).Updates(map_updateExchangeRate).Error; err != nil {
+	// 这里的条例是_id
+	if err := global.DB.Model(&models.ExchangeRate{}).Where("_id = ?", id).Updates(map_updateExchangeRate).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 

@@ -17,6 +17,14 @@ body {
     line-height: 1.6;
 }
 
+body.modal-open {
+    overflow: hidden;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
 /* ========== 顶部导航 ========== */
 .zhihu-nav {
     background: #fff;
@@ -103,13 +111,14 @@ body {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: var(#1f7ae0);
+    background: var(--primary, #1f7ae0);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: .75rem;
     font-weight: 700;
+    box-shadow: 0 0 0 2px rgba(31, 122, 224, .12);
 }
 
 .zhihu-username {
@@ -357,13 +366,14 @@ body {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary, #1f7ae0);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 12px;
     font-weight: 600;
+    box-shadow: 0 0 0 2px rgba(31, 122, 224, .12);
 }
 
 .zhihu-article-content {
@@ -508,13 +518,14 @@ body {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary, #1f7ae0);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 12px;
     font-weight: 600;
+    box-shadow: 0 0 0 2px rgba(31, 122, 224, .12);
 }
 
 .zhihu-comment-username {
@@ -618,6 +629,388 @@ body {
 
 .zhihu-error {
     color: #eb5757;
+}
+
+/* ========== 分享弹窗 ========== */
+.share-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1100;
+}
+
+.share-modal-backdrop.show {
+    display: flex;
+}
+
+.share-modal {
+    width: min(480px, 100%);
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.share-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.share-modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.share-modal-close {
+    border: none;
+    background: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: #8590a6;
+}
+
+.share-modal-close:hover {
+    color: #0084ff;
+}
+
+.share-modal-body {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.share-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.share-option {
+    border: 1px solid #e8e8e8;
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: #fafafa;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color 0.2s, background 0.2s;
+    text-decoration: none;
+    color: inherit;
+}
+
+.share-option:hover {
+    border-color: #d2e7ff;
+    background: #f5f9ff;
+}
+
+.share-option img,
+.share-option svg {
+    width: 28px;
+    height: 28px;
+}
+
+.share-option span {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.share-wechat {
+    border: 1px dashed #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+
+.share-wechat-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.share-wechat img {
+    width: 160px;
+    height: 160px;
+    border-radius: 8px;
+    border: 1px solid #f0f0f0;
+    background: #fff;
+}
+
+.share-wechat-tip {
+    font-size: 12px;
+    color: #8590a6;
+    margin-top: 12px;
+}
+
+.share-modal-footer {
+    padding: 12px 24px 18px;
+    font-size: 13px;
+    color: #8590a6;
+}
+
+.share-modal-footer.msg-success {
+    color: #1a7f37;
+}
+
+.share-modal-footer.msg-error {
+    color: #d93026;
+}
+
+.share-modal-footer.msg-info {
+    color: #1f7ae0;
+}
+
+/* ========== 收藏夹模态框 ========== */
+.collection-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 20px;
+}
+
+.collection-modal-backdrop.show {
+    display: flex;
+}
+
+.collection-modal {
+    width: min(460px, 100%);
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 90vh;
+}
+
+.collection-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.collection-modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.collection-close-btn {
+    border: none;
+    background: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    color: #8590a6;
+    padding: 0 4px;
+}
+
+.collection-close-btn:hover {
+    color: #0084ff;
+}
+
+.collection-modal-subtitle {
+    font-size: 14px;
+    color: #8590a6;
+}
+
+.collection-modal-message {
+    min-height: 18px;
+    font-size: 13px;
+}
+
+.collection-modal-message.message-info {
+    color: #1f7ae0;
+}
+
+.collection-modal-message.message-success {
+    color: #1a7f37;
+}
+
+.collection-modal-message.message-error {
+    color: #c62828;
+}
+
+.collection-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.collection-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.collection-list::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.collection-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    background: #fafbfc;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.collection-list-item:hover {
+    border-color: #dce5ff;
+    background: #f5f9ff;
+}
+
+.collection-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.collection-item-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.collection-item-count {
+    font-size: 13px;
+    color: #8590a6;
+}
+
+.collection-item-action {
+    min-width: 80px;
+    height: 32px;
+    border-radius: 16px;
+    border: none;
+    background: #0084ff;
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+.collection-item-action:hover {
+    background: #006bd3;
+}
+
+.collection-item-action.disabled,
+.collection-item-action:disabled {
+    background: #f0f0f0;
+    color: #8590a6;
+    cursor: not-allowed;
+}
+
+.collection-modal-loading,
+.collection-modal-error,
+.collection-modal-empty {
+    text-align: center;
+    padding: 20px 10px;
+    font-size: 14px;
+    color: #8590a6;
+}
+
+.collection-modal-error {
+    color: #c62828;
+}
+
+.collection-modal-footer {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.collection-create-toggle {
+    height: 34px;
+    border-radius: 4px;
+    border: 1px solid #0084ff;
+    background: #fff;
+    color: #0084ff;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.collection-create-toggle:hover {
+    background: #f0f9ff;
+}
+
+.collection-create-form {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.collection-create-form.show {
+    display: flex;
+}
+
+.collection-create-form input {
+    height: 36px;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+    padding: 0 10px;
+    font-size: 14px;
+}
+
+.collection-create-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.collection-create-submit,
+.collection-create-cancel {
+    border-radius: 4px;
+    height: 32px;
+    padding: 0 14px;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+}
+
+.collection-create-submit {
+    background: #0084ff;
+    color: #fff;
+}
+
+.collection-create-submit:hover {
+    background: #006bd3;
+}
+
+.collection-create-submit:disabled {
+    background: #9abff5;
+    cursor: not-allowed;
+}
+
+.collection-create-cancel {
+    background: #f5f5f5;
+    color: #646464;
+}
+
+.collection-create-cancel:hover {
+    background: #ebebeb;
 }
 
 /* 响应式 */

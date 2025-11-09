@@ -53,6 +53,71 @@
         </section>
     </div>
 
+    <!-- 收藏夹选择模态框 -->
+    <div class="collection-modal-backdrop" id="collectionModal">
+        <div class="collection-modal">
+            <div class="collection-modal-header">
+                <h2>添加收藏</h2>
+                <button class="collection-close-btn" id="collectionCloseBtn" aria-label="关闭">×</button>
+            </div>
+            <div class="collection-modal-subtitle">请选择你想添加的收藏夹</div>
+            <div class="collection-modal-message" id="collectionMessage"></div>
+            <div class="collection-list" id="collectionList">
+                <div class="collection-modal-loading">加载中...</div>
+            </div>
+            <div class="collection-modal-footer">
+                <button class="collection-create-toggle" id="toggleCreateCollection">创建收藏夹</button>
+                <form class="collection-create-form" id="collectionCreateForm">
+                    <input type="text" id="collectionNameInput" placeholder="收藏夹名称（1~50字）" maxlength="50" required>
+                    <div class="collection-create-actions">
+                        <button type="submit" class="collection-create-submit">保存</button>
+                        <button type="button" class="collection-create-cancel" id="collectionCreateCancel">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分享弹窗 -->
+    <div class="share-modal-backdrop" id="shareModal">
+        <div class="share-modal">
+            <div class="share-modal-header">
+                <h2>转发文章</h2>
+                <button class="share-modal-close" id="shareModalClose" aria-label="关闭">×</button>
+            </div>
+            <div class="share-modal-body">
+                <div class="share-actions">
+                    <button class="share-option" id="shareQQ">
+                        <img src="/static/share/qq.png" alt="QQ">
+                        <span>分享到 QQ</span>
+                    </button>
+                    <button class="share-option" id="shareWeChat">
+                        <img src="/static/share/wechat.png" alt="微信">
+                        <span>微信扫一扫</span>
+                    </button>
+                    <a class="share-option" id="shareGithub" href="https://github.com/Soul-XuYang/go-web"
+                        target="_blank" rel="noopener noreferrer">
+                        <img src="https://github.githubassets.com/favicons/favicon.svg" alt="GitHub">
+                        <span>查看 GitHub 项目</span>
+                    </a>
+                    <button class="share-option" id="shareCopy">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span>复制文章链接</span>
+                    </button>
+                </div>
+                <div class="share-wechat" id="wechatPanel">
+                    <div class="share-wechat-title">微信扫码分享</div>
+                    <img id="wechatQr" alt="微信二维码">
+                    <div class="share-wechat-tip">使用微信扫描二维码即可分享给好友或朋友圈</div>
+                </div>
+            </div>
+            <div class="share-modal-footer" id="shareStatus"></div>
+        </div>
+    </div>
+
     <script>
         const $ = s => document.querySelector(s);
         const $$ = s => Array.from(document.querySelectorAll(s));
@@ -60,6 +125,30 @@
 
         let currentUserId = null;
         let currentArticle = null;
+
+        const collectionModalRefs = {
+            backdrop: document.getElementById('collectionModal'),
+            list: document.getElementById('collectionList'),
+            message: document.getElementById('collectionMessage'),
+            toggleBtn: document.getElementById('toggleCreateCollection'),
+            form: document.getElementById('collectionCreateForm'),
+            input: document.getElementById('collectionNameInput'),
+            cancelBtn: document.getElementById('collectionCreateCancel'),
+            closeBtn: document.getElementById('collectionCloseBtn'),
+        };
+        let collectionFormVisible = false;
+        let collectionLoading = false;
+        const shareModalRefs = {
+            backdrop: $('#shareModal'),
+            closeBtn: $('#shareModalClose'),
+            qqBtn: $('#shareQQ'),
+            wechatBtn: $('#shareWeChat'),
+            githubLink: $('#shareGithub'),
+            copyBtn: $('#shareCopy'),
+            wechatPanel: $('#wechatPanel'),
+            wechatQr: $('#wechatQr'),
+            status: $('#shareStatus'),
+        };
 
         function getStoredToken() {
             const t = localStorage.getItem('token');
@@ -133,11 +222,13 @@
                             <span>${escapeHTML(article.username)}</span>
                         </div>
                         <span>·</span>
-                        <span id="likeCount">${article.likes || 0} 赞同</span>
+                        <span id="likeCount">点赞 ${article.likes || 0}</span>
                         <span>·</span>
-                        <span id="articleCommentCount">${article.commentcount || 0} 评论</span>
+                        <span id="articleCommentCount">评论 ${article.commentcount || 0}</span>
                         <span>·</span>
-                        <span>${article.repost_count || 0} 分享</span>
+                        <span id="collectionCount">收藏 ${article.collection_count || 0}</span>
+                        <span>·</span>
+                        <span id="repostCount">转发 ${article.repost_count || 0}</span>
                     </div>
                 </div>
                 <div class="zhihu-article-content">${escapeHTML(article.preview || '')}</div>
@@ -148,7 +239,7 @@
                         </svg>
                         <span id="likeBtnText">赞同</span>
                     </button>
-                    <button class="zhihu-action-btn">
+                    <button class="zhihu-action-btn" id="shareBtn">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <circle cx="18" cy="5" r="3"></circle>
                             <circle cx="6" cy="12" r="3"></circle>
@@ -156,12 +247,318 @@
                             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
                             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
                         </svg>
-                        <span>分享</span>
+                        <span>转发</span>
+                    </button>
+                    <button class="zhihu-action-btn" id="collectBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M6 4h12a1 1 0 0 1 1 1v14l-7-4-7 4V5a1 1 0 0 1 1-1z"></path>
+                        </svg>
+                        <span>收藏</span>
                     </button>
                 </div>
             `;
 
             $('#likeBtn').onclick = toggleLike;
+            const collectBtn = $('#collectBtn');
+            if (collectBtn) {
+                collectBtn.onclick = openCollectionModal;
+            }
+            const shareBtn = $('#shareBtn');
+            if (shareBtn) {
+                shareBtn.onclick = openShareModal;
+            }
+        }
+
+        function updateCollectionFormVisibility(show) {
+            collectionFormVisible = !!show;
+            if (collectionModalRefs.form) {
+                if (collectionFormVisible) {
+                    collectionModalRefs.form.classList.add('show');
+                } else {
+                    collectionModalRefs.form.classList.remove('show');
+                    if (typeof collectionModalRefs.form.reset === 'function') {
+                        collectionModalRefs.form.reset();
+                    }
+                }
+            }
+        }
+
+        function setCollectionMessage(type, text) {
+            if (!collectionModalRefs.message) return;
+            collectionModalRefs.message.textContent = text || '';
+            collectionModalRefs.message.className = 'collection-modal-message';
+            if (type && text) {
+                collectionModalRefs.message.classList.add(`message-${type}`);
+            }
+        }
+
+        function normalizeCollections(data) {
+            const lists = data?.lists ?? data?.Lists ?? [];
+            if (!Array.isArray(lists)) return [];
+            return lists.map(col => {
+                const rawItems = col.items ?? col.Items ?? [];
+                return {
+                    id: col.id ?? col.ID ?? col.Id ?? 0,
+                    name: col.name ?? col.Name ?? '未命名收藏夹',
+                    itemCount: col.item_count ?? col.ItemCount ?? 0,
+                    items: Array.isArray(rawItems)
+                        ? rawItems.map(item => ({
+                            articleId: item.article_id ?? item.ArticleID ?? item.articleId ?? 0
+                        }))
+                        : []
+                };
+            });
+        }
+
+        async function loadCollectionLists() {
+            if (!collectionModalRefs.list) return;
+            collectionLoading = true;
+            collectionModalRefs.list.innerHTML = '<div class="collection-modal-loading">加载中...</div>';
+            try {
+                const res = await authFetch('/api/collections/all_items', { cache: 'no-store' });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '加载收藏夹失败');
+                }
+                const collections = normalizeCollections(data);
+                renderCollectionList(collections);
+            } catch (e) {
+                collectionModalRefs.list.innerHTML = `<div class="collection-modal-error">${e.message || '加载失败'}</div>`;
+            } finally {
+                collectionLoading = false;
+            }
+        }
+
+        function renderCollectionList(collections) {
+            if (!collectionModalRefs.list) return;
+            if (!collections || collections.length === 0) {
+                collectionModalRefs.list.innerHTML = '<div class="collection-modal-empty">暂无收藏夹，试试创建一个吧。</div>';
+                return;
+            }
+            const frag = document.createDocumentFragment();
+            collections.forEach(col => {
+                const item = document.createElement('div');
+                item.className = 'collection-list-item';
+
+                const info = document.createElement('div');
+                info.className = 'collection-item-info';
+
+                const name = document.createElement('div');
+                name.className = 'collection-item-name';
+                name.textContent = col.name;
+
+                const count = document.createElement('div');
+                count.className = 'collection-item-count';
+                count.textContent = `${col.itemCount || 0} 条内容`;
+
+                info.appendChild(name);
+                info.appendChild(count);
+
+                const action = document.createElement('button');
+                const alreadyCollected = Array.isArray(col.items) && col.items.some(i => Number(i.articleId) === Number(articleId));
+                action.className = 'collection-item-action' + (alreadyCollected ? ' disabled' : '');
+                action.textContent = alreadyCollected ? '已收藏' : '收藏';
+                action.disabled = alreadyCollected;
+
+                if (!alreadyCollected) {
+                    action.addEventListener('click', () => handleAddToCollection(col.id));
+                }
+
+                item.appendChild(info);
+                item.appendChild(action);
+                frag.appendChild(item);
+            });
+
+            collectionModalRefs.list.innerHTML = '';
+            collectionModalRefs.list.appendChild(frag);
+        }
+
+        async function handleAddToCollection(collectionId) {
+            if (!collectionId || collectionLoading) return;
+            try {
+                collectionLoading = true;
+                setCollectionMessage('info', '正在添加到收藏夹...');
+                const res = await authFetch('/api/collections/item', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        collection_id: Number(collectionId),
+                        article_id: Number(articleId)
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '添加失败');
+                }
+                setCollectionMessage('success', '收藏成功！');
+                await loadCollectionLists();
+                await loadArticle();
+            } catch (e) {
+                setCollectionMessage('error', e.message || '收藏失败');
+            } finally {
+                collectionLoading = false;
+            }
+        }
+
+        async function createCollection(name) {
+            if (!name) return;
+            try {
+                setCollectionMessage('info', '正在创建收藏夹...');
+                const res = await authFetch('/api/collections', {
+                    method: 'POST',
+                    body: JSON.stringify({ name: name.trim() })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '创建失败');
+                }
+                setCollectionMessage('success', '收藏夹创建成功');
+                updateCollectionFormVisibility(false);
+                await loadCollectionLists();
+            } catch (e) {
+                setCollectionMessage('error', e.message || '创建失败');
+            }
+        }
+
+        function openCollectionModal() {
+            if (!collectionModalRefs.backdrop) return;
+            collectionModalRefs.backdrop.classList.add('show');
+            document.body.classList.add('modal-open');
+            setCollectionMessage('', '');
+            updateCollectionFormVisibility(false);
+            loadCollectionLists();
+        }
+
+        function closeCollectionModal() {
+            if (!collectionModalRefs.backdrop) return;
+            collectionModalRefs.backdrop.classList.remove('show');
+            document.body.classList.remove('modal-open');
+        }
+
+        if (collectionModalRefs.closeBtn) {
+            collectionModalRefs.closeBtn.addEventListener('click', closeCollectionModal);
+        }
+
+        if (collectionModalRefs.backdrop) {
+            collectionModalRefs.backdrop.addEventListener('click', (e) => {
+                if (e.target === collectionModalRefs.backdrop) {
+                    closeCollectionModal();
+                }
+            });
+        }
+
+        if (collectionModalRefs.toggleBtn) {
+            collectionModalRefs.toggleBtn.addEventListener('click', () => {
+                updateCollectionFormVisibility(!collectionFormVisible);
+            });
+        }
+
+        if (collectionModalRefs.cancelBtn) {
+            collectionModalRefs.cancelBtn.addEventListener('click', () => {
+                updateCollectionFormVisibility(false);
+            });
+        }
+
+        if (collectionModalRefs.form) {
+            collectionModalRefs.form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = collectionModalRefs.input?.value?.trim();
+                if (!name) {
+                    setCollectionMessage('error', '请输入收藏夹名称');
+                    collectionModalRefs.input?.focus();
+                    return;
+                }
+                const submitBtn = collectionModalRefs.form.querySelector('.collection-create-submit');
+                if (submitBtn) submitBtn.disabled = true;
+                try {
+                    await createCollection(name);
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && collectionModalRefs.backdrop?.classList.contains('show')) {
+                closeCollectionModal();
+            }
+            if (e.key === 'Escape' && shareModalRefs.backdrop?.classList.contains('show')) {
+                closeShareModal();
+            }
+        });
+
+        function openShareModal() {
+            if (!shareModalRefs.backdrop) return;
+            shareModalRefs.backdrop.classList.add('show');
+            document.body.classList.add('modal-open');
+            updateShareStatus();
+            prepareWeChatQr();
+        }
+
+        function closeShareModal() {
+            if (!shareModalRefs.backdrop) return;
+            shareModalRefs.backdrop.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            updateShareStatus();
+        }
+
+        function buildShareUrl() {
+            return `${location.origin}/page/articles/${articleId}`;
+        }
+
+        function updateShareStatus(type = '', text = '') {
+            if (!shareModalRefs.status) return;
+            shareModalRefs.status.textContent = text || '';
+            shareModalRefs.status.className = 'share-modal-footer';
+            if (type && text) {
+                shareModalRefs.status.classList.add(`msg-${type}`);
+            }
+        }
+
+        function prepareWeChatQr() {
+            if (!shareModalRefs.wechatQr) return;
+            const url = encodeURIComponent(buildShareUrl());
+            shareModalRefs.wechatQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${url}`;
+        }
+
+        if (shareModalRefs.qqBtn) {
+            shareModalRefs.qqBtn.addEventListener('click', () => {
+                const url = encodeURIComponent(buildShareUrl());
+                const title = encodeURIComponent(currentArticle?.title || '精彩文章');
+                const summary = encodeURIComponent(currentArticle?.preview || '');
+                const qqUrl = `https://connect.qq.com/widget/shareqq/index.html?url=${url}&title=${title}&summary=${summary}`;
+                window.open(qqUrl, '_blank', 'noopener,noreferrer');
+                updateShareStatus('success', '已打开 QQ 分享窗口');
+            });
+        }
+
+        if (shareModalRefs.wechatBtn) {
+            shareModalRefs.wechatBtn.addEventListener('click', () => {
+                prepareWeChatQr();
+                updateShareStatus('info', '已生成微信二维码');
+            });
+        }
+
+        if (shareModalRefs.copyBtn) {
+            shareModalRefs.copyBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(buildShareUrl());
+                    updateShareStatus('success', '文章链接已复制');
+                } catch (e) {
+                    updateShareStatus('error', '复制失败，请手动复制');
+                }
+            });
+        }
+
+        if (shareModalRefs.closeBtn) {
+            shareModalRefs.closeBtn.addEventListener('click', closeShareModal);
+        }
+
+        if (shareModalRefs.backdrop) {
+            shareModalRefs.backdrop.addEventListener('click', (e) => {
+                if (e.target === shareModalRefs.backdrop) {
+                    closeShareModal();
+                }
+            });
         }
 
         // 检查文章所有权
@@ -197,7 +594,7 @@
                     $('#likeBtnText').textContent = '赞同';
                 }
 
-                $('#likeCount').textContent = `${data.total_likes} 赞同`;
+                $('#likeCount').textContent = `点赞 ${data.total_likes}`;
             } catch (e) {
                 alert('点赞失败：' + (e.message || '未知错误'));
             }
@@ -215,12 +612,38 @@
         }
 
         // 渲染评论
+        function normalizeComment(raw) {
+            if (!raw || typeof raw !== 'object') return null;
+            const id = raw.id ?? raw.ID ?? raw.Id ?? null;
+            const username = raw.username ?? raw.Username ?? '';
+            const createdAt = raw.created_at ?? raw.CreatedAt ?? raw.createdAt ?? '';
+            const childrenRaw = raw.children ?? raw.Children ?? [];
+            const children = Array.isArray(childrenRaw)
+                ? childrenRaw.map(normalizeComment).filter(Boolean)
+                : [];
+            return {
+                id,
+                content: raw.content ?? raw.Content ?? '',
+                username,
+                created_at: createdAt,
+                children
+            };
+        }
+
         function renderComments(comments) {
             if (!Array.isArray(comments) || comments.length === 0) {
                 $('#commentList').innerHTML = '<div style="text-align:center;color:#8590a6;padding:40px 20px;">暂无评论，快来抢沙发吧！</div>';
                 $('#commentCount').textContent = '(0)';
                 return;
             }
+
+            let data = comments;
+            if (!Array.isArray(comments) && comments && typeof comments === 'object') {
+                const keys = Object.keys(comments);
+                const nested = keys.map(k => comments[k]).find(Array.isArray) || [];
+                data = nested;
+            }
+            const normalized = Array.isArray(data) ? data.map(normalizeComment).filter(Boolean) : [];
 
             let totalCount = 0;
             function countComments(items) {
@@ -231,15 +654,15 @@
                     }
                 });
             }
-            countComments(comments);
+            countComments(normalized);
             $('#commentCount').textContent = `(${totalCount})`;
             const articleCountEl = $('#articleCommentCount');
             if (articleCountEl) {
-                articleCountEl.textContent = `${totalCount} 评论`;
+                articleCountEl.textContent = `评论 ${totalCount}`;
             }
 
             $('#commentList').innerHTML = '';
-            comments.forEach(comment => {
+            normalized.forEach(comment => {
                 $('#commentList').appendChild(createCommentElement(comment));
             });
         }

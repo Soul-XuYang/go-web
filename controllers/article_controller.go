@@ -40,13 +40,14 @@ type ArticleResp struct { //DTO这里是给数据库要更改的数据
 }
 
 type ArticleListResp struct {
-	ID           uint   `json:"id"`
-	Username     string `json:"username"`
-	Title        string `json:"title"`
-	Preview      string `json:"preview"`
-	Likes        uint   `json:"likes"`
-	Commentcount uint   `json:"commentcount"`
-	RepostCount  uint   `json:"repost_count"`
+	ID              uint   `json:"id"`
+	Username        string `json:"username"`
+	Title           string `json:"title"`
+	Preview         string `json:"preview"`
+	Likes           uint   `json:"likes"`
+	Commentcount    uint   `json:"commentcount"`
+	RepostCount     uint   `json:"repost_count"`
+	CollectionCount uint   `json:"collection_count"`
 }
 
 // CreateArticle godoc
@@ -175,7 +176,7 @@ func UpdateArticle(c *gin.Context) {
 // @Param        title            query  string false "关键字（匹配文件名，模糊）"
 // @Param        page         query  int    false "页码（默认1）"
 // @Param        page_size    query  int    false "每页的条数（默认10，最大100）"
-// @Param        order        query  string false "排序：共8种组合，两种排序方式-上传日期 created_desc（默认）/created_asc/likes_desc/likes_asc/comments_desc/comments_asc/reposts_desc/reposts_asc
+// @Param        order        query  string false "排序：共8种组合，两种排序方式-上传日期 created_desc（默认）/created_asc/likes_desc/likes_asc/comments_desc/comments_asc/reposts_desc/reposts_asc/collections_desc/collections_asc"
 // @Success      200  {array}   controllers.ArticleListResp
 // @Failure      401  {object}  map[string]string
 // @Failure      500  {object}  map[string]string
@@ -227,10 +228,14 @@ func Get_All_Articles(c *gin.Context) {
 		db = db.Order("repost_count DESC")
 	case "reposts_asc":
 		db = db.Order("repost_count ASC")
+	case "collections_desc":
+		db = db.Order("collection_count DESC")
+	case "collections_asc":
+		db = db.Order("collection_count ASC")
 	default:
 		db = db.Order("created_at DESC")
 	}
-	db = db.Select("id, user_id, title, preview, likes, repost_count, comment_count, created_at, updated_at") // 只查询这几个字段
+	db = db.Select("id, user_id, title, preview, likes, repost_count, comment_count, collection_count, created_at, updated_at") // 只查询这几个字段
 	var articles []models.Article
 	if err := db.Preload("User", func(tx *gorm.DB) *gorm.DB {
 		return tx.Select("id, username")
@@ -242,13 +247,14 @@ func Get_All_Articles(c *gin.Context) {
 	items := make([]ArticleListResp, 0, len(articles))
 	for _, a := range articles {
 		items = append(items, ArticleListResp{
-			ID:           a.ID,
-			Username:     a.User.Username,
-			Title:        a.Title,
-			Preview:      a.Preview,
-			Likes:        a.Likes,       // 直接 DB
-			RepostCount:  a.RepostCount, // 直接 DB
-			Commentcount: a.CommentCount,
+			ID:              a.ID,
+			Username:        a.User.Username,
+			Title:           a.Title,
+			Preview:         a.Preview,
+			Likes:           a.Likes,       // 直接 DB
+			RepostCount:     a.RepostCount, // 直接 DB
+			Commentcount:    a.CommentCount,
+			CollectionCount: a.CollectionCount,
 		})
 	}
 	// 写入缓存（仅首页）-明确给出缓存
@@ -263,14 +269,15 @@ func Get_All_Articles(c *gin.Context) {
 
 // 个人文章管理列表响应项（比公开列表更详细）
 type MyArticleItem struct {
-	ID           uint   `json:"id"`
-	Title        string `json:"title"`
-	Preview      string `json:"preview"`
-	Likes        uint   `json:"likes"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
-	CommentCount uint   `json:"comment_count"`
-	RepostCount  uint   `json:"repost_count"`
+	ID              uint   `json:"id"`
+	Title           string `json:"title"`
+	Preview         string `json:"preview"`
+	Likes           uint   `json:"likes"`
+	CollectionCount uint   `json:"collection_count"`
+	CommentCount    uint   `json:"comment_count"`
+	RepostCount     uint   `json:"repost_count"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
 }
 
 // GetMyArticles godoc
@@ -287,7 +294,6 @@ type MyArticleItem struct {
 // @Router       /api/articles/me [get]
 func GetMyArticles(c *gin.Context) {
 	userID := c.GetUint("user_id") // 从中间件获取
-	userName := c.GetString("username")
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
@@ -321,10 +327,14 @@ func GetMyArticles(c *gin.Context) {
 		db = db.Order("repost_count DESC")
 	case "reposts_asc":
 		db = db.Order("repost_count ASC")
+	case "collections_desc":
+		db = db.Order("collection_count DESC")
+	case "collections_asc":
+		db = db.Order("collection_count ASC")
 	default:
 		db = db.Order("created_at DESC")
 	}
-	db = db.Select("id, user_id, title, preview, likes, repost_count, comment_count, created_at, updated_at") // 只查询这几个字段
+	db = db.Select("id, user_id, title, preview, likes, repost_count, comment_count, collection_count, created_at, updated_at")
 	var articles []models.Article
 	if err := db.Preload("User", func(tx *gorm.DB) *gorm.DB {
 		return tx.Select("id")
@@ -333,16 +343,25 @@ func GetMyArticles(c *gin.Context) {
 		return
 	}
 
-	items := make([]ArticleListResp, 0, len(articles))
+	items := make([]MyArticleItem, 0, len(articles))
 	for _, a := range articles {
-		items = append(items, ArticleListResp{
-			ID:           a.ID,
-			Username:     userName,      //可减少查询和录入的速度
-			Title:        a.Title,
-			Preview:      a.Preview,
-			Likes:        a.Likes,       // 直接 DB
-			RepostCount:  a.RepostCount, // 直接 DB
-			Commentcount: a.CommentCount,
+		var createdAt, updatedAt string
+		if !a.CreatedAt.IsZero() {
+			createdAt = a.CreatedAt.Format(utils.FormatTime_specific)
+		}
+		if !a.UpdatedAt.IsZero() {
+			updatedAt = a.UpdatedAt.Format(utils.FormatTime_specific)
+		}
+		items = append(items, MyArticleItem{
+			ID:              a.ID,
+			Title:           a.Title,
+			Preview:         a.Preview,
+			Likes:           a.Likes,
+			CollectionCount: a.CollectionCount,
+			CommentCount:    a.CommentCount,
+			RepostCount:     a.RepostCount,
+			CreatedAt:       createdAt,
+			UpdatedAt:       updatedAt,
 		})
 	}
 	c.JSON(http.StatusOK, items)

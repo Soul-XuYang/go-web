@@ -23,7 +23,8 @@ func SetupRouter() *gin.Engine {
 	//页面（公开）
 	r.GET("/auth/login", func(c *gin.Context) { c.HTML(200, "login.html", nil) })
 	r.GET("/auth/register", func(c *gin.Context) { c.HTML(200, "register.html", nil) })
-	auth := r.Group("/api/auth") //给出路由组的路径
+	r.GET("/auth/logout", func(c *gin.Context) { c.HTML(200, "logout.html", nil) }) // 注销页面
+	auth := r.Group("/api/auth")                                                    //给出路由组的路径
 	auth.POST("/login", controllers.Login)
 	auth.POST("/register", controllers.Register)
 	auth.POST("/logout", controllers.Logout)
@@ -31,7 +32,8 @@ func SetupRouter() *gin.Engine {
 	// 受保护的页面端
 	page := r.Group("/page", middlewares.AuthMiddleWare()) //也是需要登录
 	{
-		page.GET("/shell", controllers.ShellPage) //界面
+		page.GET("/shell", controllers.ShellPage)                                     //界面
+		page.GET("/logout", func(c *gin.Context) { c.HTML(200, "logout.html", nil) }) // 注销界面
 		page.GET("/rates", func(c *gin.Context) { c.HTML(200, "exchange_rates.html", nil) })
 		page.GET("/rmb-top10", func(c *gin.Context) { c.HTML(200, "rmb_top10.html", nil) })
 		//文章界面
@@ -40,6 +42,7 @@ func SetupRouter() *gin.Engine {
 		page.GET("/articles/edit/:id", func(c *gin.Context) { c.HTML(200, "article_edit.html", nil) })
 		page.GET("/articles/:id", func(c *gin.Context) { c.HTML(200, "article_detail.html", nil) })
 		page.GET("/articles/my/list", func(c *gin.Context) { c.HTML(200, "article_my_list.html", nil) })
+		page.GET("/collections", func(c *gin.Context) { c.HTML(200, "collections.html", nil) })
 		// 游戏相关界面
 		page.GET("/game/selection", func(c *gin.Context) { c.HTML(200, "game_selection.html", nil) })
 		// 游戏界面
@@ -125,6 +128,15 @@ func SetupRouter() *gin.Engine {
 		// 计算器模块
 		api.POST("/calculator/calculate", controllers.Calculate)
 
+		collections := api.Group("/collections")
+		{
+			collections.POST("", controllers.CreateMycollection)
+			collections.GET("/all", controllers.ListMyCollections)
+			collections.GET("/all_items", controllers.ListMyCollectionsWithItems)
+			collections.POST("/item", controllers.AddArticleToMyCollection)
+			collections.DELETE("/item", controllers.RemoveArticleFromMyCollection)
+			collections.DELETE("/:collectionId", controllers.DeleteMyCollection)
+		}
 	}
 	// 超级管理员系统
 	admin := r.Group("/admin", middlewares.RolePermission("admin", "superadmin")) //给定用户的身份登记

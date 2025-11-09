@@ -41,15 +41,15 @@ func runMigrations() {
 		// 新增翻译历史记录表
 		&models.TranslationHistory{},
 		&models.Files{},
-		&models.Game_2048_Score{}, // 新增2048游戏分数表
+		&models.Game_2048_Score{},
 		// 博客系统表
 		&models.Article{},
 		&models.Comment{},
-		&models.UserLikeArticle{},
-		&models.UserArticleRepost{},
-		&models.Collection{},
+		&models.UserLikeArticle{},   //点赞关联表
+		&models.UserArticleRepost{}, //转发关联表
+		&models.Collection{},  
 		&models.CollectionItem{},
-		&models.UserArticleRepost{},
+		&models.UserCollectionItem{}, //收藏关联表
 	); err != nil {
 		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
 	}

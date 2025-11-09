@@ -16,6 +16,10 @@ body {
     line-height: 1.6;
 }
 
+body.modal-open {
+    overflow: hidden;
+}
+
 /* ========== 顶部导航 ========== */
 .zhihu-nav {
     background: #fff;
@@ -52,13 +56,14 @@ body {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: var(#1f7ae0);
+    background: var(--primary, #1f7ae0);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: .75rem;
     font-weight: 700;
+    box-shadow: 0 0 0 2px rgba(31, 122, 224, .12);
 }
 
 .zhihu-username {
@@ -348,6 +353,219 @@ body {
     font-size: 14px;
 }
 
+/* ========== 收藏夹 Modal ========== */
+.collections-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 1200;
+}
+
+.collections-modal-backdrop.show {
+    display: flex;
+}
+
+.collections-modal {
+    width: min(900px, 100%);
+    max-height: 90vh;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.collections-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.collections-modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.collections-modal-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.collections-modal-close {
+    font-size: 24px;
+    line-height: 1;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #8590a6;
+}
+
+.collections-modal-close:hover {
+    color: #0084ff;
+}
+
+.collections-modal-refresh {
+    border: 1px solid #dce5ff;
+    background: #f5f9ff;
+    color: #1f7ae0;
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.collections-modal-refresh:hover {
+    background: #e5efff;
+}
+
+.collections-modal-body {
+    display: flex;
+    flex: 1;
+    min-height: 360px;
+}
+
+.collections-list-panel {
+    width: 240px;
+    border-right: 1px solid #f0f0f0;
+    padding: 18px 0;
+    background: #fafbfc;
+}
+
+.collections-list-inner {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.collections-list-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.collections-list-item:hover {
+    background: #f0f6ff;
+}
+
+.collections-list-item.active {
+    background: #e5efff;
+    border-color: #1f7ae0;
+}
+
+.collections-list-item h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.collections-list-item span {
+    font-size: 13px;
+    color: #8590a6;
+}
+
+.collections-items-panel {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.collections-modal-items {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.collections-modal-empty {
+    text-align: center;
+    color: #8590a6;
+    padding: 40px 20px;
+}
+
+.collection-item-card {
+    border: 1px solid #f0f0f0;
+    border-radius: 10px;
+    padding: 16px 18px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(26, 26, 26, 0.05);
+}
+
+.collection-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.collection-item-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.collection-item-meta {
+    font-size: 13px;
+    color: #8590a6;
+    margin-top: 6px;
+}
+
+.collection-item-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.collection-item-actions button,
+.collection-item-actions a {
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.collection-item-view {
+    background: #e8f3ff;
+    color: #1f7ae0;
+}
+
+.collection-item-remove {
+    background: #ffecef;
+    color: #eb5757;
+}
+
+.collection-item-view:hover {
+    background: #d2e7ff;
+}
+
+.collection-item-remove:hover {
+    background: #ffd8de;
+}
+
+.collections-modal-loading {
+    text-align: center;
+    padding: 30px 10px;
+    color: #8590a6;
+    font-size: 14px;
+}
+
+.collections-modal-footer {
+    padding: 12px 24px;
+    font-size: 13px;
+    color: #8590a6;
+    border-top: 1px solid #f0f0f0;
+}
+
 /* 响应式 */
 @media (max-width: 768px) {
     .zhihu-container {
@@ -377,5 +595,19 @@ body {
     .zhihu-article-meta {
         flex-wrap: wrap;
         gap: 12px;
+    }
+
+    .collections-modal {
+        width: min(640px, 100%);
+    }
+
+    .collections-modal-body {
+        flex-direction: column;
+    }
+
+    .collections-list-panel {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #f0f0f0;
     }
 }

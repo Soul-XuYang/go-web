@@ -48,7 +48,7 @@ func ToggleLike(c *gin.Context) {
 	}
 	aid := uint(articleID)
 
-	//文章存在性（带缓存）
+	//文章存在性（带缓存）-先看它存不存在
 	IDKey := fmt.Sprintf(config.RedisArticleKey, aid)
 	if val, err := global.RedisDB.Get(IDKey).Result(); err == nil {
 		if val == "0" {
@@ -75,7 +75,7 @@ func ToggleLike(c *gin.Context) {
 	likeKey := fmt.Sprintf(config.RedisLikeKey, aid)
 	userLikeKey := fmt.Sprintf(config.RedisUserLikeKey, aid, userID)
 	var (
-		likeFlag      bool  // true=点过赞（操作后状态）
+		likeFlag      bool  // true=点过赞的状态
 		newTotalLikes int64 // 最新总数
 	)
 	err = global.DB.Transaction(func(tx *gorm.DB) error {
@@ -95,11 +95,12 @@ func ToggleLike(c *gin.Context) {
 				return err
 			}
 		} else {
+			// 删除关联表
 			del := tx.Where("user_id = ? AND article_id = ?", userID, aid).Delete(&models.UserLikeArticle{})
 			if del.Error != nil {
 				return del.Error
 			}
-			if del.RowsAffected == 1 {
+			if del.RowsAffected == 1 { //这里修改文章总体的点赞数
 				likeFlag = false
 				// 防止负数，带保护条件（也可在 DB 约束层做 CHECK）
 				if err := tx.Model(&models.Article{}).
@@ -108,11 +109,9 @@ func ToggleLike(c *gin.Context) {
 					return err
 				}
 			} else {
-				// 理论上不应发生：插入说已存在，但删除又删不到。这里当作仍然点赞状态返回。
 				likeFlag = true
 			}
 		}
-
 		// 读取最新总数（只取该列）
 		if err := tx.Model(&models.Article{}).
 			Where("id = ?", aid).
@@ -126,6 +125,7 @@ func ToggleLike(c *gin.Context) {
 		return
 	}
 
+    // 这里设置缓存-用户点赞的状态和文章总体的点赞数	
 	if likeFlag {
 		_ = global.RedisDB.Set(userLikeKey, "1", 24*time.Hour).Err()
 	} else {
@@ -134,7 +134,7 @@ func ToggleLike(c *gin.Context) {
 	_ = global.RedisDB.Set(likeKey, strconv.FormatInt(newTotalLikes, 10), 24*time.Hour).Err() //默认设置总点赞数的缓存
 
 	c.JSON(http.StatusOK, gin.H{
-		"like_flag":   likeFlag,
+		"like_flag":   likeFlag,  //点赞的状态
 		"total_likes": newTotalLikes,
 	})
 }
@@ -183,13 +183,13 @@ func CreateComment(c *gin.Context) {
 		return
 	}
 
-	// 安全防刷：限制用户评论频率（10秒/次）
+	// 安全防刷：限制用户评论频率（3秒/次）
 	rateKey := fmt.Sprintf(config.RedisCommentRate, userID)
 	if global.RedisDB.Exists(rateKey).Val() > 0 {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": "请在10秒后再次评论"})
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "请在3秒后再次评论"})
 		return
 	}
-	global.RedisDB.Set(rateKey, "1", 10*time.Second)
+	global.RedisDB.Set(rateKey, "1", 3*time.Second) //失效期
 
 	//文章存在性检验
 	// 这里先缓存查询文章的存在性，再通ID查询Mysql里是否有这个文章-带有缓存
@@ -255,7 +255,7 @@ func CreateComment(c *gin.Context) {
 		return
 	}
 
-	// 💬 构造响应
+	// 构造响应
 	resp := commentResp{
 		ID:        newComment.ID,
 		Content:   newComment.Content,
@@ -270,12 +270,12 @@ func CreateComment(c *gin.Context) {
 // 这里只有用户点击才能展开所有的评论情况
 // 递归探寻用户的所有评论
 type commentListResp struct {
-	ID        uint              `json:"id"`
-	Content   string            `json:"content"`
-	ParentID  *uint             `json:"parent_id"` // null = 一级评论-实际上根据当前评论往下走
-	Children  []commentListResp `json:"children"`
-	Username  string            `json:"username"`
-	CreatedAt string            `json:"created_at"`
+	ID        uint               `json:"id"`
+	Content   string             `json:"content"`
+	ParentID  *uint              `json:"parent_id"` // null = 一级评论-实际上根据当前评论往下走
+	Children  []*commentListResp `json:"children"`
+	Username  string             `json:"username"`
+	CreatedAt string             `json:"created_at"`
 }
 
 // GetArticleComments 获取文章的所有评论（扁平列表）
@@ -350,7 +350,7 @@ func GetArticleComments(c *gin.Context) { //依据文章id获取对应的所有�
 			ID:        comment.ID,                                          //对应的评论ID
 			Content:   comment.Content,                                     //对应的内容
 			ParentID:  comment.ParentID,                                    //父节点
-			Username:  username,                                            //用户名
+			Username:  username,                                            //评论的用户名
 			CreatedAt: comment.CreatedAt.Format(utils.FormatTime_specific), //评论发表时间
 		}
 	}
@@ -359,24 +359,30 @@ func GetArticleComments(c *gin.Context) { //依据文章id获取对应的所有�
 }
 
 // 树的辅助函数
-func buildCommentTree(comments []commentListResp) []commentListResp {
+
+func buildCommentTree(comments []commentListResp) []*commentListResp {
 	commentsMap := make(map[uint]*commentListResp, len(comments))
-	var roots []commentListResp
+	var roots []*commentListResp
+
+	// 建立 ID -> 指针映射，并初始化 Children
 	for i := range comments {
-		comment := &comments[i]
-		comment.Children = []commentListResp{} //空接口的切片
-		commentsMap[comment.ID] = comment      // 构建映射HASH表-因为接下来拿取用
+		c := &comments[i]
+		c.Children = nil
+		commentsMap[c.ID] = c
 	}
+
+	// 连接父子
 	for i := range comments {
-		c := &comments[i] //要的是指针-这里是对原数据修改
+		c := &comments[i]
 		if c.ParentID != nil {
-			if parent, ok := commentsMap[*c.ParentID]; ok { //防止出错的意外之险
-				parent.Children = append(parent.Children, *c)
-			} else {
-				log.L().Error("comments structure error")
+			parent, ok := commentsMap[*c.ParentID]
+			if !ok {
+				log.L().Error("comments structure error: parent not found")
+				continue
 			}
+			parent.Children = append(parent.Children, c)
 		} else {
-			roots = append(roots, *c) //接跟节点
+			roots = append(roots, c)
 		}
 	}
 	return roots

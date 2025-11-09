@@ -77,13 +77,14 @@ body {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    background: var(#1f7ae0);
+    background: var(--primary, #1f7ae0);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: .75rem;
     font-weight: 700;
+    box-shadow: 0 0 0 2px rgba(31, 122, 224, .12);
 }
 
 
@@ -255,7 +256,7 @@ body {
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary, #1f7ae0);
     color: #fff;
     display: flex;
     align-items: center;
@@ -263,6 +264,7 @@ body {
     font-size: 12px;
     font-weight: 600;
     flex-shrink: 0;
+    box-shadow: 0 0 0 2px rgba(31, 122, 224, .12);
 }
 
 .zhihu-card-username {

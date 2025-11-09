@@ -9,7 +9,11 @@
     <style>
         /* 居中 header，卡片等宽；降低输入框/按钮高度到 40px */
         :root {
-            --control-h: 40px;
+            --control-h: 48px;
+            --card-radius: 18px;
+            --input-radius: 14px;
+            --input-border: #cbd5f5;
+            --input-border-focus: #2563eb;
         }
 
         body.auth-page {
@@ -47,9 +51,11 @@
         .card.auth-card {
             width: 100%;
             margin: 0 auto;
-            padding: 24px 22px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+            padding: 32px 28px;
+            border-radius: var(--card-radius);
+            background: #ffffff;
+            border: 1px solid rgba(203, 213, 224, 0.6);
+            box-shadow: 0 22px 55px rgba(15, 23, 42, 0.12);
         }
 
         .auth-card h2 {
@@ -65,23 +71,42 @@
         .input {
             position: relative;
             margin: 8px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .input input {
             height: var(--control-h);
             line-height: var(--control-h);
-            border-radius: 10px;
-            padding: 0 44px 0 12px;
+            flex: 1;
+            border-radius: var(--input-radius);
+            padding: 0 18px;
+            border: 1px solid var(--input-border);
+            background: #ffffff;
+            color: #1f2937;
+            font-size: 16px;
+            box-shadow: none;
+            outline: none;
+        }
+
+        .input input::placeholder {
+            color: #9aa6c1;
+        }
+
+        .input input:focus,
+        .input input:focus-visible {
+            border-color: var(--input-border-focus);
+            outline: none;
+            box-shadow: none;
         }
 
         .toggle {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 12px;
+            font-size: 13px;
+            color: #2563eb;
             cursor: pointer;
             user-select: none;
+            white-space: nowrap;
         }
 
         .actions {
@@ -144,8 +169,8 @@
                 <div class="input">
                     <input id="username" name="username" autocomplete="username" placeholder="请用户输入用户名" required
                         autofocus />
+                    <span class="toggle" style="visibility:hidden;">占位</span>
                 </div>
-
                 <label for="password">密码</label>
                 <div class="input">
                     <input id="password" name="password" type="password" autocomplete="current-password"

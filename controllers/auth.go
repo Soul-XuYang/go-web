@@ -69,9 +69,8 @@ func Register(c *gin.Context) {
 	utils.SetAuthCookie(c, token, utils.Expire_hours*time.Hour) //给上下文签发token和
 	c.JSON(http.StatusCreated, gin.H{"token": token})
 }
-
 func CheckPassword(hash string, pwd string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pwd)) //第一个是hash加密过的密码，第二个是原装的密码
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(pwd)) //第一个是hash加密过的密码，第二个是原装的密码-并不是字符串的比较
 	return err == nil
 }
 
@@ -98,7 +97,6 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		return
 	}
-
 	if !CheckPassword(user.Password, in.Password) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		return
@@ -127,9 +125,58 @@ func Login(c *gin.Context) {
 // @Produce     json
 // @Success     200   {object}  map[string]string
 // @Router      /auth/logout [post]
-
 // controllers/auth.go
 func Logout(c *gin.Context) {
 	utils.ClearAuthCookie(c)
 	c.JSON(200, gin.H{"ok": true})
+}
+
+type deleteInput struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+// @Summary      Delete user account
+// @Description  Delete the current user's account after password verification
+// @Tags         User
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        data  body      deleteInput  true  "User credentials"
+// @Success      200   {object}  gin.H        {"ok": true}
+// @Failure      400   {object}  gin.H        {"error": "error message"}
+// @Failure      401   {object}  gin.H        {"error": "error message"}
+// @Failure      500   {object}  gin.H        {"error": "error message"}
+// @Router       /api/user/delete [delete]
+// 这个是在登录之后的注销页面
+func DeleteUser(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	var deleteInput deleteInput //获得其请求的数据
+	if err := c.ShouldBindJSON(&deleteInput); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	var user models.Users
+	if err := global.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user"})
+		return
+	}
+
+	if !CheckPassword(user.Password, deleteInput.Password) || user.Username != deleteInput.Username {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid password"})
+		return
+	}
+	if err := global.DB.Delete(&deleteInput).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+		return
+	}
+
+	utils.ClearAuthCookie(c)
+	c.JSON(http.StatusOK, gin.H{
+		"ok": true,
+	})
 }
