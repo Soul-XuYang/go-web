@@ -67,7 +67,7 @@ func UploadFile(c *gin.Context) {
 	maxTotal := int64(config.AppConfig.Upload.TotalSize) * 1024 * 1024
 
 	// 取文件
-	file, header, err := c.Request.FormFile("file")
+	file, header, err := c.Request.FormFile("file") //file是含有io接口，header是文件的元信息
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no file or invalid form"})
 		return
@@ -399,7 +399,7 @@ type ListFilesResponse struct {
 // @Param        min_size     query  int    false "最小大小（字节）"
 // @Param        max_size     query  int    false "最大大小（字节）"
 // @Param        page         query  int    false "页码（默认1）"
-// @Param        page_size    query  int    false "每页的条数（默认20，最大100）"
+// @Param        page_size    query  int    false "每页的条数（默认10，最大100）"
 // @Param        order        query  string false "排序：共四种组合，两种排序方式-上传日期和文件大小 created_desc（默认）/created_asc/size_desc/size_asc"
 // @Success      200  {object}  ListFilesResponse
 // @Failure      401  {object}  ErrorResponse
@@ -422,7 +422,7 @@ func ListMyFiles(c *gin.Context) { //这里是展示用户的所有文件-并加
 	ext := strings.ToLower(strings.TrimSpace(c.Query("ext"))) //查询后缀即拓展名
 	ctPrefix := strings.TrimSpace(c.Query("content_type"))
 	dateFrom := strings.TrimSpace(c.Query("date_from"))
-	dateTo := strings.TrimSpace(c.Query("date_to")) //结束日期，这里我理解为
+	dateTo := strings.TrimSpace(c.Query("date_to")) //结束日期
 	minSizeStr := c.Query("min_size")
 	maxSizeStr := c.Query("max_size")
 	order := strings.TrimSpace(c.Query("order")) //排序参数

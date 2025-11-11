@@ -44,7 +44,19 @@ var (
 	historyLimitPerUser  = 50
 )
 
-// TranslateText 处理翻译请求并保存历史（同步保存，带短超时）-这里不加缓存因为翻译请求都是独特的文本
+// TranslateText godoc
+// @Summary     翻译文本
+// @Description 使用AI模型翻译文本，支持自动检测源语言，翻译结果会保存到历史记录
+// @Tags        Translation
+// @Security    Bearer
+// @Accept      json
+// @Produce     json
+// @Param       request  body      TranslationRequest   true  "翻译请求参数"
+// @Success     200      {object}  TranslationResponse  "翻译成功响应"
+// @Failure     400      {object}  map[string]string    "请求参数错误"
+// @Failure     429      {object}  map[string]string    "服务繁忙，请稍后重试"
+// @Failure     500      {object}  map[string]string    "服务器内部错误"
+// @Router      /api/translate [post]
 func TranslateText(c *gin.Context) {
 	//并发限制-select 的规则是：只在“就绪”的分支里随机选一个
 	select {
@@ -132,14 +144,33 @@ Do NOT add any commentary, labels, or extra text. Preserve original formatting (
 
 	// 获取当前用户ID（健壮处理多种类型）
 	userID := c.GetUint("user_id")
-	if userID > 0 { //
+	if userID == 0 {
+		log.L().Warn("TranslateText called without user_id in context",
+			zap.Any("claims_username", c.GetString("username")))
+	} else { //
 		// 同步保存，但绑定短超时，避免请求长时间阻塞
 		db_ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 		defer cancel()
 		db := global.DB.WithContext(db_ctx)
-		if err := SaveTranslationHistory(db, userID, req.Text, result.TranslatedText, req.SourceLang, req.TargetLang, req.Model, config.AppConfig.Translation_Api.Provider); err != nil {
+		if err := SaveTranslationHistory(
+			db,
+			userID,
+			req.Text,
+			result.TranslatedText,
+			result.SourceLang,
+			result.TargetLang,
+			result.Model,
+			config.AppConfig.Translation_Api.Provider,
+		); err != nil {
 			// 记录错误但不影响主流程
 			log.L().Error("SaveTranslationHistory error: ", zap.Error(err))
+		} else {
+			log.L().Info("translation history stored",
+				zap.Uint("user_id", userID),
+				zap.String("source_lang", result.SourceLang),
+				zap.String("target_lang", result.TargetLang),
+				zap.String("model", result.Model),
+				zap.String("provider", config.AppConfig.Translation_Api.Provider))
 		}
 	}
 	c.JSON(http.StatusOK, result)
@@ -147,7 +178,14 @@ Do NOT add any commentary, labels, or extra text. Preserve original formatting (
 
 // 这里是依据请求内容获得翻译内容
 
-// GetSupportedLanguages 返回支持的语言列表
+// GetSupportedLanguages godoc
+// @Summary     获取支持的语言列表
+// @Description 返回翻译服务支持的所有语言及其代码
+// @Tags        Translation
+// @Security    Bearer
+// @Produce     json
+// @Success     200  {object}  map[string]string  "语言代码与名称的映射表"
+// @Router      /api/translate/languages [get]
 func GetSupportedLanguages(c *gin.Context) {
 	languages := gin.H{
 		"auto":  "Auto Detect",
@@ -177,7 +215,18 @@ func GetSupportedLanguages(c *gin.Context) {
 	c.JSON(http.StatusOK, languages)
 }
 
-// GetTranslationHistory 获取用户的翻译历史记录（分页）
+// GetTranslationHistory godoc
+// @Summary     获取翻译历史记录
+// @Description 分页查询当前用户的翻译历史记录
+// @Tags        Translation
+// @Security    Bearer
+// @Produce     json
+// @Param       page       query     int  false  "页码，默认为1"                default(1)
+// @Param       page_size  query     int  false  "每页记录数，默认10，最大100"  default(10)
+// @Success     200        {object}  map[string]interface{}  "历史记录列表及分页信息"
+// @Failure     401        {object}  map[string]string       "用户未授权"
+// @Failure     500        {object}  map[string]string       "查询失败"
+// @Router      /api/translate/history [get]
 func GetTranslationHistory(c *gin.Context) { //查询历史记录
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -225,7 +274,19 @@ func GetTranslationHistory(c *gin.Context) { //查询历史记录
 	})
 }
 
-// DeleteTranslationHistory 删除指定的历史记录
+// DeleteTranslationHistory godoc
+// @Summary     删除指定翻译历史记录
+// @Description 根据记录ID删除当前用户的一条翻译历史记录
+// @Tags        Translation
+// @Security    Bearer
+// @Produce     json
+// @Param       id   path      int                 true  "历史记录ID"
+// @Success     200  {object}  map[string]string  "删除成功消息"
+// @Failure     400  {object}  map[string]string  "无效的ID参数"
+// @Failure     401  {object}  map[string]string  "用户未授权"
+// @Failure     404  {object}  map[string]string  "记录不存在"
+// @Failure     500  {object}  map[string]string  "删除失败"
+// @Router      /api/translate/history/{id} [delete]
 func DeleteTranslationHistory(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -254,7 +315,16 @@ func DeleteTranslationHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "翻译历史记录已删除"})
 }
 
-// ClearTranslationHistory 清空用户的翻译历史记录
+// ClearTranslationHistory godoc
+// @Summary     清空翻译历史记录
+// @Description 删除当前用户的所有翻译历史记录
+// @Tags        Translation
+// @Security    Bearer
+// @Produce     json
+// @Success     200  {object}  map[string]string  "清空成功消息"
+// @Failure     401  {object}  map[string]string  "用户未授权"
+// @Failure     500  {object}  map[string]string  "清空失败"
+// @Router      /api/translate/history/clear [delete]
 func ClearTranslationHistory(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID <= 0 {
@@ -272,6 +342,17 @@ func ClearTranslationHistory(c *gin.Context) {
 
 // SaveTranslationHistory 保存翻译历史记录（可被单元测试替换）
 func SaveTranslationHistory(db *gorm.DB, userID uint, src, dst, srcLang, tgtLang, model, provider string) error {
+	srcLang = strings.TrimSpace(srcLang)
+	if srcLang == "" {
+		srcLang = "auto"
+	}
+	tgtLang = strings.TrimSpace(tgtLang)
+	if tgtLang == "" {
+		tgtLang = "en"
+	}
+	model = strings.TrimSpace(model)
+	provider = strings.TrimSpace(provider)
+
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 1) 插入
 		hist := models.TranslationHistory{
@@ -287,21 +368,32 @@ func SaveTranslationHistory(db *gorm.DB, userID uint, src, dst, srcLang, tgtLang
 			return err
 		}
 
-		// 2) 找出“第 4 条起”的旧记录 (按时间逆序+ID 兜底，确保稳定排序)
-		var oldIDs []uint
+		// 2) 统计总数，删除超过上限 (historyLimitPerUser) 的旧记录
+		var total int64
 		if err := tx.Model(&models.TranslationHistory{}).
 			Where("user_id = ?", userID).
-			Order("created_at DESC, id DESC").       //降序-最新的排前面
-			Offset(historyLimitPerUser).             // 跳过最新的 3 条 -队列优先级为最久弹出
-			Pluck("id", &oldIDs).Error; err != nil { //查询并存入到切片里
+			Count(&total).Error; err != nil {
 			return err
 		}
 
-		// 3) 删除这些旧记录
-		if len(oldIDs) > 0 {
-			if err := tx.Where("id IN ?", oldIDs).
-				Delete(&models.TranslationHistory{}).Error; err != nil {
-				return err
+		if total > int64(historyLimitPerUser) {
+			extra := int(total) - historyLimitPerUser
+			if extra > 0 {
+				var oldIDs []uint
+				if err := tx.Model(&models.TranslationHistory{}).
+					Where("user_id = ?", userID).
+					Order("created_at DESC, id DESC").
+					Offset(historyLimitPerUser).
+					Limit(extra).
+					Pluck("id", &oldIDs).Error; err != nil {
+					return err
+				}
+				if len(oldIDs) > 0 {
+					if err := tx.Where("id IN ?", oldIDs).
+						Delete(&models.TranslationHistory{}).Error; err != nil {
+						return err
+					}
+				}
 			}
 		}
 		return nil

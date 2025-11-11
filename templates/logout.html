@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Go-Web | 注销账户</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        /* 与登录注册页面保持一致的浅色主题风格 */
+        :root {
+            --control-h: 48px;
+            --card-radius: 18px;
+            --input-radius: 14px;
+            --input-border: #cbd5f5;
+            --input-border-focus: #2563eb;
+            --danger-color: #dc2626;
+            --danger-hover: #b91c1c;
+        }
+
+        body.auth-page {
+            min-height: 100svh;
+            margin: 0;
+            display: grid;
+            place-items: center;
+            padding: 32px 16px;
+        }
+
+        .auth-wrap {
+            width: min(480px, 100%);
+            margin: 0 auto;
+        }
+
+        .page-header {
+            margin: 0 auto 10px;
+            text-align: center;
+        }
+
+        .page-title {
+            margin: 0;
+            font-weight: 800;
+            line-height: 1.2;
+            font-size: clamp(20px, 4vw, 26px);
+            color: #1f2937;
+        }
+
+        .page-sub {
+            margin: 6px 0 0;
+            font-size: 13px;
+            opacity: .85;
+            color: #6b7280;
+        }
+
+        .card.auth-card {
+            width: 100%;
+            margin: 0 auto;
+            padding: 32px 28px;
+            border-radius: var(--card-radius);
+            background: #ffffff;
+            border: 1px solid rgba(203, 213, 224, 0.6);
+            box-shadow: 0 22px 55px rgba(15, 23, 42, 0.12);
+        }
+
+        .auth-card h2 {
+            margin: 0 0 8px;
+            font-size: 1rem;
+            color: #dc2626;
+            text-align: center;
+        }
+
+        .warning-text {
+            margin: 0 0 20px;
+            padding: 12px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            color: #dc2626;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .auth-card .sub {
+            margin-top: 0;
+            opacity: .9;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .input {
+            position: relative;
+            margin: 8px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .input input {
+            height: var(--control-h);
+            line-height: var(--control-h);
+            flex: 1;
+            border-radius: var(--input-radius);
+            padding: 0 18px;
+            border: 1px solid var(--input-border);
+            background: #ffffff;
+            color: #1f2937;
+            font-size: 16px;
+            box-shadow: none;
+            outline: none;
+        }
+
+        .input input::placeholder {
+            color: #9aa6c1;
+        }
+
+        .input input:focus,
+        .input input:focus-visible {
+            border-color: var(--input-border-focus);
+            outline: none;
+            box-shadow: none;
+        }
+
+        .toggle {
+            font-size: 13px;
+            color: #2563eb;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .button-group button {
+            flex: 1;
+            height: var(--control-h);
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            border: 1px solid var(--danger-color);
+            color: #fff;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: var(--danger-hover);
+            border-color: var(--danger-hover);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            color: #374151;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+        }
+
+        .button-group button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 删除了 background, border, padding, 只保留基本文本样式 */
+        .msg {
+            display: none;
+            margin-top: 12px;
+            font-size: 13px;
+            text-align: center;
+            line-height: 1.4;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+
+        .msg.ok {
+            display: block;
+            color: #0a7d4c;
+            /* 绿色文字表示成功 */
+        }
+
+        .msg.error {
+            display: block;
+            color: #dc2626;
+            font-size: 16px;
+            font-weight: 600;
+            /* 红色文字表示错误 */
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .footer {
+            margin-top: 32px;
+            font-size: 13px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        footer a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body class="auth-page">
+    <main class="auth-wrap">
+        <!-- 与卡片等宽且居中的页面标题 -->
+        <header class="page-header" aria-label="页面标题">
+            <h1 class="page-title">Go-Web 注销页面</h1>
+            <p class="page-sub">谨慎操作 - 此操作不可撤销</p>
+        </header>
+
+        <div class="card auth-card" role="region" aria-labelledby="logoutTitle">
+            <h2 id="logoutTitle">⚠️ 确认注销账户</h2>
+            
+            <div class="warning-text">
+                <strong>警告：</strong>注销账户将永久删除您的所有数据，包括文章、文件、游戏记录等。此操作无法撤销！
+            </div>
+
+            <form id="logoutForm" autocomplete="off">
+                <label for="username">用户名</label>
+                <div class="input">
+                    <input id="username" name="username" autocomplete="username" placeholder="请输入您的用户名" required autofocus />
+                    <span class="toggle" style="visibility:hidden;">占位</span>
+                </div>
+                
+                <label for="password">密码</label>
+                <div class="input">
+                    <input id="password" name="password" type="password" autocomplete="current-password" placeholder="请输入您的密码" required />
+                    <span class="toggle" id="togglePwd">显示</span>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" id="submitBtn" class="btn-primary">
+                        <span id="btnText">确认注销</span>
+                    </button>
+                </div>
+
+                <div class="msg" id="msg" role="status" aria-live="polite"></div>
+            </form>
+
+            <div class="footer">
+                <a href="/page/shell" class="btn-ghost" style="padding:4px 8px; border-radius:999px;">返回主菜单</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const form = $('#logoutForm');
+        const msg = $('#msg');
+        const submitBtn = $('#submitBtn');
+        const btnText = $('#btnText');
+        const pwd = $('#password');
+        const toggle = $('#togglePwd');
+
+        // 密码显示/隐藏切换
+        toggle.onclick = () => {
+            const t = pwd.type === 'password' ? 'text' : 'password';
+            pwd.type = t;
+            toggle.textContent = t === 'password' ? '显示' : '隐藏';
+        };
+
+        // 获取存储的token
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            if (!t) return null;
+            return t.toLowerCase().startsWith('bearer ') ? t : ('Bearer ' + t);
+        }
+
+        // 显示消息
+        function showMessage(text, type = 'error') {
+            msg.textContent = text;
+            msg.className = `msg ${type}`;
+            msg.style.display = 'block';
+            
+            if (type === 'ok') {
+                setTimeout(() => {
+                    msg.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // 设置加载状态
+        function setLoading(isLoading) {
+            submitBtn.disabled = isLoading;
+            
+            if (isLoading) {
+                btnText.innerHTML = '<span class="loading"></span>注销中...';
+            } else {
+                btnText.textContent = '确认注销';
+            }
+        }
+
+        // 表单验证
+        function validateForm() {
+            const username = $('#username').value.trim();
+            const password = $('#password').value;
+
+            if (!username) {
+                showMessage('请输入用户名');
+                return false;
+            }
+
+            if (!password) {
+                showMessage('请输入密码');
+                return false;
+            }
+
+            if (username.length < 3 || username.length > 32) {
+                showMessage('用户名长度应在3-32个字符之间');
+                return false;
+            }
+
+            if (password.length < 6) {
+                showMessage('密码长度至少为6个字符');
+                return false;
+            }
+
+            return true;
+        }
+
+        // 表单提交
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!validateForm()) {
+                return;
+            }
+
+            const username = $('#username').value.trim();
+            const password = $('#password').value;
+
+            setLoading(true);
+
+            try {
+                const token = getStoredToken();
+                if (!token) {
+                    showMessage('未找到登录凭证，请重新登录');
+                    setTimeout(() => {
+                        window.location.href = '/auth/login';
+                    }, 1500);
+                    return;
+                }
+
+                const response = await fetch('/api/user/delete', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('账户注销成功！正在跳转到登录页面...', 'ok');
+                    
+                    // 清除本地存储
+                    localStorage.removeItem('token');
+                    
+                    // 延迟跳转，让用户看到成功消息
+                    setTimeout(() => {
+                        window.location.href = '/auth/login';
+                    }, 2000);
+                } else {
+                    const errorMsg = data.error || '注销失败，请检查用户名和密码';
+                    showMessage(errorMsg);
+                    
+                    if (response.status === 401) {
+                        // 未授权，可能需要重新登录
+                        setTimeout(() => {
+                            window.location.href = '/auth/login';
+                        }, 3000);
+                    }
+                }
+            } catch (error) {
+                console.error('注销请求失败：', error);
+                showMessage('网络请求失败，请检查网络连接后重试');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // 页面加载时检查登录状态
+        window.addEventListener('load', () => {
+            const token = getStoredToken();
+            if (!token) {
+                showMessage('请先登录后再进行注销操作');
+                setTimeout(() => {
+                    window.location.href = '/auth/login';
+                }, 2000);
+            }
+        });
+
+        // 清除消息当用户开始输入
+        $('#username').addEventListener('input', () => {
+            msg.style.display = 'none';
+        });
+
+        $('#password').addEventListener('input', () => {
+            msg.style.display = 'none';
+        });
+    </script>
+</body>
+
+</html>

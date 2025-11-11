@@ -7,169 +7,429 @@
     <title>Dashborad-管理控制台</title>
     <link rel="stylesheet" href="/static/base.css" />
     <style>
-        /* 补充少量布局样式，尽量不与 base.css 冲突 */
         :root {
-            --gap: 16px;
+            --gap: 18px;
+            --card-radius: 16px;
+            --shadow-sm: 0 8px 30px rgba(15, 23, 42, 0.08);
+            --text-muted: #6b7280;
+            --bg: linear-gradient(135deg, #f5f7fb 0%, #eef3ff 100%);
+            --gradient-blue: linear-gradient(135deg, #2563eb, #60a5fa);
+            --gradient-indigo: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --gradient-purple: linear-gradient(135deg, #7c3aed, #a855f7);
+            --gradient-pink: linear-gradient(135deg, #db2777, #f472b6);
+            --gradient-orange: linear-gradient(135deg, #f97316, #facc15);
+            --gradient-lime: linear-gradient(135deg, #22c55e, #a3e635);
+            --gradient-cyan: linear-gradient(135deg, #0891b2, #22d3ee);
+            --gradient-slate: linear-gradient(135deg, #475569, #94a3b8);
         }
 
         body {
-            background: #f6f7f9;
+            background: var(--bg);
+            min-height: 100vh;
+            font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+            color: #0f172a;
         }
 
         .wrap {
-            max-width: 1280px;
+            max-width: 1360px;
             margin: 0 auto;
-            padding: 24px;
+            padding: 32px 24px 48px;
         }
 
         .topbar {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: var(--gap);
+            gap: 16px;
+            margin-bottom: 10px;
         }
 
         .topbar h1 {
             margin: 0;
-            font-size: 22px;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .topbar h1 span {
+            display: block;
+            margin-top: 6px;
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-muted);
         }
 
         .topbar .tools {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             align-items: center;
         }
 
-        .topbar select,
-        .topbar input {
-            padding: 6px 10px;
+        .surface {
+            background: rgba(255, 255, 255, 0.86);
+            backdrop-filter: blur(16px);
+            border-radius: var(--card-radius);
+            padding: 12px 16px;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .surface input,
+        .surface select {
+            border: none;
+            outline: none;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            padding: 8px 12px;
             font-size: 14px;
+            color: #0f172a;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.12);
+            min-width: 140px;
+        }
+
+        .surface select {
+            cursor: pointer;
         }
 
         .grid {
             display: grid;
             gap: var(--gap);
-            grid-template-columns: repeat(12, 1fr);
+            grid-template-columns: repeat(12, minmax(0, 1fr));
         }
 
         .card {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            padding: 16px;
+            position: relative;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: var(--card-radius);
+            box-shadow: var(--shadow-sm);
+            padding: 20px 22px;
+            overflow: hidden;
         }
 
-        .kpi {
+        .card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.6), transparent 45%);
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .metric {
             grid-column: span 3;
+            color: #0f172a;
         }
 
-        .kpi h3 {
-            margin: 0 0 6px;
+        .metric .metric-label {
             font-size: 14px;
-            color: #666;
+            font-weight: 500;
+            letter-spacing: 0.4px;
+            opacity: 0.85;
         }
 
-        .kpi .val {
-            font-size: 24px;
+        .metric .metric-value {
+            margin-top: 12px;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+        }
+
+        .metric .metric-sub {
+            margin-top: 6px;
+            font-size: 12px;
+            opacity: 0.85;
+        }
+
+        .metric[data-theme="blue"] {
+            background: var(--gradient-blue);
+            color: #f8fafc;
+        }
+
+        .metric[data-theme="indigo"] {
+            background: var(--gradient-indigo);
+            color: #f8f9ff;
+        }
+
+        .metric[data-theme="purple"] {
+            background: var(--gradient-purple);
+            color: #fdf4ff;
+        }
+
+        .metric[data-theme="pink"] {
+            background: var(--gradient-pink);
+            color: #fff5f7;
+        }
+
+        .metric[data-theme="orange"] {
+            background: var(--gradient-orange);
+            color: #fffdf2;
+        }
+
+        .metric[data-theme="lime"] {
+            background: var(--gradient-lime);
+            color: #f7fee7;
+        }
+
+        .metric[data-theme="cyan"] {
+            background: var(--gradient-cyan);
+            color: #ecfeff;
+        }
+
+        .metric[data-theme="slate"] {
+            background: var(--gradient-slate);
+            color: #f8fafc;
+        }
+
+        .metric::after {
+            display: none;
+        }
+
+        .additions {
+            grid-column: span 4;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .additions h3 {
+            margin: 0;
+            font-size: 16px;
             font-weight: 600;
         }
 
-        .kpi .delta {
-            font-size: 12px;
-            color: #0a7e07;
+        .addition-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .kpi .delta.neg {
-            color: #b42318;
+        .addition-list li {
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-muted);
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(148, 163, 184, 0.08);
+        }
+
+        .addition-list li strong {
+            font-size: 18px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .addition-list li span {
+            font-size: 13px;
+            letter-spacing: 0.4px;
+        }
+
+        .visuals {
+            margin-top: 8px;
+            align-items: stretch;
         }
 
         .chart {
             grid-column: span 8;
+            padding: 24px 24px 12px;
+        }
+
+        .chart .card-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .chart-title {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .chart-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .chart-canvas {
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(59, 130, 246, 0.08), rgba(14, 165, 233, 0.04));
+            padding: 12px;
         }
 
         .table {
             grid-column: span 4;
-            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+        }
+
+        .table h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+            font-weight: 600;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
+            font-size: 13px;
+        }
+
+        thead tr {
+            background: rgba(148, 163, 184, 0.1);
         }
 
         th,
         td {
             padding: 10px;
-            border-bottom: 1px solid #eee;
             text-align: left;
+            color: #1f2937;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
             white-space: nowrap;
         }
 
         th {
-            color: #666;
             font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .btn {
+            padding: 11px 18px;
+            border-radius: 999px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            color: #f8fafc;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.32);
+        }
+
+        .btn.secondary {
+            background: rgba(59, 130, 246, 0.12);
+            color: #1d4ed8;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
         }
 
         .actions {
             grid-column: span 12;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
-        }
-
-        .actions .btn {
-            padding: 10px 14px;
-            border-radius: 10px;
-            background: #0a67ff;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-        }
-
-        .actions .btn.secondary {
-            background: #eef2ff;
-            color: #0a67ff;
+            padding: 20px 24px;
         }
 
         .footer-bar {
-            margin-top: 24px;
+            margin-top: 28px;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
+            gap: 12px;
             align-items: center;
+            padding: 16px 20px;
+            border-radius: var(--card-radius);
+            background: rgba(255, 255, 255, 0.88);
+            box-shadow: var(--shadow-sm);
         }
 
         .back-link {
-            display: inline-block;
-            padding: 10px 14px;
-            border-radius: 10px;
-            background: #1f40d1fa;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #1d4ed8, #3b82f6);
             color: #fff;
             text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
         }
 
         .muted {
-            color: #777;
-            font-size: 12px;
+            color: var(--text-muted);
+            font-size: 13px;
         }
 
-        @media (max-width: 960px) {
-            .kpi {
-                grid-column: span 6;
+        @media (max-width: 1280px) {
+            .metric {
+                grid-column: span 4;
             }
 
             .chart {
-                grid-column: span 12;
+                grid-column: span 7;
             }
 
+            .table {
+                grid-column: span 5;
+            }
+        }
+
+        @media (max-width: 960px) {
+            .metric {
+                grid-column: span 6;
+            }
+
+            .chart,
             .table {
                 grid-column: span 12;
             }
         }
 
-        @media (max-width: 560px) {
-            .kpi {
+        @media (max-width: 640px) {
+            .wrap {
+                padding: 24px 16px 40px;
+            }
+
+            .topbar h1 {
+                font-size: 24px;
+            }
+
+            .surface {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .surface input,
+            .surface select {
+                width: 100%;
+            }
+
+            .metric {
                 grid-column: span 12;
+            }
+
+            .actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .actions .btn {
+                width: 100%;
+                text-align: center;
             }
         }
     </style>
@@ -177,107 +437,229 @@
 
 <body>
     <div class="wrap">
-        <!-- 顶部条 -->
         <div class="topbar">
-            <h1>管理控制台</h1>
-            <div class="tools">
-                <input id="search" placeholder="搜索…" />
-                <select id="range">
-                    <option value="7">最近 7 天</option>
-                    <option value="30" selected>最近 30 天</option>
-                    <option value="90">最近 90 天</option>
+            <h1>管理控制台
+                <span>实时掌握用户、内容、文件与小游戏全局态势</span>
+            </h1>
+            <div class="surface tools">
+                <input id="search" placeholder="搜索卡片…" />
+                <select id="dataset">
+                    <option value="users" selected>用户新增</option>
+                    <option value="files">文件新增</option>
+                    <option value="articles">文章新增</option>
                 </select>
+                <select id="range">
+                    <option value="7days">最近 7 天</option>
+                    <option value="30days" selected>最近 30 天</option>
+                    <option value="90days">最近 90 天</option>
+                    <option value="6months">最近 6 个月</option>
+                    <option value="1years">最近 1 年</option>
+                </select>
+                <button class="btn primary" id="btnRefresh">立即刷新</button>
             </div>
         </div>
 
-        <!-- KPI 指标 -->
-        <div class="grid" id="kpiRow">
-            <div class="card kpi">
-                <h3>活跃用户</h3>
-                <div class="val" id="kpiUsers">--</div>
-                <div class="delta" id="kpiUsersDelta">--</div>
+        <div class="grid" id="totalGrid">
+            <div class="card metric" data-key="totalUsers" data-theme="blue">
+                <div class="metric-label">用户总数</div>
+                <div class="metric-value">--</div>
+                <div class="metric-sub">累计注册用户</div>
             </div>
-            <div class="card kpi">
-                <h3>新注册</h3>
-                <div class="val" id="kpiSignups">--</div>
-                <div class="delta" id="kpiSignupsDelta">--</div>
+            <div class="card metric" data-key="totalArticles" data-theme="indigo">
+                <div class="metric-label">文章总数</div>
+                <div class="metric-value">--</div>
+                <div class="metric-sub">平台内容总量</div>
             </div>
-            <div class="card kpi">
-                <h3>订单数</h3>
-                <div class="val" id="kpiOrders">--</div>
-                <div class="delta" id="kpiOrdersDelta">--</div>
+            <div class="card metric" data-key="totalCollections" data-theme="purple">
+                <div class="metric-label">收藏夹</div>
+                <div class="metric-value">--</div>
+                <div class="metric-sub">收藏夹总数</div>
             </div>
-            <div class="card kpi">
-                <h3>收入 (¥)</h3>
-                <div class="val" id="kpiRevenue">--</div>
-                <div class="delta" id="kpiRevenueDelta">--</div>
+            <div class="card metric" data-key="totalCollectionItems" data-theme="pink">
+                <div class="metric-label">收藏条目</div>
+                <div class="metric-value">--</div>
+                <div class="metric-sub">收藏内容数量</div>
+            </div>
+            <div class="card metric" data-key="totalReposts" data-theme="orange">
+                <div class="metric-label">转发次数</div>
+                <div class="metric-value">--</div>
+                <div class="metric-sub">文章转发总计</div>
+            </div>
+            <div class="card metric" data-key="totalLikes" data-theme="lime">
+                <div class="metric-label">点赞次数</div>
+                <div class="metric-value">--</div>
+                <div class="metric-sub">互动活跃指数</div>
+            </div>
+            <div class="card metric" data-key="totalFiles" data-theme="cyan">
+                <div class="metric-label">文件总数</div>
+                <div class="metric-value">--</div>
+                <div class="metric-sub">文档 / 资料</div>
+            </div>
+            <div class="card metric" data-key="totalGame2048Score" data-theme="slate">
+                <div class="metric-label">2048 累计得分</div>
+                <div class="metric-value">--</div>
+                <div class="metric-sub">小游戏活跃</div>
+            </div>
+            <div class="card metric" data-key="totalGameGuessScore" data-theme="indigo">
+                <div class="metric-label">猜数字得分</div>
+                <div class="metric-value">--</div>
+                <div class="metric-sub">猜数小游戏总分</div>
+            </div>
+            <div class="card metric" data-key="totalGameMapTime" data-theme="orange">
+                <div class="metric-label">地图游戏时长</div>
+                <div class="metric-value">--</div>
+                <div class="metric-sub">总累计时长</div>
             </div>
         </div>
 
-        <!-- 图表 + 近期活动 -->
-        <div class="grid" style="margin-top:16px;">
+        <div class="grid" style="margin-top: var(--gap);">
+            <div class="card additions" data-section="users">
+                <h3>用户新增</h3>
+                <ul class="addition-list">
+                    <li><span>近 7 天</span><strong data-period="7d">--</strong></li>
+                    <li><span>近 3 个月</span><strong data-period="3m">--</strong></li>
+                    <li><span>近 1 天</span><strong data-period="1d">--</strong></li>
+                </ul>
+            </div>
+            <div class="card additions" data-section="files">
+                <h3>文件新增</h3>
+                <ul class="addition-list">
+                    <li><span>近 7 天</span><strong data-period="7d">--</strong></li>
+                    <li><span>近 3 个月</span><strong data-period="3m">--</strong></li>
+                    <li><span>近 1 天</span><strong data-period="1d">--</strong></li>
+                </ul>
+            </div>
+            <div class="card additions" data-section="articles">
+                <h3>文章新增</h3>
+                <ul class="addition-list">
+                    <li><span>近 7 天</span><strong data-period="7d">--</strong></li>
+                    <li><span>近 3 个月</span><strong data-period="3m">--</strong></li>
+                    <li><span>近 1 天</span><strong data-period="1d">--</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="grid visuals">
             <div class="card chart">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <h3 style="margin:0;font-size:16px;">趋势（按日）</h3>
-                    <span class="muted" id="chartMeta">--</span>
+                <div class="card-head">
+                    <h3 class="chart-title">新增趋势</h3>
+                    <div class="chart-meta" id="chartMeta">--</div>
                 </div>
-                <canvas id="lineChart" height="220" aria-label="指标趋势图" role="img"></canvas>
+                <div class="chart-canvas">
+                    <canvas id="lineChart" height="240" aria-label="新增趋势折线图" role="img"></canvas>
+                </div>
             </div>
-
             <div class="card table">
-                <h3 style="margin:0 0 8px;font-size:16px;">近期活动</h3>
+                <h3>最新动态</h3>
                 <table>
                     <thead>
                         <tr>
                             <th>时间</th>
-                            <th>事件</th>
+                            <th>内容</th>
                             <th>用户</th>
-                            <th>状态</th>
+                            <th>描述</th>
                         </tr>
                     </thead>
-                    <tbody id="recentTbody">
-                        <!-- 动态填充 -->
-                    </tbody>
+                    <tbody id="recentTbody"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- 快捷操作 -->
-        <div class="card actions" style="margin-top:16px;">
-            <button class="btn" id="btnRefresh">刷新数据</button>
-            <button class="btn secondary" id="btnExport">导出报表</button>
+        <div class="card actions" style="margin-top: var(--gap);">
             <button class="btn secondary" id="btnUsers">用户管理</button>
             <button class="btn secondary" id="btnSettings">系统设置</button>
+            <button class="btn secondary" id="btnFiles">文件中心</button>
+            <button class="btn secondary" id="btnArticles">文章中心</button>
         </div>
 
-        <!-- 底部返回按钮 -->
         <div class="footer-bar">
-            <span class="muted">提示：/admin 路径已由后端中间件进行权限控制。</span>
-            <a class="back-link" href="/page/shell" id="backLink">返回用户管理界面页</a>
+            <span class="muted">提示：/admin 路径已由后端中间件进行权限控制，请确保仅限管理员访问。</span>
+            <a class="back-link" href="/page/shell" id="backLink">返回用户管理界面</a>
         </div>
     </div>
 
     <script>
-        // 简单的 Canvas 折线图（无第三方库）
-        function drawLineChart(canvas, series, labels) {
+        const chartCanvas = document.getElementById('lineChart');
+        const totalGrid = document.getElementById('totalGrid');
+        const datasetSelector = document.getElementById('dataset');
+        const rangeSelector = document.getElementById('range');
+        const searchInput = document.getElementById('search');
+        const chartMetaEl = document.getElementById('chartMeta');
+        const recentTbody = document.getElementById('recentTbody');
+        let latestChartData = null;
+
+        function formatNumber(num) {
+            if (num === null || num === undefined || Number.isNaN(num)) return '--';
+            if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
+            if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
+            if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K';
+            return Number(num).toLocaleString();
+        }
+
+        async function fetchJSON(url, options = {}, fallback = null) {
+            try {
+                const res = await fetch(url, { credentials: 'include', ...options });
+                if (!res.ok) throw new Error(res.statusText);
+                return await res.json();
+            } catch (err) {
+                console.warn('请求失败，使用兜底数据:', err);
+                return typeof fallback === 'function' ? fallback() : fallback;
+            }
+        }
+
+        function renderTotals(data) {
+            if (!data) return;
+            totalGrid.querySelectorAll('.metric').forEach(card => {
+                const key = card.dataset.key;
+                const valueEl = card.querySelector('.metric-value');
+                valueEl.textContent = formatNumber(data[key]);
+            });
+        }
+
+        function renderAdditions(data) {
+            if (!data) return;
+            const map = {
+                users: data.user_add || [],
+                files: data.files_add || [],
+                articles: data.articles_add || []
+            };
+            document.querySelectorAll('.card.additions').forEach(section => {
+                const key = section.dataset.section;
+                const values = map[key] || [];
+                const [v7 = 0, v3 = 0, v1 = 0] = values;
+                section.querySelector('[data-period="7d"]').textContent = formatNumber(v7);
+                section.querySelector('[data-period="3m"]').textContent = formatNumber(v3);
+                section.querySelector('[data-period="1d"]').textContent = formatNumber(v1);
+            });
+        }
+
+        function drawLineChart(canvas, series = [], labels = []) {
             const ctx = canvas.getContext('2d');
-            const W = canvas.clientWidth, H = canvas.height;
-            canvas.width = W; // 处理高清屏重绘
-            ctx.clearRect(0, 0, W, H);
+            const ratio = window.devicePixelRatio || 1;
+            const width = canvas.clientWidth;
+            const height = canvas.height;
+            canvas.width = width * ratio;
+            canvas.height = height * ratio;
+            ctx.scale(ratio, ratio);
+            ctx.clearRect(0, 0, width, height);
 
-            // 边距
-            const pad = { l: 36, r: 12, t: 16, b: 28 };
-            const innerW = W - pad.l - pad.r;
-            const innerH = H - pad.t - pad.b;
+            if (!series.length) {
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '14px system-ui';
+                ctx.fillText('暂无数据', width / 2 - 28, height / 2);
+                return;
+            }
 
-            const min = Math.min(...series);
-            const max = Math.max(...series);
-            const lo = Math.floor(min * 0.9);
-            const hi = Math.ceil(max * 1.1);
-            const n = series.length;
+            const pad = { l: 46, r: 16, t: 16, b: 32 };
+            const innerW = width - pad.l - pad.r;
+            const innerH = height - pad.t - pad.b;
+            const minVal = Math.min(...series);
+            const maxVal = Math.max(...series);
+            const scaleMin = minVal === maxVal ? minVal - 1 : minVal;
+            const scaleMax = minVal === maxVal ? maxVal + 1 : maxVal;
+            const stepCount = 4;
 
-            // 轴线
-            ctx.strokeStyle = '#e5e7eb';
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(pad.l, pad.t);
@@ -285,137 +667,207 @@
             ctx.lineTo(pad.l + innerW, pad.t + innerH);
             ctx.stroke();
 
-            // Y 轴刻度
-            ctx.fillStyle = '#6b7280';
-            ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
-            const ticks = 4;
-            for (let i = 0; i <= ticks; i++) {
-                const yVal = lo + (hi - lo) * i / ticks;
-                const y = pad.t + innerH - innerH * i / ticks;
-                ctx.fillText(Math.round(yVal), 4, y + 4);
-                ctx.strokeStyle = '#f3f4f6';
+            ctx.fillStyle = '#64748b';
+            ctx.font = '12px system-ui';
+            for (let i = 0; i <= stepCount; i++) {
+                const val = scaleMin + (scaleMax - scaleMin) * (i / stepCount);
+                const y = pad.t + innerH - innerH * (i / stepCount);
+                ctx.globalAlpha = 0.25;
                 ctx.beginPath();
                 ctx.moveTo(pad.l, y);
                 ctx.lineTo(pad.l + innerW, y);
                 ctx.stroke();
+                ctx.globalAlpha = 1;
+                ctx.fillText(Math.round(val), 6, y + 4);
             }
 
-            // 折线
-            ctx.strokeStyle = '#2563eb';
-            ctx.lineWidth = 2;
+            const gradient = ctx.createLinearGradient(pad.l, pad.t, pad.l, pad.t + innerH);
+            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
+            gradient.addColorStop(1, 'rgba(103, 232, 249, 0.05)');
+
             ctx.beginPath();
-            series.forEach((v, i) => {
-                const x = pad.l + innerW * (i / (n - 1 || 1));
-                const y = pad.t + innerH * (1 - (v - lo) / (hi - lo || 1));
-                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            series.forEach((value, index) => {
+                const x = pad.l + innerW * (index / (series.length - 1 || 1));
+                const y = pad.t + innerH * (1 - (value - scaleMin) / (scaleMax - scaleMin || 1));
+                if (index === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
             });
+
+            ctx.strokeStyle = '#2563eb';
+            ctx.lineWidth = 2.5;
             ctx.stroke();
 
-            // X 轴标签（最多显示 6 个避免拥挤）
-            const show = Math.max(2, Math.min(6, labels.length));
-            const step = Math.max(1, Math.floor(labels.length / show));
-            ctx.fillStyle = '#6b7280';
-            for (let i = 0; i < labels.length; i += step) {
-                const x = pad.l + innerW * (i / (n - 1 || 1));
-                ctx.fillText(labels[i], x - 12, pad.t + innerH + 16);
-            }
-        }
+            ctx.lineTo(pad.l + innerW, pad.t + innerH);
+            ctx.lineTo(pad.l, pad.t + innerH);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
 
-        // 假数据回退
-        function fallbackSummary(days = 30) {
-            const now = new Date();
-            const labels = [...Array(days)].map((_, i) => {
-                const d = new Date(now - (days - 1 - i) * 86400000);
-                return `${d.getMonth() + 1}/${d.getDate()}`;
+            ctx.fillStyle = '#475569';
+            const maxLabels = Math.min(6, labels.length);
+            const step = Math.max(1, Math.floor(labels.length / maxLabels));
+            labels.forEach((label, index) => {
+                if (index % step !== 0 && index !== labels.length - 1) return;
+                const x = pad.l + innerW * (index / (labels.length - 1 || 1));
+                ctx.fillText(label, x - 18, pad.t + innerH + 20);
             });
-            const rand = (base, vol) => Math.max(0, Math.round(base + (Math.random() - 0.5) * vol));
-            const series = labels.map((_, i) => rand(100 + i * 0.8, 40));
-            return {
-                kpi: {
-                    users: { val: 1289, delta: +5.2 },
-                    signups: { val: 86, delta: -3.1 },
-                    orders: { val: 312, delta: +2.4 },
-                    revenue: { val: 58230, delta: +1.7 },
-                },
-                chart: { series, labels },
-                recent: [
-                    { time: '10:21', event: '创建订单', user: 'alice', status: '已支付' },
-                    { time: '09:58', event: '新增用户', user: 'bob', status: '已激活' },
-                    { time: '09:35', event: '导出报表', user: 'carol', status: '成功' },
-                    { time: '09:10', event: '重置密码', user: 'dave', status: '成功' },
-                ]
-            };
         }
 
-        async function loadSummary(days = 30) {
-            try {
-                // 若你有后端接口，比如 /api/admin/summary
-                const res = await fetch(`/api/admin/summary?days=${days}`, { credentials: 'include' });
-                if (!res.ok) throw new Error();
-                return await res.json();
-            } catch {
-                return fallbackSummary(days); // 无接口或报错则使用假数据渲染
-            }
-        }
-
-        function setKPI(k) {
-            const fmt = n => n.toLocaleString();
-            const set = (id, val, delta) => {
-                document.getElementById(id).textContent = fmt(val);
-                const dEl = document.getElementById(id + 'Delta');
-                const d = +delta || 0;
-                dEl.textContent = (d >= 0 ? '▲ ' : '▼ ') + Math.abs(d).toFixed(1) + '%';
-                dEl.className = 'delta ' + (d >= 0 ? '' : 'neg');
-            };
-            set('kpiUsers', k.users.val, k.users.delta);
-            set('kpiSignups', k.signups.val, k.signups.delta);
-            set('kpiOrders', k.orders.val, k.orders.delta);
-            set('kpiRevenue', k.revenue.val, k.revenue.delta);
-        }
-
-        function setTable(rows) {
-            const tb = document.getElementById('recentTbody');
-            tb.innerHTML = '';
-            rows.forEach(r => {
+        function renderRecent(list) {
+            recentTbody.innerHTML = '';
+            list.forEach(item => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${r.time}</td><td>${r.event}</td><td>${r.user}</td><td>${r.status}</td>`;
-                tb.appendChild(tr);
+                tr.innerHTML = `<td>${item.time}</td><td>${item.event}</td><td>${item.user}</td><td>${item.status}</td>`;
+                recentTbody.appendChild(tr);
+            });
+        }
+
+        function fallbackRecent() {
+            const now = new Date();
+            const fmt = (offsetMinutes) => {
+                const d = new Date(now - offsetMinutes * 60000);
+                return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+            };
+            return [
+                { time: fmt(18), event: '审核文章', user: 'Grace', status: '通过发布' },
+                { time: fmt(42), event: '新增收藏夹', user: 'Leo', status: '创建成功' },
+                { time: fmt(65), event: '上传文件', user: 'Mia', status: '文档中心' },
+                { time: fmt(95), event: '小游戏挑战', user: 'Kai', status: '2048 得分 +1200' }
+            ];
+        }
+
+        function fallbackCurve(rangeLabel) {
+            const lengths = {
+                '7days': 7,
+                '30days': 30,
+                '90days': 30,
+                '6months': 6,
+                '1years': 12
+            };
+            const unit = rangeLabel.includes('months') || rangeLabel.includes('years') ? 'month' : 'day';
+            const count = lengths[rangeLabel] || 30;
+            const labels = [];
+            const now = new Date();
+            for (let i = count - 1; i >= 0; i--) {
+                if (unit === 'day') {
+                    const d = new Date(now - i * 86400000);
+                    labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+                } else if (rangeLabel.includes('months')) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    labels.push(`${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`);
+                } else {
+                    labels.push(`${now.getFullYear() - i}`);
+                }
+            }
+            const series = labels.map(() => Math.round(100 + Math.random() * 150));
+            return {
+                time_dimension: unit,
+                data: series,
+                data_length: series.length,
+                labels
+            };
+        }
+
+        async function loadCurve(table, range) {
+            const payload = { table, time_range: range };
+            const data = await fetchJSON('/api/dashboard/curve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }, () => fallbackCurve(range));
+            if (!data) return;
+            const labels = data.labels ||
+                buildLabels(data.time_dimension, data.data_length);
+            latestChartData = { labels, series: data.data || [] };
+            drawLineChart(chartCanvas, latestChartData.series, latestChartData.labels);
+            chartMetaEl.textContent = `当前指标：${table} ｜ 粒度：${data.time_dimension} ｜ 数据点数：${labels.length}`;
+        }
+
+        function buildLabels(dimension, length) {
+            const labels = [];
+            const now = new Date();
+            for (let i = length - 1; i >= 0; i--) {
+                if (dimension === 'day') {
+                    const d = new Date(now - i * 86400000);
+                    labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+                } else if (dimension === 'month') {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    labels.push(`${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`);
+                } else {
+                    labels.push(`${now.getFullYear() - i}`);
+                }
+            }
+            return labels;
+        }
+
+        function registerInteractions() {
+            datasetSelector.addEventListener('change', () => {
+                loadCurve(datasetSelector.value, rangeSelector.value);
+            });
+
+            rangeSelector.addEventListener('change', () => {
+                loadCurve(datasetSelector.value, rangeSelector.value);
+            });
+
+            searchInput.addEventListener('input', () => {
+                const keyword = searchInput.value.trim().toLowerCase();
+                totalGrid.querySelectorAll('.metric').forEach(card => {
+                    const text = card.innerText.toLowerCase();
+                    card.style.opacity = keyword && !text.includes(keyword) ? 0.25 : 1;
+                    card.style.transform = keyword && text.includes(keyword) ? 'scale(1.02)' : '';
+                });
+            });
+
+            document.getElementById('btnRefresh').addEventListener('click', bootstrap);
+            document.getElementById('btnUsers').addEventListener('click', () => location.assign('/admin/users'));
+            document.getElementById('btnSettings').addEventListener('click', () => location.assign('/admin/settings'));
+            document.getElementById('btnFiles').addEventListener('click', () => location.assign('/admin/files'));
+            document.getElementById('btnArticles').addEventListener('click', () => location.assign('/admin/articles'));
+            window.addEventListener('resize', () => {
+                if (latestChartData) {
+                    drawLineChart(chartCanvas, latestChartData.series, latestChartData.labels);
+                }
             });
         }
 
         async function bootstrap() {
-            const rangeSel = document.getElementById('range');
-            const days = +rangeSel.value || 30;
-            const data = await loadSummary(days);
+            const [totals, additions] = await Promise.all([
+                fetchJSON('/api/dashboard/total', {}, null),
+                fetchJSON('/api/dashboard/add', {}, null)
+            ]);
+            renderTotals(totals);
+            renderAdditions(additions);
 
-            setKPI(data.kpi);
-            setTable(data.recent);
+            const recent = additions ? buildRecentFromAdditions(additions) : fallbackRecent();
+            renderRecent(recent);
 
-            const canvas = document.getElementById('lineChart');
-            drawLineChart(canvas, data.chart.series, data.chart.labels);
-            document.getElementById('chartMeta').textContent = `共 ${data.chart.labels.length} 天`;
-
-            // 交互
-            document.getElementById('btnRefresh').onclick = () => bootstrap();
-            document.getElementById('btnExport').onclick = () => {
-                // 这里可以触发 /api/admin/export
-                alert('已开始导出报表（示例）');
-            };
-            document.getElementById('btnUsers').onclick = () => location.assign('/admin/users');
-            document.getElementById('btnSettings').onclick = () => location.assign('/admin/settings');
-
-            rangeSel.onchange = async () => {
-                const d = await loadSummary(+rangeSel.value || 30);
-                setKPI(d.kpi);
-                setTable(d.recent);
-                drawLineChart(canvas, d.chart.series, d.chart.labels);
-                document.getElementById('chartMeta').textContent = `共 ${d.chart.labels.length} 天`;
-            };
-            window.addEventListener('resize', () => {
-                drawLineChart(canvas, data.chart.series, data.chart.labels);
-            });
+            await loadCurve(datasetSelector.value, rangeSelector.value);
         }
 
+        function buildRecentFromAdditions(additions) {
+            const entries = [];
+            const map = [
+                { type: '用户', arr: additions.user_add, icon: '新增用户' },
+                { type: '文件', arr: additions.files_add, icon: '上传文件' },
+                { type: '文章', arr: additions.articles_add, icon: '发布文章' }
+            ];
+            const labels = ['近 7 天', '近 3 个月', '近 1 天'];
+            const now = new Date();
+            map.forEach(item => {
+                if (!item.arr) return;
+                item.arr.forEach((val, idx) => {
+                    entries.push({
+                        time: `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`,
+                        event: `${item.icon}`,
+                        user: item.type,
+                        status: `${labels[idx]}：${formatNumber(val)}`
+                    });
+                });
+            });
+            return entries.length ? entries : fallbackRecent();
+        }
+
+        registerInteractions();
         bootstrap();
     </script>
 </body>

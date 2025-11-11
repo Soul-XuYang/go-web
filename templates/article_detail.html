@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章详情</title>
+    <link rel="stylesheet" href="/static/article_detail.css">
+</head>
+
+<body>
+    <!-- 顶部导航 -->
+    <nav class="zhihu-nav">
+        <div class="zhihu-nav-inner">
+            <div class="zhihu-nav-left">
+                <a href="/page/articles" class="zhihu-btn">返回论坛界面</a>
+                <a href="/page/shell" class="zhihu-btn">返回主应用界面</a>
+                <button class="zhihu-btn" id="btnEdit" style="display:none;">编辑</button>
+                <button class="zhihu-btn zhihu-btn-delete" id="btnDelete" style="display:none;">删除</button>
+            </div>
+            <div class="zhihu-nav-right">
+                <div class="zhihu-user-info">
+                    <div class="zhihu-user-avatar" id="userAvatar">U</div>
+                    <span class="zhihu-username" id="username">加载中...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主容器 -->
+    <div class="zhihu-container">
+        <!-- 文章详情 -->
+        <article class="zhihu-article-detail">
+            <div id="articleContent">
+                <div class="zhihu-loading">加载中...</div>
+            </div>
+        </article>
+
+        <!-- 评论区 -->
+        <section class="zhihu-comment-section">
+            <h2 class="zhihu-comment-header">
+                评论 <span class="zhihu-comment-count" id="commentCount">(0)</span>
+            </h2>
+
+            <div class="zhihu-comment-input">
+                <textarea class="zhihu-comment-textarea" id="commentInput" placeholder="写下你的评论..."></textarea>
+                <button class="zhihu-comment-submit" id="btnSubmitComment">发表评论</button>
+            </div>
+
+            <div class="zhihu-comment-list" id="commentList">
+                <div class="zhihu-loading">加载评论中...</div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 收藏夹选择模态框 -->
+    <div class="collection-modal-backdrop" id="collectionModal">
+        <div class="collection-modal">
+            <div class="collection-modal-header">
+                <h2>添加收藏</h2>
+                <button class="collection-close-btn" id="collectionCloseBtn" aria-label="关闭">×</button>
+            </div>
+            <div class="collection-modal-subtitle">请选择你想添加的收藏夹</div>
+            <div class="collection-modal-message" id="collectionMessage"></div>
+            <div class="collection-list" id="collectionList">
+                <div class="collection-modal-loading">加载中...</div>
+            </div>
+            <div class="collection-modal-footer">
+                <button class="collection-create-toggle" id="toggleCreateCollection">创建收藏夹</button>
+                <form class="collection-create-form" id="collectionCreateForm">
+                    <input type="text" id="collectionNameInput" placeholder="收藏夹名称（1~50字）" maxlength="50" required>
+                    <div class="collection-create-actions">
+                        <button type="submit" class="collection-create-submit">保存</button>
+                        <button type="button" class="collection-create-cancel" id="collectionCreateCancel">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分享弹窗 -->
+    <div class="share-modal-backdrop" id="shareModal">
+        <div class="share-modal">
+            <div class="share-modal-header">
+                <h2>转发文章</h2>
+                <button class="share-modal-close" id="shareModalClose" aria-label="关闭">×</button>
+            </div>
+            <div class="share-modal-body">
+                <div class="share-actions">
+                    <button class="share-option" id="shareQQ">
+                        <img src="/static/share/qq.png" alt="QQ">
+                        <span>分享到 QQ</span>
+                    </button>
+                    <button class="share-option" id="shareWeChat">
+                        <img src="/static/share/wechat.png" alt="微信">
+                        <span>微信扫一扫</span>
+                    </button>
+                    <a class="share-option" id="shareGithub" href="https://github.com/Soul-XuYang/go-web"
+                        target="_blank" rel="noopener noreferrer">
+                        <img src="https://github.githubassets.com/favicons/favicon.svg" alt="GitHub">
+                        <span>查看 GitHub 项目</span>
+                    </a>
+                    <button class="share-option" id="shareCopy">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <rect x="9" y="9" width="13" height="13" rx="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span>复制文章链接</span>
+                    </button>
+                </div>
+                <div class="share-wechat" id="wechatPanel">
+                    <div class="share-wechat-title">微信扫码分享</div>
+                    <img id="wechatQr" alt="微信二维码">
+                    <div class="share-wechat-tip">使用微信扫描二维码即可分享给好友或朋友圈</div>
+                </div>
+            </div>
+            <div class="share-modal-footer" id="shareStatus"></div>
+        </div>
+    </div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const $$ = s => Array.from(document.querySelectorAll(s));
+        const articleId = location.pathname.split('/').pop();
+
+        let currentUserId = null;
+        let currentArticle = null;
+
+        const collectionModalRefs = {
+            backdrop: document.getElementById('collectionModal'),
+            list: document.getElementById('collectionList'),
+            message: document.getElementById('collectionMessage'),
+            toggleBtn: document.getElementById('toggleCreateCollection'),
+            form: document.getElementById('collectionCreateForm'),
+            input: document.getElementById('collectionNameInput'),
+            cancelBtn: document.getElementById('collectionCreateCancel'),
+            closeBtn: document.getElementById('collectionCloseBtn'),
+        };
+        let collectionFormVisible = false;
+        let collectionLoading = false;
+        const shareModalRefs = {
+            backdrop: $('#shareModal'),
+            closeBtn: $('#shareModalClose'),
+            qqBtn: $('#shareQQ'),
+            wechatBtn: $('#shareWeChat'),
+            githubLink: $('#shareGithub'),
+            copyBtn: $('#shareCopy'),
+            wechatPanel: $('#wechatPanel'),
+            wechatQr: $('#wechatQr'),
+            status: $('#shareStatus'),
+        };
+
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            return t ? (t.toLowerCase().startsWith('bearer ') ? t : 'Bearer ' + t) : null;
+        }
+
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign(
+                { 'Content-Type': 'application/json' },
+                token ? { 'Authorization': token } : {},
+                opts.headers || {}
+            );
+            const r = await fetch(url, { ...opts, headers });
+            if (r.status === 401) {
+                localStorage.removeItem('token');
+                location.href = '/auth/login';
+                throw new Error('Unauthorized');
+            }
+            return r;
+        }
+
+        function escapeHTML(s) {
+            const div = document.createElement('div');
+            div.textContent = s ?? '';
+            return div.innerHTML;
+        }
+
+        // 加载用户信息
+        async function loadMe() {
+            try {
+                const r = await authFetch('/api/me', { cache: 'no-store' });
+                const d = await r.json().catch(() => ({}));
+                const u = d.username || 'unknown';
+                $('#username').textContent = u;
+                $('#userAvatar').textContent = (u?.trim?.()[0] || 'U').toUpperCase();
+                currentUserId = d.user_id;
+            } catch (e) {
+                console.error('加载用户信息失败:', e);
+            }
+        }
+
+        // 加载文章详情
+        async function loadArticle() {
+            try {
+                const r = await authFetch('/api/articles', { cache: 'no-store' });
+                const articles = await r.json();
+                currentArticle = articles.find(a => a.id == articleId);
+
+                if (!currentArticle) {
+                    throw new Error('文章不存在');
+                }
+
+                renderArticle(currentArticle);
+                checkArticleOwnership();
+            } catch (e) {
+                $('#articleContent').innerHTML = `<div class="zhihu-error">加载失败：${e.message}</div>`;
+            }
+        }
+
+        // 渲染文章
+        function renderArticle(article) {
+            const avatar = (article.username || 'U')[0].toUpperCase();
+
+            $('#articleContent').innerHTML = `
+                <div class="zhihu-article-header">
+                    <h1 class="zhihu-article-title">${escapeHTML(article.title)}</h1>
+                    <div class="zhihu-article-meta">
+                        <div class="zhihu-article-author">
+                            <div class="zhihu-article-author-avatar">${avatar}</div>
+                            <span>${escapeHTML(article.username)}</span>
+                        </div>
+                        <span>·</span>
+                        <span id="likeCount">点赞 ${article.likes || 0}</span>
+                        <span>·</span>
+                        <span id="articleCommentCount">评论 ${article.commentcount || 0}</span>
+                        <span>·</span>
+                        <span id="collectionCount">收藏 ${article.collection_count || 0}</span>
+                        <span>·</span>
+                        <span id="repostCount">转发 ${article.repost_count || 0}</span>
+                    </div>
+                </div>
+                <div class="zhihu-article-content">${escapeHTML(article.preview || '')}</div>
+                <div class="zhihu-article-actions">
+                    <button class="zhihu-action-btn" id="likeBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                        </svg>
+                        <span id="likeBtnText">赞同</span>
+                    </button>
+                    <button class="zhihu-action-btn" id="shareBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                        <span>转发</span>
+                    </button>
+                    <button class="zhihu-action-btn" id="collectBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M6 4h12a1 1 0 0 1 1 1v14l-7-4-7 4V5a1 1 0 0 1 1-1z"></path>
+                        </svg>
+                        <span>收藏</span>
+                    </button>
+                </div>
+            `;
+
+            $('#likeBtn').onclick = toggleLike;
+            const collectBtn = $('#collectBtn');
+            if (collectBtn) {
+                collectBtn.onclick = openCollectionModal;
+            }
+            const shareBtn = $('#shareBtn');
+            if (shareBtn) {
+                shareBtn.onclick = openShareModal;
+            }
+        }
+
+        function updateCollectionFormVisibility(show) {
+            collectionFormVisible = !!show;
+            if (collectionModalRefs.form) {
+                if (collectionFormVisible) {
+                    collectionModalRefs.form.classList.add('show');
+                } else {
+                    collectionModalRefs.form.classList.remove('show');
+                    if (typeof collectionModalRefs.form.reset === 'function') {
+                        collectionModalRefs.form.reset();
+                    }
+                }
+            }
+        }
+
+        function setCollectionMessage(type, text) {
+            if (!collectionModalRefs.message) return;
+            collectionModalRefs.message.textContent = text || '';
+            collectionModalRefs.message.className = 'collection-modal-message';
+            if (type && text) {
+                collectionModalRefs.message.classList.add(`message-${type}`);
+            }
+        }
+
+        function normalizeCollections(data) {
+            const lists = data?.lists ?? data?.Lists ?? [];
+            if (!Array.isArray(lists)) return [];
+            return lists.map(col => {
+                const rawItems = col.items ?? col.Items ?? [];
+                return {
+                    id: col.id ?? col.ID ?? col.Id ?? 0,
+                    name: col.name ?? col.Name ?? '未命名收藏夹',
+                    itemCount: col.item_count ?? col.ItemCount ?? 0,
+                    items: Array.isArray(rawItems)
+                        ? rawItems.map(item => ({
+                            articleId: item.article_id ?? item.ArticleID ?? item.articleId ?? 0
+                        }))
+                        : []
+                };
+            });
+        }
+
+        async function loadCollectionLists() {
+            if (!collectionModalRefs.list) return;
+            collectionLoading = true;
+            collectionModalRefs.list.innerHTML = '<div class="collection-modal-loading">加载中...</div>';
+            try {
+                const res = await authFetch('/api/collections/all_items', { cache: 'no-store' });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '加载收藏夹失败');
+                }
+                const collections = normalizeCollections(data);
+                renderCollectionList(collections);
+            } catch (e) {
+                collectionModalRefs.list.innerHTML = `<div class="collection-modal-error">${e.message || '加载失败'}</div>`;
+            } finally {
+                collectionLoading = false;
+            }
+        }
+
+        function renderCollectionList(collections) {
+            if (!collectionModalRefs.list) return;
+            if (!collections || collections.length === 0) {
+                collectionModalRefs.list.innerHTML = '<div class="collection-modal-empty">暂无收藏夹，试试创建一个吧。</div>';
+                return;
+            }
+            const frag = document.createDocumentFragment();
+            collections.forEach(col => {
+                const item = document.createElement('div');
+                item.className = 'collection-list-item';
+
+                const info = document.createElement('div');
+                info.className = 'collection-item-info';
+
+                const name = document.createElement('div');
+                name.className = 'collection-item-name';
+                name.textContent = col.name;
+
+                const count = document.createElement('div');
+                count.className = 'collection-item-count';
+                count.textContent = `${col.itemCount || 0} 条内容`;
+
+                info.appendChild(name);
+                info.appendChild(count);
+
+                const action = document.createElement('button');
+                const alreadyCollected = Array.isArray(col.items) && col.items.some(i => Number(i.articleId) === Number(articleId));
+                action.className = 'collection-item-action' + (alreadyCollected ? ' disabled' : '');
+                action.textContent = alreadyCollected ? '已收藏' : '收藏';
+                action.disabled = alreadyCollected;
+
+                if (!alreadyCollected) {
+                    action.addEventListener('click', () => handleAddToCollection(col.id));
+                }
+
+                item.appendChild(info);
+                item.appendChild(action);
+                frag.appendChild(item);
+            });
+
+            collectionModalRefs.list.innerHTML = '';
+            collectionModalRefs.list.appendChild(frag);
+        }
+
+        async function handleAddToCollection(collectionId) {
+            if (!collectionId || collectionLoading) return;
+            try {
+                collectionLoading = true;
+                setCollectionMessage('info', '正在添加到收藏夹...');
+                const res = await authFetch('/api/collections/item', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        collection_id: Number(collectionId),
+                        article_id: Number(articleId)
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '添加失败');
+                }
+                setCollectionMessage('success', '收藏成功！');
+                await loadCollectionLists();
+                await loadArticle();
+            } catch (e) {
+                setCollectionMessage('error', e.message || '收藏失败');
+            } finally {
+                collectionLoading = false;
+            }
+        }
+
+        async function createCollection(name) {
+            if (!name) return;
+            try {
+                setCollectionMessage('info', '正在创建收藏夹...');
+                const res = await authFetch('/api/collections', {
+                    method: 'POST',
+                    body: JSON.stringify({ name: name.trim() })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '创建失败');
+                }
+                setCollectionMessage('success', '收藏夹创建成功');
+                updateCollectionFormVisibility(false);
+                await loadCollectionLists();
+            } catch (e) {
+                setCollectionMessage('error', e.message || '创建失败');
+            }
+        }
+
+        function openCollectionModal() {
+            if (!collectionModalRefs.backdrop) return;
+            collectionModalRefs.backdrop.classList.add('show');
+            document.body.classList.add('modal-open');
+            setCollectionMessage('', '');
+            updateCollectionFormVisibility(false);
+            loadCollectionLists();
+        }
+
+        function closeCollectionModal() {
+            if (!collectionModalRefs.backdrop) return;
+            collectionModalRefs.backdrop.classList.remove('show');
+            document.body.classList.remove('modal-open');
+        }
+
+        if (collectionModalRefs.closeBtn) {
+            collectionModalRefs.closeBtn.addEventListener('click', closeCollectionModal);
+        }
+
+        if (collectionModalRefs.backdrop) {
+            collectionModalRefs.backdrop.addEventListener('click', (e) => {
+                if (e.target === collectionModalRefs.backdrop) {
+                    closeCollectionModal();
+                }
+            });
+        }
+
+        if (collectionModalRefs.toggleBtn) {
+            collectionModalRefs.toggleBtn.addEventListener('click', () => {
+                updateCollectionFormVisibility(!collectionFormVisible);
+            });
+        }
+
+        if (collectionModalRefs.cancelBtn) {
+            collectionModalRefs.cancelBtn.addEventListener('click', () => {
+                updateCollectionFormVisibility(false);
+            });
+        }
+
+        if (collectionModalRefs.form) {
+            collectionModalRefs.form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = collectionModalRefs.input?.value?.trim();
+                if (!name) {
+                    setCollectionMessage('error', '请输入收藏夹名称');
+                    collectionModalRefs.input?.focus();
+                    return;
+                }
+                const submitBtn = collectionModalRefs.form.querySelector('.collection-create-submit');
+                if (submitBtn) submitBtn.disabled = true;
+                try {
+                    await createCollection(name);
+                } finally {
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && collectionModalRefs.backdrop?.classList.contains('show')) {
+                closeCollectionModal();
+            }
+            if (e.key === 'Escape' && shareModalRefs.backdrop?.classList.contains('show')) {
+                closeShareModal();
+            }
+        });
+
+        function openShareModal() {
+            if (!shareModalRefs.backdrop) return;
+            shareModalRefs.backdrop.classList.add('show');
+            document.body.classList.add('modal-open');
+            updateShareStatus();
+            prepareWeChatQr();
+        }
+
+        function closeShareModal() {
+            if (!shareModalRefs.backdrop) return;
+            shareModalRefs.backdrop.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            updateShareStatus();
+        }
+
+        function buildShareUrl() {
+            return `${location.origin}/page/articles/${articleId}`;
+        }
+
+        function updateShareStatus(type = '', text = '') {
+            if (!shareModalRefs.status) return;
+            shareModalRefs.status.textContent = text || '';
+            shareModalRefs.status.className = 'share-modal-footer';
+            if (type && text) {
+                shareModalRefs.status.classList.add(`msg-${type}`);
+            }
+        }
+
+        function prepareWeChatQr() {
+            if (!shareModalRefs.wechatQr) return;
+            const url = encodeURIComponent(buildShareUrl());
+            shareModalRefs.wechatQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${url}`;
+        }
+
+        if (shareModalRefs.qqBtn) {
+            shareModalRefs.qqBtn.addEventListener('click', () => {
+                const url = encodeURIComponent(buildShareUrl());
+                const title = encodeURIComponent(currentArticle?.title || '精彩文章');
+                const summary = encodeURIComponent(currentArticle?.preview || '');
+                const qqUrl = `https://connect.qq.com/widget/shareqq/index.html?url=${url}&title=${title}&summary=${summary}`;
+                window.open(qqUrl, '_blank', 'noopener,noreferrer');
+                updateShareStatus('success', '已打开 QQ 分享窗口');
+            });
+        }
+
+        if (shareModalRefs.wechatBtn) {
+            shareModalRefs.wechatBtn.addEventListener('click', () => {
+                prepareWeChatQr();
+                updateShareStatus('info', '已生成微信二维码');
+            });
+        }
+
+        if (shareModalRefs.copyBtn) {
+            shareModalRefs.copyBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(buildShareUrl());
+                    updateShareStatus('success', '文章链接已复制');
+                } catch (e) {
+                    updateShareStatus('error', '复制失败，请手动复制');
+                }
+            });
+        }
+
+        if (shareModalRefs.closeBtn) {
+            shareModalRefs.closeBtn.addEventListener('click', closeShareModal);
+        }
+
+        if (shareModalRefs.backdrop) {
+            shareModalRefs.backdrop.addEventListener('click', (e) => {
+                if (e.target === shareModalRefs.backdrop) {
+                    closeShareModal();
+                }
+            });
+        }
+
+        // 检查文章所有权
+        async function checkArticleOwnership() {
+            try {
+                const r = await authFetch('/api/articles/me', { cache: 'no-store' });
+                const myArticles = await r.json();
+                const isOwner = myArticles.some(a => a.id == articleId);
+
+                if (isOwner) {
+                    $('#btnEdit').style.display = 'inline-flex';
+                    $('#btnDelete').style.display = 'inline-flex';
+                }
+            } catch (e) {
+                console.error('检查所有权失败:', e);
+            }
+        }
+
+        // 点赞
+        async function toggleLike() {
+            try {
+                const r = await authFetch(`/api/articles/${articleId}/like`, {
+                    method: 'POST'
+                });
+                const data = await r.json();
+
+                const btn = $('#likeBtn');
+                if (data.like_flag) {
+                    btn.classList.add('active');
+                    $('#likeBtnText').textContent = '已赞同';
+                } else {
+                    btn.classList.remove('active');
+                    $('#likeBtnText').textContent = '赞同';
+                }
+
+                $('#likeCount').textContent = `点赞 ${data.total_likes}`;
+            } catch (e) {
+                alert('点赞失败：' + (e.message || '未知错误'));
+            }
+        }
+
+        // 加载评论
+        async function loadComments() {
+            try {
+                const r = await authFetch(`/api/articles/${articleId}/comments`, { cache: 'no-store' });
+                const comments = await r.json();
+                renderComments(comments);
+            } catch (e) {
+                $('#commentList').innerHTML = `<div class="zhihu-error">加载评论失败：${e.message}</div>`;
+            }
+        }
+
+        // 渲染评论
+        function normalizeComment(raw) {
+            if (!raw || typeof raw !== 'object') return null;
+            const id = raw.id ?? raw.ID ?? raw.Id ?? null;
+            const username = raw.username ?? raw.Username ?? '';
+            const createdAt = raw.created_at ?? raw.CreatedAt ?? raw.createdAt ?? '';
+            const childrenRaw = raw.children ?? raw.Children ?? [];
+            const children = Array.isArray(childrenRaw)
+                ? childrenRaw.map(normalizeComment).filter(Boolean)
+                : [];
+            return {
+                id,
+                content: raw.content ?? raw.Content ?? '',
+                username,
+                created_at: createdAt,
+                children
+            };
+        }
+
+        function renderComments(comments) {
+            if (!Array.isArray(comments) || comments.length === 0) {
+                $('#commentList').innerHTML = '<div style="text-align:center;color:#8590a6;padding:40px 20px;">暂无评论，快来抢沙发吧！</div>';
+                $('#commentCount').textContent = '(0)';
+                return;
+            }
+
+            let data = comments;
+            if (!Array.isArray(comments) && comments && typeof comments === 'object') {
+                const keys = Object.keys(comments);
+                const nested = keys.map(k => comments[k]).find(Array.isArray) || [];
+                data = nested;
+            }
+            const normalized = Array.isArray(data) ? data.map(normalizeComment).filter(Boolean) : [];
+
+            let totalCount = 0;
+            function countComments(items) {
+                items.forEach(c => {
+                    totalCount++;
+                    if (c.children && c.children.length > 0) {
+                        countComments(c.children);
+                    }
+                });
+            }
+            countComments(normalized);
+            $('#commentCount').textContent = `(${totalCount})`;
+            const articleCountEl = $('#articleCommentCount');
+            if (articleCountEl) {
+                articleCountEl.textContent = `评论 ${totalCount}`;
+            }
+
+            $('#commentList').innerHTML = '';
+            normalized.forEach(comment => {
+                $('#commentList').appendChild(createCommentElement(comment));
+            });
+        }
+
+        // 创建评论元素
+        function createCommentElement(comment, isReply = false) {
+            const div = document.createElement('div');
+            div.className = 'zhihu-comment-item' + (isReply ? ' reply' : '');
+
+            const avatar = (comment.username || 'U')[0].toUpperCase();
+            const time = comment.created_at || '-';
+
+            div.innerHTML = `
+                <div class="zhihu-comment-user">
+                    <div class="zhihu-comment-avatar">${avatar}</div>
+                    <span class="zhihu-comment-username">${escapeHTML(comment.username)}</span>
+                    <span class="zhihu-comment-time">${time}</span>
+                </div>
+                <div class="zhihu-comment-content">${escapeHTML(comment.content)}</div>
+                <div class="zhihu-comment-actions">
+                    <button class="zhihu-comment-reply-btn" type="button">回复</button>
+                </div>
+            `;
+
+            const replyBtn = div.querySelector('.zhihu-comment-reply-btn');
+            if (replyBtn) {
+                replyBtn.addEventListener('click', () => toggleReplyForm(div, comment));
+            }
+
+            // 递归渲染子评论
+            if (comment.children && comment.children.length > 0) {
+                comment.children.forEach(child => {
+                    div.appendChild(createCommentElement(child, true));
+                });
+            }
+
+            return div;
+        }
+
+        function toggleReplyForm(container, comment) {
+            const existing = container.querySelector('.zhihu-reply-form');
+            if (existing) {
+                existing.remove();
+                return;
+            }
+            const form = createReplyForm(comment);
+            container.appendChild(form);
+            const textarea = form.querySelector('textarea');
+            if (textarea) textarea.focus();
+        }
+
+        function createReplyForm(comment) {
+            const form = document.createElement('div');
+            form.className = 'zhihu-reply-form';
+            form.innerHTML = `
+                <textarea class="zhihu-reply-textarea" placeholder="回复 ${escapeHTML(comment.username)}..."></textarea>
+                <div class="zhihu-reply-actions">
+                    <button type="button" class="zhihu-reply-cancel">取消</button>
+                    <button type="button" class="zhihu-reply-submit">发布</button>
+                </div>
+            `;
+
+            const textarea = form.querySelector('.zhihu-reply-textarea');
+            const submitBtn = form.querySelector('.zhihu-reply-submit');
+            const cancelBtn = form.querySelector('.zhihu-reply-cancel');
+
+            cancelBtn.addEventListener('click', () => form.remove());
+
+            submitBtn.addEventListener('click', async () => {
+                const content = textarea.value.trim();
+                if (!content) {
+                    alert('请输入回复内容');
+                    textarea.focus();
+                    return;
+                }
+                submitBtn.disabled = true;
+                cancelBtn.disabled = true;
+                submitBtn.textContent = '发送中...';
+                try {
+                    await postComment(content, comment.id);
+                    form.remove();
+                    await loadComments();
+                } catch (e) {
+                    alert('回复失败：' + (e.message || '未知错误'));
+                } finally {
+                    submitBtn.disabled = false;
+                    cancelBtn.disabled = false;
+                    submitBtn.textContent = '发布';
+                }
+            });
+
+            return form;
+        }
+
+        async function postComment(content, parentId = null) {
+            const payload = {
+                article_id: parseInt(articleId),
+                content,
+                parent_id: parentId
+            };
+
+            const r = await authFetch('/api/comments', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) {
+                throw new Error(data.error || '未知错误');
+            }
+            return data;
+        }
+
+        // 提交评论
+        async function submitComment() {
+            const content = $('#commentInput').value.trim();
+            if (!content) {
+                alert('请输入评论内容');
+                return;
+            }
+
+            try {
+                $('#btnSubmitComment').disabled = true;
+                await postComment(content);
+                $('#commentInput').value = '';
+                await loadComments();
+            } catch (e) {
+                alert('评论失败：' + (e.message || '未知错误'));
+            } finally {
+                $('#btnSubmitComment').disabled = false;
+            }
+        }
+
+        // 编辑文章
+        $('#btnEdit').addEventListener('click', () => {
+            location.href = `/page/articles/edit/${articleId}`;
+        });
+
+        // 删除文章
+        $('#btnDelete').addEventListener('click', async () => {
+            if (!confirm('确定要删除这篇文章吗？此操作不可恢复！')) {
+                return;
+            }
+
+            try {
+                const r = await authFetch(`/api/articles/${articleId}`, {
+                    method: 'DELETE'
+                });
+
+                if (r.ok) {
+                    alert('文章已删除');
+                    location.href = '/page/articles';
+                } else {
+                    const err = await r.json();
+                    alert('删除失败：' + (err.error || '未知错误'));
+                }
+            } catch (e) {
+                alert('删除失败：' + (e.message || '未知错误'));
+            }
+        });
+
+        $('#btnSubmitComment').onclick = submitComment;
+
+        loadMe();
+        loadArticle();
+        loadComments();
+    </script>
+</body>
+
+</html>

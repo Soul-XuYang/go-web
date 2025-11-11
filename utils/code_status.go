@@ -15,7 +15,7 @@ import (
 // 文件统计
 const (
 	save_file = ".code_statistics"
-	length    = 1
+	length    = 5 //代码历史list长度
 )
 
 type FileStats struct {

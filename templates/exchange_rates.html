@@ -119,6 +119,11 @@
             background: rgba(255, 255, 255, .05);
         }
 
+        tbody tr.editing {
+            box-shadow: inset 0 0 0 2px rgba(77, 163, 255, .45);
+            background: rgba(77, 163, 255, .12);
+        }
+
         .pill {
             padding: 10px 16px;
             border-radius: 999px;
@@ -126,6 +131,83 @@
             border: 1px solid rgba(255, 255, 255, .1);
             font-weight: 700;
             cursor: pointer;
+        }
+
+        .actions-cell {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .action-btn {
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: .88rem;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .08);
+            color: #e8eefc;
+            cursor: pointer;
+            transition: background .18s ease, transform .15s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, .18);
+            transform: translateY(-1px);
+        }
+
+        .action-btn.edit {
+            background: linear-gradient(180deg, var(--primary), var(--primary-strong));
+            border-color: rgba(77, 163, 255, .6);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(77, 163, 255, .35);
+        }
+
+        .action-btn.edit:hover {
+            background: linear-gradient(180deg, var(--primary-strong), #125fb8);
+        }
+
+        .action-btn.delete {
+            border-color: rgba(220, 38, 38, .35);
+            background: rgba(220, 38, 38, .12);
+            color: #ff9b9b;
+        }
+
+        .action-btn.delete:hover {
+            background: rgba(220, 38, 38, .22);
+        }
+
+        #cancelEdit {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, #f8fafc, #e2e8f0);
+            border: 1px solid rgba(15, 23, 42, .12);
+            color: #1e293b;
+            padding: 0 22px;
+            border-radius: 999px;
+            height: 42px;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: .02em;
+            box-shadow: 0 10px 18px rgba(15, 23, 42, .08), inset 0 1px 0 rgba(255, 255, 255, .6);
+            transition: all .2s ease;
+        }
+
+        #cancelEdit:hover {
+            background: linear-gradient(180deg, #e2e8f0, #cbd5f5);
+            transform: translateY(-1px);
+            box-shadow: 0 14px 22px rgba(15, 23, 42, .12), inset 0 1px 0 rgba(255, 255, 255, .75);
+        }
+
+        #cancelEdit:active {
+            transform: translateY(0);
+            box-shadow: 0 6px 14px rgba(15, 23, 42, .1);
+        }
+
+        .editing-hint {
+            color: #4da3ff;
+            font-weight: 600;
         }
 
         /* 底部按钮区域（两颗按钮并排居中，不会拉满左右） */
@@ -180,8 +262,9 @@
                     <div class="input"><input id="rate" type="number" step="0.00000001" placeholder="如：7.1234"
                             required /></div>
                 </div>
-                <div style="display:flex;align-items:flex-end">
+                <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
                     <button id="btn" type="submit">新增</button>
+                    <button id="cancelEdit" type="button">取消编辑</button>
                 </div>
             </div>
             <div id="msg" class="msg"></div>
@@ -197,11 +280,12 @@
                         <th>To</th>
                         <th>Rate</th>
                         <th>Date</th>
+                        <th style="width:180px">操作</th>
                     </tr>
                 </thead>
                 <tbody id="tbody">
                     <tr>
-                        <td colspan="5" class="muted">加载中…</td>
+                        <td colspan="6" class="muted">加载中…</td>
                     </tr>
                 </tbody>
             </table>
@@ -216,7 +300,42 @@
 
     <script>
         const $ = s => document.querySelector(s);
-        const tbody = $('#tbody'), msg = $('#msg'), btn = $('#btn'), usernameEl = $('#username');
+        const tbody = $('#tbody'), msg = $('#msg'), btn = $('#btn'), usernameEl = $('#username'), cancelEditBtn = $('#cancelEdit');
+        let editingId = null;
+        let editingRow = null;
+
+        const FIELD_KEYS = {
+            id: ['_id', 'id', 'ID', 'Id', '_Id'],
+            from: ['FromCurrency', 'from_currency', 'fromCurrency', 'from', 'FromCurreny', 'fromCurreny'],
+            to: ['ToCurrency', 'to_currency', 'toCurrency', 'to', 'ToCurreny', 'toCurreny'],
+            rate: ['Rate', 'rate'],
+            date: ['Date', 'date']
+        };
+
+        function pickField(obj, keys, fallback = '') {
+            for (const key of keys) {
+                if (Object.prototype.hasOwnProperty.call(obj, key) && obj[key] != null) {
+                    return obj[key];
+                }
+                if (obj[key] != null) {
+                    return obj[key];
+                }
+            }
+            return fallback;
+        }
+
+        function escapeHTML(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function escapeAttr(value) {
+            return escapeHTML(value)
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         function buildAuthHeader() {
             const raw = localStorage.getItem('token');
@@ -240,53 +359,211 @@
         }
 
         async function loadRates() {
-            tbody.innerHTML = `<tr><td colspan="5" class="muted">加载中…</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="muted">加载中…</td></tr>`;
             try {
                 const res = await authFetch('/api/exchangeRates');
                 if (!res.ok) throw new Error('加载失败');
                 const list = await res.json();
                 if (!Array.isArray(list) || list.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="muted">暂无数据</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6" class="muted">暂无数据</td></tr>`;
                     return;
                 }
                 tbody.innerHTML = list.map((it, idx) => {
-                    const from = it.FromCurrency ?? it.from_currency ?? it.fromCurrency ?? it.from ?? it.FromCurreny ?? it.fromCurreny ?? '';
-                    const to = it.ToCurrency ?? it.to_currency ?? it.toCurrency ?? it.to ?? it.ToCurreny ?? it.toCurreny ?? '';
-                    const rate = it.Rate ?? it.rate ?? '';
-                    const rawDate = it.Date ?? it.date ?? '';
-                    const dateStr = rawDate ? new Date(rawDate).toLocaleString() : '';
-                    return `<tr><td>${idx + 1}</td><td>${from}</td><td>${to}</td><td>${rate}</td><td>${dateStr}</td></tr>`;
+                    const idRaw = pickField(it, FIELD_KEYS.id, '');
+                    const id = idRaw !== undefined && idRaw !== null ? String(idRaw) : '';
+                    const fromRaw = pickField(it, FIELD_KEYS.from, '');
+                    const toRaw = pickField(it, FIELD_KEYS.to, '');
+                    const rateRaw = pickField(it, FIELD_KEYS.rate, '');
+                    const dateRaw = pickField(it, FIELD_KEYS.date, '');
+                    const dateStr = dateRaw ? new Date(dateRaw).toLocaleString() : '';
+                    const actions = id
+                        ? `<div class="actions-cell"><button class="action-btn edit" data-action="edit" data-id="${escapeAttr(id)}" data-from="${escapeAttr(fromRaw)}" data-to="${escapeAttr(toRaw)}" data-rate="${escapeAttr(rateRaw)}">编辑</button><button class="action-btn delete" data-action="delete" data-id="${escapeAttr(id)}" data-from="${escapeAttr(fromRaw)}" data-to="${escapeAttr(toRaw)}">删除</button></div>`
+                        : '<span class="muted">-</span>';
+                    return `<tr data-id="${escapeAttr(id)}"><td>${idx + 1}</td><td>${escapeHTML(fromRaw)}</td><td>${escapeHTML(toRaw)}</td><td>${escapeHTML(rateRaw)}</td><td>${escapeHTML(dateStr)}</td><td>${actions}</td></tr>`;
                 }).join('');
-            } catch {
-                tbody.innerHTML = `<tr><td colspan="5" class="badge-err">加载失败</td></tr>`;
+
+                if (editingId) {
+                    const row = tbody.querySelector(`tr[data-id="${editingId.replace(/"/g, '\\"')}"]`);
+                    if (row) {
+                        if (editingRow) editingRow.classList.remove('editing');
+                        row.classList.add('editing');
+                        editingRow = row;
+                    } else if (editingRow) {
+                        editingRow.classList.remove('editing');
+                        editingRow = null;
+                    }
+                } else if (editingRow) {
+                    editingRow.classList.remove('editing');
+                    editingRow = null;
+                }
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="6" class="badge-err">加载失败</td></tr>`;
             }
+        }
+
+        function resetForm(clearInputs = true) {
+            if (clearInputs) {
+                $('#from').value = '';
+                $('#to').value = '';
+                $('#rate').value = '';
+            }
+            editingId = null;
+            if (editingRow) {
+                editingRow.classList.remove('editing');
+                editingRow = null;
+            }
+            btn.textContent = '新增';
+            cancelEditBtn.style.display = 'none';
+            cancelEditBtn.disabled = false;
+        }
+
+        function startEdit(data, row) {
+            editingId = data.id;
+            $('#from').value = String(data.from ?? '').toUpperCase();
+            $('#to').value = String(data.to ?? '').toUpperCase();
+            $('#rate').value = data.rate ?? '';
+            btn.textContent = '保存修改';
+            cancelEditBtn.style.display = 'inline-flex';
+            cancelEditBtn.disabled = false;
+            msg.className = 'msg editing-hint';
+            msg.textContent = `正在编辑：${(data.from || '-').toUpperCase()} → ${(data.to || '-').toUpperCase()}（ID ${data.id}）`;
+            if (editingRow && editingRow !== row) {
+                editingRow.classList.remove('editing');
+            }
+            editingRow = row;
+            if (editingRow) {
+                editingRow.classList.add('editing');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         $('#form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            msg.className = 'msg'; msg.textContent = '';
+            msg.className = 'msg';
+            msg.textContent = '';
+
             const from = $('#from').value.trim().toUpperCase();
             const to = $('#to').value.trim().toUpperCase();
-            const rate = $('#rate').value;
-            if (!from || !to) { msg.classList.add('error'); msg.textContent = '请输入 From/To'; return; }
-            if (!rate || Number(rate) <= 0) { msg.classList.add('error'); msg.textContent = '汇率需为正数'; return; }
+            const rateValue = $('#rate').value;
+            const isEditing = Boolean(editingId);
 
-            btn.disabled = true; btn.textContent = '提交中…';
+            if (!from || !to) {
+                msg.classList.add('error');
+                msg.textContent = '请输入 From/To';
+                return;
+            }
+            if (!rateValue || Number(rateValue) <= 0) {
+                msg.classList.add('error');
+                msg.textContent = '汇率需为正数';
+                return;
+            }
+
+            btn.disabled = true;
+            cancelEditBtn.disabled = true;
+            btn.textContent = isEditing ? '保存中…' : '提交中…';
+
             try {
-                const res = await authFetch('/api/exchangeRates', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ FromCurrency: from, ToCurrency: to, Rate: Number(rate) })
-                });
+                let res;
+                if (isEditing) {
+                    res = await authFetch(`/api/exchangeRates/${editingId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            from_currency: from,
+                            to_currency: to,
+                            rate: Number(rateValue)
+                        })
+                    });
+                } else {
+                    res = await authFetch('/api/exchangeRates', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            FromCurrency: from,
+                            ToCurrency: to,
+                            Rate: Number(rateValue)
+                        })
+                    });
+                }
+
                 const data = await res.json().catch(() => ({}));
-                if (!res.ok) { msg.classList.add('error'); msg.textContent = data.error || '新增失败'; return; }
-                msg.classList.add('ok'); msg.textContent = '新增成功';
-                $('#from').value = ''; $('#to').value = ''; $('#rate').value = '';
+                if (!res.ok) {
+                    msg.classList.add('error');
+                    msg.textContent = data.error || (isEditing ? '更新失败' : '新增失败');
+                    return;
+                }
+
+                msg.classList.add('ok');
+                msg.textContent = isEditing ? '更新成功' : '新增成功';
+                resetForm();
                 loadRates();
-            } catch {
-                msg.classList.add('error'); msg.textContent = '网络错误';
+            } catch (err) {
+                console.error(err);
+                msg.classList.add('error');
+                msg.textContent = '网络错误';
             } finally {
-                btn.disabled = false; btn.textContent = '新增';
+                btn.disabled = false;
+                cancelEditBtn.disabled = false;
+                btn.textContent = editingId ? '保存修改' : '新增';
+                if (!editingId) {
+                    cancelEditBtn.style.display = 'none';
+                }
+            }
+        });
+
+        cancelEditBtn.addEventListener('click', () => {
+            resetForm();
+            msg.className = 'msg';
+            msg.textContent = '';
+        });
+
+        tbody.addEventListener('click', async (e) => {
+            const actionBtn = e.target.closest('button[data-action]');
+            if (!actionBtn) return;
+
+            const id = actionBtn.dataset.id;
+            if (!id) {
+                alert('未找到该记录的 ID，无法执行操作。');
+                return;
+            }
+
+            if (actionBtn.dataset.action === 'edit') {
+                const row = actionBtn.closest('tr');
+                startEdit({
+                    id,
+                    from: actionBtn.dataset.from || '',
+                    to: actionBtn.dataset.to || '',
+                    rate: actionBtn.dataset.rate || ''
+                }, row);
+            } else if (actionBtn.dataset.action === 'delete') {
+                const label = `${(actionBtn.dataset.from || '?').toUpperCase()} → ${(actionBtn.dataset.to || '?').toUpperCase()}`;
+                if (!confirm(`确定删除汇率 ${label} (ID ${id}) 吗？`)) {
+                    return;
+                }
+                const prevText = actionBtn.textContent;
+                actionBtn.disabled = true;
+                actionBtn.textContent = '删除中…';
+                try {
+                    const res = await authFetch(`/api/exchangeRates/${id}`, { method: 'DELETE' });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        alert('删除失败：' + (data.error || '未知错误'));
+                        return;
+                    }
+                    if (editingId === id) {
+                        resetForm();
+                    }
+                    msg.className = 'msg ok';
+                    msg.textContent = '删除成功';
+                    loadRates();
+                } catch (err) {
+                    console.error(err);
+                    alert('删除失败：' + (err?.message || '网络错误'));
+                } finally {
+                    actionBtn.disabled = false;
+                    actionBtn.textContent = prevText;
+                }
             }
         });
 

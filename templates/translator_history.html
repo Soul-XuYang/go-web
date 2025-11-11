@@ -68,6 +68,10 @@
             font-size: .95rem;
         }
 
+        .muted {
+            color: var(--muted);
+        }
+
         .wrap {
             padding: 0 16px;
             margin-top: 8px;
@@ -338,9 +342,13 @@
             <div id="status" class="msg" style="display:none;"></div>
             <div id="list" class="list"></div>
 
-            <div class="row" style="justify-content:space-between; margin-top:8px;">
-                <button id="btnPrev" class="btn-primary icon-btn" style="min-width:60px;">上一页</button>
-                <button id="btnNext" class="btn-primary icon-btn" style="min-width:60px;">下一页</button>
+            <div class="pager-cards">
+                <div class="pager-card">
+                    <button id="btnPrev" class="btn-primary icon-btn">上一页</button>
+                </div>
+                <div class="pager-card">
+                    <button id="btnNext" class="btn-primary icon-btn">下一页</button>
+                </div>
             </div>
         </section>
     </main>
@@ -362,12 +370,21 @@
 
         // 语言中文名
         const LANG_ZH_MAP = {
-            auto: "自动检测", en: "英语", zh: "简体中文", "zh-TW": "繁体中文", ja: "日语", ko: "韩语",
+            auto: "自动检测", en: "英语", zh: "简体中文", "zh-tw": "繁体中文", ja: "日语", ko: "韩语",
             es: "西班牙语", fr: "法语", de: "德语", ru: "俄语", ar: "阿拉伯语", pt: "葡萄牙语",
             it: "意大利语", nl: "荷兰语", sv: "瑞典语", da: "丹麦语", no: "挪威语", fi: "芬兰语",
             pl: "波兰语", tr: "土耳其语", hi: "印地语", th: "泰语", vi: "越南语",
+            "zh-cn": "简体中文", "en-us": "英语", "en-gb": "英语"
         };
-        const langName = code => LANG_ZH_MAP[String(code || '').trim()] || String(code || '');
+        const langName = code => {
+            const raw = String(code || '').trim();
+            if (!raw) return '';
+            const lower = raw.toLowerCase();
+            if (LANG_ZH_MAP[lower]) return LANG_ZH_MAP[lower];
+            const base = lower.split(/[-_]/)[0];
+            if (LANG_ZH_MAP[base]) return LANG_ZH_MAP[base];
+            return raw;
+        };
 
         // 时间格式化：裁到 “YYYY-MM-DD HH:MM:SS”
         function formatTs(ts) {
@@ -411,6 +428,7 @@
                 const sl = pick(it, ['source_lang', 'SourceLang'], '');
                 const tl = pick(it, ['target_lang', 'TargetLang'], '');
                 const mdl = pick(it, ['llm', 'LLM', 'model', 'Model'], '');
+                const provider = pick(it, ['provider', 'Provider'], '');
                 const ts = pick(it, ['timestamp', 'created_at', 'CreatedAt'], '');
 
                 const sln = langName(sl), tln = langName(tl);
@@ -420,11 +438,12 @@
                 // 头部：语言/模型 + 时间
                 const head = document.createElement('div'); head.className = 'item-head';
                 head.innerHTML = `
-          <div class="row" style="gap:8px;">
-            ${sln || '?'}
-            ——>
-            ${tln || '?'}
-            |大模型: ${mdl ? `${mdl}` : ''}
+          <div class="row" style="gap:8px; flex-wrap:wrap;">
+            <span>${sln || '?'}<span class="muted mono" style="margin-left:6px;">(${sl || '-'})</span></span>
+            <span>——></span>
+            <span>${tln || '?'}<span class="muted mono" style="margin-left:6px;">(${tl || '-'})</span></span>
+            ${mdl ? `<span class="chip" style="background:#f0f4ff;">模型: ${mdl}</span>` : ''}
+            ${provider ? `<span class="chip" style="background:#fdf2f8;">服务商: ${provider}</span>` : ''}
           </div>
           <div class="muted"><span class="label">记录时间：</span>${formatTs(ts)}</div>`;
                 wrap.appendChild(head);

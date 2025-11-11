@@ -9,7 +9,11 @@
     <style>
         /* 居中 header，卡片等宽；降低输入框/按钮高度到 40px */
         :root {
-            --control-h: 40px;
+            --control-h: 48px;
+            --card-radius: 18px;
+            --input-radius: 14px;
+            --input-border: #cbd5f5;
+            --input-border-focus: #2563eb;
         }
 
         body.auth-page {
@@ -47,9 +51,11 @@
         .card.auth-card {
             width: 100%;
             margin: 0 auto;
-            padding: 24px 22px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+            padding: 32px 28px;
+            border-radius: var(--card-radius);
+            background: #ffffff;
+            border: 1px solid rgba(203, 213, 224, 0.6);
+            box-shadow: 0 22px 55px rgba(15, 23, 42, 0.12);
         }
 
         .auth-card h2 {
@@ -65,47 +71,78 @@
         .input {
             position: relative;
             margin: 8px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .input input {
             height: var(--control-h);
             line-height: var(--control-h);
-            border-radius: 10px;
-            padding: 0 44px 0 12px;
+            flex: 1;
+            border-radius: var(--input-radius);
+            padding: 0 18px;
+            border: 1px solid var(--input-border);
+            background: #ffffff;
+            color: #1f2937;
+            font-size: 16px;
+            box-shadow: none;
+            outline: none;
+        }
+
+        .input input::placeholder {
+            color: #9aa6c1;
+        }
+
+        .input input:focus,
+        .input input:focus-visible {
+            border-color: var(--input-border-focus);
+            outline: none;
+            box-shadow: none;
         }
 
         .toggle {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 12px;
+            font-size: 13px;
+            color: #2563eb;
             cursor: pointer;
             user-select: none;
+            white-space: nowrap;
         }
 
         .actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
             margin-top: 6px;
         }
 
         #btn {
+            width: 100%;
             height: var(--control-h);
             border-radius: 10px;
         }
 
+        /* 删除了 background, border, padding, 只保留基本文本样式 */
         .msg {
-            font-size: 12px;
+            display: none;
+            margin-top: 12px;
+            font-size: 13px;
+            text-align: center;
+            line-height: 1.4;
+            background: transparent;
+            border: none;
+            padding: 0;
         }
 
         .msg.ok {
-            color: #22c55e;
+            display: block;
+            color: #0a7d4c;
+            /* 绿色文字表示成功 */
         }
 
         .msg.error {
-            color: #ef4444;
+            display: block;
+            color: #dc2626;
+            font-size: 16px;
+            font-weight: 600;
+            /* 红色文字表示错误 */
         }
 
         .footer {
@@ -130,19 +167,23 @@
             <form id="form" autocomplete="on">
                 <label for="username">用户名</label>
                 <div class="input">
-                    <input id="username" name="username" autocomplete="username" required autofocus />
+                    <input id="username" name="username" autocomplete="username" placeholder="请用户输入用户名" required
+                        autofocus />
+                    <span class="toggle" style="visibility:hidden;">占位</span>
                 </div>
-
                 <label for="password">密码</label>
                 <div class="input">
-                    <input id="password" name="password" type="password" autocomplete="current-password" required />
+                    <input id="password" name="password" type="password" autocomplete="current-password"
+                        placeholder="请用户输入密码" required />
                     <span class="toggle" id="togglePwd">显示</span>
                 </div>
 
                 <div class="actions">
                     <button id="btn" type="submit" class="btn-primary">登录</button>
-                    <div class="msg" id="msg" role="status" aria-live="polite"></div>
                 </div>
+
+                <!-- 提示消息：现在只是纯文本 -->
+                <div class="msg" id="msg" role="status" aria-live="polite"></div>
             </form>
 
             <div class="footer">
@@ -156,21 +197,30 @@
         const pwd = $('#password'), toggle = $('#togglePwd');
         toggle.onclick = () => {
             const t = pwd.type === 'password' ? 'text' : 'password';
-            pwd.type = t; toggle.textContent = t === 'password' ? '显示' : '隐藏';
+            pwd.type = t;
+            toggle.textContent = t === 'password' ? '显示' : '隐藏';
         };
 
         const form = $('#form'), msg = $('#msg'), btn = $('#btn');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            msg.className = 'msg'; msg.textContent = '';
-            btn.disabled = true; btn.textContent = '登录中...';
+            msg.className = 'msg'; // 重置类名
+            msg.textContent = '';
+            btn.disabled = true;
+            btn.textContent = '登录中...';
 
-            const payload = { username: $('#username').value.trim(), password: $('#password').value };
+            const payload = {
+                username: $('#username').value.trim(),
+                password: $('#password').value
+            };
 
             try {
                 const res = await fetch('/api/auth/login', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload)
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
                 });
                 const data = await res.json().catch(() => ({}));
 
@@ -178,18 +228,22 @@
                     msg.classList.add('error');
                     msg.textContent = data.error || '登录失败';
                 } else {
-                    if (typeof data.token === 'string' && data.token.length > 0) localStorage.setItem('token', data.token);
+                    if (typeof data.token === 'string' && data.token.length > 0) {
+                        localStorage.setItem('token', data.token);
+                    }
                     let dest = (data.result_url || '').toString().trim();
                     if (!dest) dest = '/';
-                    if (dest === '/admin/dashborad') dest = '/admin/dashboard';
-                    msg.classList.add('ok'); msg.textContent = '登录成功，正在跳转...';
+                    if (dest === '/admin/dashborad') dest = '/admin/dashboard'; // 拼写修正
+
                     location.assign(dest);
                 }
-            } catch {
+            } catch (err) {
+                console.error(err);
                 msg.classList.add('error');
-                msg.textContent = '网络错误';
+                msg.textContent = '网络错误，请检查连接';
             } finally {
-                btn.disabled = false; btn.textContent = '登录';
+                btn.disabled = false;
+                btn.textContent = '登录';
             }
         });
     </script>

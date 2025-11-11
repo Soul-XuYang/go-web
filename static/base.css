@@ -238,6 +238,47 @@ button,
     height: 42px;
 }
 
+.pager-cards {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+    max-width: 360px;
+    margin: 12px auto 0;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(17, 40, 85, .06);
+    background: rgba(255, 255, 255, 0.45);
+    box-shadow: 0 6px 18px rgba(17, 40, 85, .08);
+}
+
+.pager-card {
+    flex: 0 0 160px;
+    background: #ffffff;
+    border: 1px solid rgba(17, 40, 85, .08);
+    border-radius: 14px;
+    box-shadow: 0 10px 24px rgba(17, 40, 85, .08);
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pager-card button,
+.pager-card .btn {
+    width: auto !important;
+    min-width: 130px;
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 button:active,
 .btn:active {
     transform: translateY(1px);

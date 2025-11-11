@@ -34,16 +34,31 @@ func initDB() { //注意这个是小写只能在当前包使用，大写才能�
 func runMigrations() {
 	if err := global.DB.AutoMigrate(
 		&models.Users{},
-		&models.Article{},
 		&models.ExchangeRate{},
 		// 新增游戏数据表
-	    &models.Game_Guess_Score{}, 
+		&models.Game_Guess_Score{},
 		&models.Game_Map_Time{},
 		// 新增翻译历史记录表
 		&models.TranslationHistory{},
 		&models.Files{},
-		&models.Game_2048_Score{}, // 新增2048游戏分数表
+		&models.Game_2048_Score{},
+		// 博客系统表
+		&models.Article{},
+		&models.Comment{},
+		&models.UserLikeArticle{},   //点赞关联表
+		&models.UserArticleRepost{}, //转发关联表
+		&models.Collection{},
+		&models.CollectionItem{},
+		&models.UserCollectionItem{}, //收藏关联表
 	); err != nil {
 		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
+	}
+
+	// 确保翻译历史长文本字段能够保存超长内容
+	if err := global.DB.Migrator().AlterColumn(&models.TranslationHistory{}, "SourceText"); err != nil {
+		log.L().Warn("alter translation_histories.source_text failed", zap.Error(err))
+	}
+	if err := global.DB.Migrator().AlterColumn(&models.TranslationHistory{}, "TranslatedText"); err != nil {
+		log.L().Warn("alter translation_histories.translated_text failed", zap.Error(err))
 	}
 }

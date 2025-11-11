@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的收藏夹</title>
+    <link rel="stylesheet" href="/static/collections.css">
+</head>
+
+<body>
+    <nav class="zhihu-nav">
+        <div class="zhihu-nav-inner">
+            <div class="zhihu-nav-left">
+                <a href="/page/articles" class="zhihu-btn">返回论坛界面</a>
+                <a href="/page/shell" class="zhihu-btn">返回主应用界面</a>
+            </div>
+            <div class="zhihu-nav-right">
+                <div class="zhihu-user-info">
+                    <div class="zhihu-user-avatar" id="userAvatar">U</div>
+                    <span class="zhihu-username" id="username">加载中...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="collections-container">
+        <section class="collections-header">
+            <div class="collections-title">
+                <h1 id="pageTitle">我的收藏夹</h1>
+                <p id="pageSubtitle">管理你的收藏夹，或将文章加入收藏</p>
+            </div>
+            <div class="collections-stats">
+                <div class="collections-stat-card">
+                    <div class="stat-label">收藏夹总数</div>
+                    <div class="stat-value" id="statCollections">0</div>
+                </div>
+                <div class="collections-stat-card">
+                    <div class="stat-label">收藏文章数量</div>
+                    <div class="stat-value" id="statItems">0</div>
+                </div>
+            </div>
+            <div class="collections-actions">
+                <button class="zhihu-btn" id="btnRefresh">刷新数据</button>
+                <button class="zhihu-btn zhihu-btn-primary" id="btnCreateCollection">创建收藏夹</button>
+            </div>
+        </section>
+
+        <section class="collection-picker-section" id="collectionPickerSection">
+            <header class="picker-header">
+                <h2>添加到收藏夹</h2>
+                <p>为文章 <span id="pickerArticleId"></span> 选择收藏夹，可随时在此页面创建新的收藏夹。</p>
+            </header>
+            <div class="picker-list" id="pickerList">
+                <div class="picker-empty">加载中...</div>
+            </div>
+        </section>
+
+        <section class="collections-list-section" id="collectionsManageSection">
+            <div class="collections-empty" id="collectionsEmpty">加载中...</div>
+            <div class="collections-list" id="collectionsList"></div>
+        </section>
+    </main>
+
+    <!-- 创建收藏夹弹窗 -->
+    <div class="dialog-backdrop" id="createDialog">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h3>创建收藏夹</h3>
+                <button class="dialog-close" id="createDialogClose" aria-label="关闭">×</button>
+            </div>
+            <form class="dialog-body" id="createForm">
+                <label for="createNameInput">收藏夹名称（1~50 字）</label>
+                <input type="text" id="createNameInput" maxlength="50" placeholder="请输入收藏夹名称" required>
+                <div class="dialog-message" id="createDialogMessage"></div>
+                <div class="dialog-actions">
+                    <button type="button" class="dialog-btn" id="createDialogCancel">取消</button>
+                    <button type="submit" class="dialog-btn primary" id="createDialogSubmit">创建</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 添加文章弹窗 -->
+    <div class="dialog-backdrop" id="addArticleDialog">
+        <div class="dialog">
+            <div class="dialog-header">
+                <h3>添加文章到收藏夹</h3>
+                <button class="dialog-close" id="addArticleDialogClose" aria-label="关闭">×</button>
+            </div>
+            <form class="dialog-body" id="addArticleForm">
+                <p class="dialog-helper">请输入要添加的文章 ID，将其加入收藏夹 <span id="targetCollectionName"></span>。</p>
+                <input type="number" id="articleIdInput" min="1" placeholder="文章 ID" required>
+                <div class="dialog-message" id="addArticleDialogMessage"></div>
+                <div class="dialog-actions">
+                    <button type="button" class="dialog-btn" id="addArticleDialogCancel">取消</button>
+                    <button type="submit" class="dialog-btn primary" id="addArticleDialogSubmit">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+        const $$ = s => Array.from(document.querySelectorAll(s));
+
+        const params = new URLSearchParams(location.search);
+        const articleIdParam = params.get('articleId');
+        const hasArticleContext = !!articleIdParam;
+
+        const pickerSection = $('#collectionPickerSection');
+        const pickerList = $('#pickerList');
+        const pickerArticleId = $('#pickerArticleId');
+        const manageSection = $('#collectionsManageSection');
+        const collectionsEmpty = $('#collectionsEmpty');
+        const collectionsList = $('#collectionsList');
+        const statCollections = $('#statCollections');
+        const statItems = $('#statItems');
+        const pageTitle = $('#pageTitle');
+        const pageSubtitle = $('#pageSubtitle');
+
+        const createDialog = $('#createDialog');
+        const createForm = $('#createForm');
+        const createMessage = $('#createDialogMessage');
+        const createNameInput = $('#createNameInput');
+
+        const addArticleDialog = $('#addArticleDialog');
+        const addArticleForm = $('#addArticleForm');
+        const addArticleMessage = $('#addArticleDialogMessage');
+        const articleIdInput = $('#articleIdInput');
+        const targetCollectionName = $('#targetCollectionName');
+
+        let currentCollections = [];
+        let targetCollectionId = null;
+
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            return t ? (t.toLowerCase().startsWith('bearer ') ? t : 'Bearer ' + t) : null;
+        }
+
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign(
+                { 'Content-Type': 'application/json' },
+                token ? { 'Authorization': token } : {},
+                opts.headers || {}
+            );
+            const r = await fetch(url, { ...opts, headers });
+            if (r.status === 401) {
+                localStorage.removeItem('token');
+                location.href = '/auth/login';
+                throw new Error('Unauthorized');
+            }
+            return r;
+        }
+
+        function escapeHTML(s) {
+            const div = document.createElement('div');
+            div.textContent = s ?? '';
+            return div.innerHTML;
+        }
+
+        function normalizeCollections(data) {
+            const lists = data?.lists ?? data?.Lists ?? [];
+            if (!Array.isArray(lists)) return [];
+            return lists.map(col => {
+                const items = col.items ?? col.Items ?? [];
+                return {
+                    id: col.id ?? col.ID ?? 0,
+                    name: col.name ?? col.Name ?? '未命名收藏夹',
+                    itemCount: col.item_count ?? col.ItemCount ?? 0,
+                    items: Array.isArray(items)
+                        ? items.map(item => ({
+                            itemId: item.item_id ?? item.ItemID ?? 0,
+                            articleId: item.article_id ?? item.ArticleID ?? 0,
+                            title: item.title ?? item.Title ?? '',
+                            authorId: item.author_id ?? item.AuthorID ?? 0,
+                            authorName: item.author_name ?? item.AuthorName ?? '',
+                            preview: item.preview ?? item.Preview ?? '',
+                            createdAt: item.created_at ?? item.CreatedAt ?? 0
+                        }))
+                        : []
+                };
+            });
+        }
+
+        function updateStats(collections) {
+            const collectionCount = collections.length;
+            const totalItems = collections.reduce((sum, col) => sum + (col.itemCount || 0), 0);
+            statCollections.textContent = collectionCount;
+            statItems.textContent = totalItems;
+        }
+
+        function renderPicker(collections) {
+            if (!pickerSection) return;
+            if (!collections.length) {
+                pickerList.innerHTML = '<div class="picker-empty">你还没有收藏夹，先创建一个吧！</div>';
+                return;
+            }
+            const fragment = document.createDocumentFragment();
+            collections.forEach(col => {
+                const item = document.createElement('div');
+                item.className = 'picker-item';
+                const info = document.createElement('div');
+                info.className = 'picker-info';
+                info.innerHTML = `
+                    <div class="picker-name">${escapeHTML(col.name)}</div>
+                    <div class="picker-count">${col.itemCount || 0} 条内容</div>
+                `;
+                const action = document.createElement('button');
+                const already = col.items.some(i => Number(i.articleId) === Number(articleIdParam));
+                action.className = 'picker-action' + (already ? ' disabled' : '');
+                action.textContent = already ? '已收藏' : '收藏';
+                action.disabled = already;
+                if (!already) {
+                    action.addEventListener('click', () => addArticleToCollection(col.id, Number(articleIdParam)));
+                }
+                item.appendChild(info);
+                item.appendChild(action);
+                fragment.appendChild(item);
+            });
+            pickerList.innerHTML = '';
+            pickerList.appendChild(fragment);
+        }
+
+        function renderCollections(collections) {
+            if (!manageSection) return;
+            if (!collections.length) {
+                collectionsEmpty.textContent = '暂无收藏夹，点击“创建收藏夹”开始你的收藏之旅。';
+                collectionsEmpty.style.display = 'block';
+                collectionsList.innerHTML = '';
+                return;
+            }
+            collectionsEmpty.style.display = 'none';
+            const fragment = document.createDocumentFragment();
+            collections.forEach(col => {
+                const card = document.createElement('div');
+                card.className = 'collection-card';
+                card.innerHTML = `
+                    <div class="collection-card-header">
+                        <div class="collection-card-title">
+                            <h3>${escapeHTML(col.name)}</h3>
+                            <span>${col.itemCount || 0} 条内容</span>
+                        </div>
+                        <div class="collection-card-actions">
+                            <button class="collection-card-btn" data-action="add" data-id="${col.id}" data-name="${escapeHTML(col.name)}">添加文章</button>
+                            <button class="collection-card-btn danger" data-action="delete" data-id="${col.id}" data-name="${escapeHTML(col.name)}">删除收藏夹</button>
+                        </div>
+                    </div>
+                `;
+                const body = document.createElement('div');
+                body.className = 'collection-card-body';
+
+                if (!col.items.length) {
+                    body.innerHTML = '<div class="collection-card-empty">该收藏夹还没有文章，立即添加一篇吧。</div>';
+                } else {
+                    col.items.forEach(item => {
+                        const row = document.createElement('div');
+                        row.className = 'collection-item-row';
+                        row.innerHTML = `
+                            <div class="collection-item-info">
+                                <div class="collection-item-title">${escapeHTML(item.title)}</div>
+                                <div class="collection-item-meta">
+                                    作者：${escapeHTML(item.authorName || '未知')} · 文章ID：${item.articleId}
+                                </div>
+                            </div>
+                            <button class="collection-item-remove" data-collection="${col.id}" data-article="${item.articleId}">移除</button>
+                        `;
+                        body.appendChild(row);
+                    });
+                }
+                card.appendChild(body);
+                fragment.appendChild(card);
+            });
+            collectionsList.innerHTML = '';
+            collectionsList.appendChild(fragment);
+        }
+
+        function toggleDialog(dialog, show) {
+            if (!dialog) return;
+            if (show) {
+                dialog.classList.add('show');
+            } else {
+                dialog.classList.remove('show');
+            }
+        }
+
+        function resetCreateDialog() {
+            if (!createForm) return;
+            createForm.reset();
+            createMessage.textContent = '';
+        }
+
+        function resetAddArticleDialog() {
+            if (!addArticleForm) return;
+            addArticleForm.reset();
+            addArticleMessage.textContent = '';
+            targetCollectionName.textContent = '';
+            targetCollectionId = null;
+        }
+
+        async function loadCollections() {
+            if (pickerSection) {
+                pickerList.innerHTML = '<div class="picker-empty">加载中...</div>';
+            }
+            if (collectionsEmpty) {
+                collectionsEmpty.textContent = '加载中...';
+                collectionsEmpty.style.display = 'block';
+            }
+            try {
+                const res = await authFetch('/api/collections/all_items', { cache: 'no-store' });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '加载失败');
+                }
+                currentCollections = normalizeCollections(data);
+                updateStats(currentCollections);
+                if (hasArticleContext) {
+                    renderPicker(currentCollections);
+                } else {
+                    renderCollections(currentCollections);
+                }
+            } catch (e) {
+                if (hasArticleContext) {
+                    pickerList.innerHTML = `<div class="picker-empty">加载失败：${e.message}</div>`;
+                } else {
+                    collectionsEmpty.textContent = `加载失败：${e.message}`;
+                    collectionsEmpty.style.display = 'block';
+                    collectionsList.innerHTML = '';
+                }
+            }
+        }
+
+        async function createCollection(name) {
+            createMessage.textContent = '正在创建收藏夹...';
+            const submitBtn = $('#createDialogSubmit');
+            if (submitBtn) submitBtn.disabled = true;
+            try {
+                const res = await authFetch('/api/collections', {
+                    method: 'POST',
+                    body: JSON.stringify({ name: name.trim() })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '创建失败');
+                }
+                createMessage.textContent = '创建成功！';
+                await loadCollections();
+                setTimeout(() => {
+                    toggleDialog(createDialog, false);
+                    resetCreateDialog();
+                }, 500);
+            } catch (e) {
+                createMessage.textContent = e.message || '创建失败';
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        }
+
+        async function addArticleToCollection(collectionId, articleId) {
+            if (!collectionId || !articleId) return;
+            if (hasArticleContext) {
+                pickerList.querySelectorAll('.picker-action').forEach(btn => btn.disabled = true);
+            } else {
+                addArticleMessage.textContent = '正在添加文章...';
+                const submitBtn = $('#addArticleDialogSubmit');
+                if (submitBtn) submitBtn.disabled = true;
+            }
+            try {
+                const res = await authFetch('/api/collections/item', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        collection_id: Number(collectionId),
+                        article_id: Number(articleId)
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '添加失败');
+                }
+                if (hasArticleContext) {
+                    await loadCollections();
+                } else {
+                    addArticleMessage.textContent = '添加成功！';
+                    await loadCollections();
+                    setTimeout(() => {
+                        toggleDialog(addArticleDialog, false);
+                        resetAddArticleDialog();
+                    }, 500);
+                }
+            } catch (e) {
+                if (hasArticleContext) {
+                    pickerList.innerHTML = `<div class="picker-empty">操作失败：${e.message}</div>`;
+                } else {
+                    addArticleMessage.textContent = e.message || '添加失败';
+                }
+            } finally {
+                if (hasArticleContext) {
+                    pickerList.querySelectorAll('.picker-action').forEach(btn => btn.disabled = false);
+                } else {
+                    const submitBtn = $('#addArticleDialogSubmit');
+                    if (submitBtn) submitBtn.disabled = false;
+                }
+            }
+        }
+
+        async function deleteCollection(collectionId, name) {
+            if (!confirm(`确定要删除收藏夹「${name}」吗？其中的文章将同步移除。`)) {
+                return;
+            }
+            try {
+                const res = await authFetch(`/api/collections/${collectionId}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '删除失败');
+                }
+                await loadCollections();
+            } catch (e) {
+                alert('删除失败：' + (e.message || '未知错误'));
+            }
+        }
+
+        async function removeItem(collectionId, articleId) {
+            if (!confirm('确定要将这篇文章移出收藏夹吗？')) {
+                return;
+            }
+            try {
+                const res = await authFetch('/api/collections/item', {
+                    method: 'DELETE',
+                    body: JSON.stringify({
+                        collection_id: Number(collectionId),
+                        article_id: Number(articleId)
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || '移除失败');
+                }
+                await loadCollections();
+            } catch (e) {
+                alert('移除失败：' + (e.message || '未知错误'));
+            }
+        }
+
+        async function loadUser() {
+            try {
+                const r = await authFetch('/api/me', { cache: 'no-store' });
+                const d = await r.json().catch(() => ({}));
+                const u = d.username || 'unknown';
+                $('#username').textContent = u;
+                $('#userAvatar').textContent = (u?.trim?.()[0] || 'U').toUpperCase();
+            } catch (e) {
+                console.error('加载用户信息失败:', e);
+            }
+        }
+
+        function setupEventListeners() {
+            $('#btnRefresh').addEventListener('click', loadCollections);
+            $('#btnCreateCollection').addEventListener('click', () => {
+                resetCreateDialog();
+                toggleDialog(createDialog, true);
+                setTimeout(() => createNameInput?.focus(), 50);
+            });
+
+            $('#createDialogClose').addEventListener('click', () => {
+                toggleDialog(createDialog, false);
+            });
+            $('#createDialogCancel').addEventListener('click', () => {
+                toggleDialog(createDialog, false);
+            });
+
+            createForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = createNameInput.value.trim();
+                if (!name) {
+                    createMessage.textContent = '请输入收藏夹名称';
+                    createNameInput.focus();
+                    return;
+                }
+                createCollection(name);
+            });
+
+            $('#addArticleDialogClose').addEventListener('click', () => {
+                toggleDialog(addArticleDialog, false);
+                resetAddArticleDialog();
+            });
+            $('#addArticleDialogCancel').addEventListener('click', () => {
+                toggleDialog(addArticleDialog, false);
+                resetAddArticleDialog();
+            });
+
+            addArticleForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const articleId = Number(articleIdInput.value);
+                if (!articleId || articleId <= 0) {
+                    addArticleMessage.textContent = '请输入有效的文章ID';
+                    articleIdInput.focus();
+                    return;
+                }
+                addArticleToCollection(targetCollectionId, articleId);
+            });
+
+            collectionsList.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.matches('.collection-card-btn')) {
+                    const collectionId = target.dataset.id;
+                    const action = target.dataset.action;
+                    const name = target.dataset.name;
+                    if (action === 'add') {
+                        targetCollectionId = Number(collectionId);
+                        targetCollectionName.textContent = name;
+                        toggleDialog(addArticleDialog, true);
+                        setTimeout(() => articleIdInput?.focus(), 50);
+                    } else if (action === 'delete') {
+                        deleteCollection(collectionId, name);
+                    }
+                }
+                if (target.matches('.collection-item-remove')) {
+                    const collectionId = target.dataset.collection;
+                    const articleId = target.dataset.article;
+                    removeItem(collectionId, articleId);
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    if (createDialog.classList.contains('show')) {
+                        toggleDialog(createDialog, false);
+                        resetCreateDialog();
+                    }
+                    if (addArticleDialog.classList.contains('show')) {
+                        toggleDialog(addArticleDialog, false);
+                        resetAddArticleDialog();
+                    }
+                }
+            });
+        }
+
+        function setupMode() {
+            if (hasArticleContext) {
+                pickerSection.style.display = 'block';
+                manageSection.style.display = 'none';
+                $('#btnCreateCollection').textContent = '创建新的收藏夹';
+                pickerArticleId.textContent = articleIdParam;
+                pageTitle.textContent = '添加文章到收藏夹';
+                pageSubtitle.textContent = '为当前文章选择或创建一个收藏夹';
+            } else {
+                pickerSection.style.display = 'none';
+                manageSection.style.display = 'block';
+                $('#btnCreateCollection').textContent = '创建收藏夹';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupMode();
+            setupEventListeners();
+            loadUser();
+            loadCollections();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建文章</title>
+    <link rel="stylesheet" href="/static/article_detail.css">
+</head>
+
+<body>
+    <!-- 顶部导航 -->
+    <nav class="zhihu-nav">
+        <div class="zhihu-nav-inner">
+            <div class="zhihu-nav-left">
+                <button class="zhihu-btn" onclick="goBack()">返回论坛界面</button>
+                <a href="/page/shell" class="zhihu-btn">返回主应用界面</a>
+            </div>
+            <div class="zhihu-nav-right">
+                <div class="zhihu-user-info">
+                    <div class="zhihu-user-avatar" id="userAvatar">U</div>
+                    <span class="zhihu-username" id="username">加载中...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主容器 -->
+    <div class="zhihu-container">
+        <div class="zhihu-form-card">
+            <h1 class="zhihu-form-title">创建新文章</h1>
+
+            <div id="messageBox"></div>
+
+            <form id="articleForm">
+                <div class="zhihu-form-group">
+                    <label class="zhihu-form-label">
+                        文章标题
+                        <span class="char-count" id="titleCount">0/200</span>
+                    </label>
+                    <input type="text" class="zhihu-form-input" id="title" maxlength="200" required
+                        placeholder="请输入文章标题（1-200字）" />
+                </div>
+
+                <div class="zhihu-form-group">
+                    <label class="zhihu-form-label">
+                        文章摘要
+                        <span class="char-count" id="previewCount">0/500</span>
+                    </label>
+                    <textarea class="zhihu-form-textarea" id="preview" maxlength="500" required
+                        placeholder="请输入文章摘要或简介"></textarea>
+                    <div class="zhihu-form-hint">摘要将显示在文章列表中，帮助读者快速了解内容</div>
+                </div>
+
+                <div class="zhihu-form-group">
+                    <label class="zhihu-form-label">
+                        文章内容
+                        <span class="char-count" id="contentCount">0</span>
+                    </label>
+                    <textarea class="zhihu-form-textarea content-area" id="content" required
+                        placeholder="请输入文章正文..."></textarea>
+                    <div class="zhihu-form-hint">支持纯文本格式，换行将被保留</div>
+                </div>
+
+                <div class="zhihu-form-actions">
+                    <button type="button" class="zhihu-btn" onclick="goBack()">取消</button>
+                    <button type="button" class="zhihu-btn" id="btnPreview">预览</button>
+                    <button type="submit" class="zhihu-btn zhihu-btn-submit" id="btnSubmit">发布文章</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 预览模态框 -->
+    <div class="zhihu-preview-modal" id="previewModal">
+        <div class="zhihu-preview-content">
+            <div class="zhihu-preview-header">
+                <h2 class="zhihu-preview-title" id="previewTitle">标题</h2>
+                <button class="zhihu-btn" onclick="closePreview()">关闭</button>
+            </div>
+            <div class="zhihu-preview-body" id="previewBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const $ = s => document.querySelector(s);
+
+        function getStoredToken() {
+            const t = localStorage.getItem('token');
+            return t ? (t.toLowerCase().startsWith('bearer ') ? t : 'Bearer ' + t) : null;
+        }
+
+        async function authFetch(url, opts = {}) {
+            const token = getStoredToken();
+            const headers = Object.assign(
+                { 'Content-Type': 'application/json' },
+                token ? { 'Authorization': token } : {},
+                opts.headers || {}
+            );
+            const r = await fetch(url, { ...opts, headers });
+            if (r.status === 401) {
+                localStorage.removeItem('token');
+                location.href = '/auth/login';
+                throw new Error('Unauthorized');
+            }
+            return r;
+        }
+
+        // 加载用户信息
+        async function loadMe() {
+            try {
+                const r = await authFetch('/api/me', { cache: 'no-store' });
+                const d = await r.json().catch(() => ({}));
+                const u = d.username || 'unknown';
+                $('#username').textContent = u;
+                $('#userAvatar').textContent = (u?.trim?.()[0] || 'U').toUpperCase();
+            } catch (e) {
+                console.error('加载用户信息失败:', e);
+            }
+        }
+
+        // 字符计数
+        function updateCharCount(inputId, countId, maxLength) {
+            const input = $(inputId);
+            const counter = $(countId);
+            if (!input || !counter) return;
+
+            const length = input.value.length;
+
+            if (maxLength) {
+                counter.textContent = `${length}/${maxLength}`;
+                counter.classList.remove('warning', 'error');
+                if (length > maxLength * 0.9) {
+                    counter.classList.add('warning');
+                }
+                if (length >= maxLength) {
+                    counter.classList.add('error');
+                }
+            } else {
+                counter.textContent = length;
+            }
+        }
+
+        $('#title').oninput = () => updateCharCount('#title', '#titleCount', 200);
+        $('#preview').oninput = () => updateCharCount('#preview', '#previewCount', 500);
+        $('#content').oninput = () => updateCharCount('#content', '#contentCount');
+
+        // 显示消息
+        function showMessage(message, isError = false) {
+            const box = $('#messageBox');
+            box.className = isError ? 'zhihu-message zhihu-message-error' : 'zhihu-message zhihu-message-success';
+            box.textContent = message;
+            setTimeout(() => {
+                box.textContent = '';
+                box.className = '';
+            }, 5000);
+        }
+
+        // 预览
+        $('#btnPreview').onclick = () => {
+            const title = $('#title').value.trim();
+            const content = $('#content').value.trim();
+
+            if (!title) {
+                alert('请输入文章标题');
+                return;
+            }
+
+            $('#previewTitle').textContent = title || '(无标题)';
+            $('#previewBody').textContent = content || '(无内容)';
+            $('#previewModal').classList.add('show');
+        };
+
+        window.closePreview = () => {
+            $('#previewModal').classList.remove('show');
+        };
+
+        // 提交表单
+        $('#articleForm').onsubmit = async (e) => {
+            e.preventDefault();
+
+            const title = $('#title').value.trim();
+            const preview = $('#preview').value.trim();
+            const content = $('#content').value.trim();
+
+            if (!title || !preview || !content) {
+                showMessage('请填写所有必填项', true);
+                return;
+            }
+
+            if (title.length < 1 || title.length > 200) {
+                showMessage('标题长度必须在1-200字之间', true);
+                return;
+            }
+
+            const data = { title, preview, content };
+
+            try {
+                $('#btnSubmit').disabled = true;
+                $('#btnSubmit').textContent = '发布中...';
+
+                const r = await authFetch('/api/create_articles', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                if (r.ok) {
+                    const result = await r.json();
+                    showMessage('文章发布成功！即将跳转...');
+                    setTimeout(() => {
+                        location.href = `/page/articles/${result.id}`;
+                    }, 1000);
+                } else {
+                    const err = await r.json();
+                    showMessage('发布失败：' + (err.error || '未知错误'), true);
+                    $('#btnSubmit').disabled = false;
+                    $('#btnSubmit').textContent = '发布文章';
+                }
+            } catch (e) {
+                showMessage('发布失败：' + (e.message || '网络错误'), true);
+                $('#btnSubmit').disabled = false;
+                $('#btnSubmit').textContent = '发布文章';
+            }
+        };
+
+        function goBack() {
+            if (confirm('确定要离开吗？未保存的内容将丢失。')) {
+                location.href = '/page/articles';
+            }
+        }
+
+        // 快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && $('#previewModal').classList.contains('show')) {
+                closePreview();
+            }
+        });
+
+        loadMe();
+    </script>
+</body>
+
+</html>

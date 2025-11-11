@@ -11,6 +11,7 @@ import (
 	"project/log"
 	"project/models"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -321,23 +322,46 @@ type DisplayResp struct {
 }
 
 // Display_Map godoc
-// @Summary     地图游戏可视化展示
+// @Summary     地图游戏可视化展示 - 支持三种地图生成算法
+// @Description 根据choice参数生成不同算法的地图并返回最优路径
+// @Description choice=1: 递归路径生成算法（简单随机路径，适合初学者）
+// @Description choice=2: Prim迷宫生成算法（中等难度，生成随机迷宫）
+// @Description choice=3: DFS深度优先迷宫算法（困难难度，生成复杂迷宫）
+// @Description 前端建议：使用三个按钮分别对应三种算法，按钮文字可为"简单路径"、"Prim迷宫"、"DFS迷宫"
 // @Tags        Game
 // @Security    Bearer
 // @Produce     json
-// @Success     200   {object}  DisplayResp  "响应数据"
+// @Param       choice  query     int  true  "地图生成算法选择: 1=递归路径, 2=Prim迷宫, 3=DFS迷宫"
+// @Success     200     {object}  DisplayResp  "返回地图数据、起终点、最优路径"
+// @Failure     400     {object}  map[string]string  "无效的choice参数"
 // @Router      /api/game/map/display [get]
 func Display_Map(c *gin.Context) {
+	choice := strings.TrimSpace(c.Query("choice"))
+	choiceInt, err := strconv.Atoi(choice)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid choice parameter"})
+		return
+	}
 	grid := array_init(displayNum, displayNum+8)
 	sx, sy := start_index(grid)
 	startPoint := P{X: sx, Y: sy}
 	visitedChess := make(map[P]bool, 0)
-	generateMazeDFS(grid, startPoint, visitedChess)
+	// 根据choice选择不同的地图生成算法
+	switch choiceInt {
+	case 1:
+		go_next(grid, startPoint, displayNum+8, 5)
+	case 2:
+		primMaze(grid, startPoint)
+	case 3:
+		generateMazeDFS(grid, startPoint, visitedChess)
+	default:
+		go_next(grid, startPoint, displayNum, 3)
+	}
 	endPoint, _ := end_index(grid, startPoint)
 	grid[startPoint.X][startPoint.Y] = '+'
 	grid[endPoint.X][endPoint.Y] = 'x'
 	path, ok := AStar(grid, startPoint, endPoint)
-	//  输出 rows（每行一个 string）
+	//  输出 rows（每行一个 string）-这里返回给前端的数据以字符串数组开始
 	rows := make([]string, displayNum)
 	for i := 0; i < displayNum; i++ {
 		rows[i] = string(grid[i])
@@ -348,7 +372,7 @@ func Display_Map(c *gin.Context) {
 		StartPoint: startPoint,
 		EndPoint:   endPoint,
 		Ok:         ok,
-		Path:       path, //保留首尾
+		Path:       path, // 保留首尾的A*最优路径
 	})
 }
 
@@ -490,10 +514,7 @@ func go_next(arr [][]byte, start_point P, step int, step_rand int) {
 // media难度
 func primMaze(arr [][]byte, start P) { //这里是因为权重都为1，所以先不设置最小堆
 	arr[start.X][start.Y] = 'o' //起点设置
-
-	// 初始化表-局部全局变量
-	walls := make([]P, 0)
-
+	walls := make([]P, 0) //这里是初始化待破墙的队列
 	// 添加起始点周围的墙
 	Point_addWalls := func(p P) { //构建进入点函数
 		for i := 0; i < len(dir); i++ { //
@@ -506,7 +527,7 @@ func primMaze(arr [][]byte, start P) { //这里是因为权重都为1，所以�
 			}
 		}
 	}
-	Point_addWalls(start) //从起点开始生成
+	Point_addWalls(start) //从起点开始生成-上述为初始化过程
 
 	for len(walls) > 0 { //队列里的数据-只不过这是一个随机队列
 		// 随机选一个墙

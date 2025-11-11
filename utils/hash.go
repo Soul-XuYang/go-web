@@ -48,3 +48,9 @@ func CopyWithHash(dst io.Writer, src io.Reader, maxSize, expectedSize int64) (st
 	sum := hasher.Sum(nil)
 	return hex.EncodeToString(sum), written, nil
 }
+
+// 检查字符格式
+func CheckByte(v interface{}) bool { //直接检验
+    _, ok := v.(byte)
+    return ok
+}

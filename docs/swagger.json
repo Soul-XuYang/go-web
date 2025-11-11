@@ -360,18 +360,37 @@
                         "Bearer": []
                     }
                 ],
+                "description": "根据choice参数生成不同算法的地图并返回最优路径\nchoice=1: 递归路径生成算法（简单随机路径，适合初学者）\nchoice=2: Prim迷宫生成算法（中等难度，生成随机迷宫）\nchoice=3: DFS深度优先迷宫算法（困难难度，生成复杂迷宫）\n前端建议：使用三个按钮分别对应三种算法，按钮文字可为\"简单路径\"、\"Prim迷宫\"、\"DFS迷宫\"",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Game"
                 ],
-                "summary": "地图游戏可视化展示",
+                "summary": "地图游戏可视化展示 - 支持三种地图生成算法",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "地图生成算法选择: 1=递归路径, 2=Prim迷宫, 3=DFS迷宫",
+                        "name": "choice",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "响应数据",
+                        "description": "返回地图数据、起终点、最优路径",
                         "schema": {
                             "$ref": "#/definitions/controllers.DisplayResp"
+                        }
+                    },
+                    "400": {
+                        "description": "无效的choice参数",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -488,6 +507,279 @@
                 }
             }
         },
+        "/api/translate": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "使用AI模型翻译文本，支持自动检测源语言，翻译结果会保存到历史记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Translation"
+                ],
+                "summary": "翻译文本",
+                "parameters": [
+                    {
+                        "description": "翻译请求参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.TranslationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "翻译成功响应",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.TranslationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "服务繁忙，请稍后重试",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/translate/history": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "分页查询当前用户的翻译历史记录",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Translation"
+                ],
+                "summary": "获取翻译历史记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码，默认为1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页记录数，默认10，最大100",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "历史记录列表及分页信息",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "用户未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "查询失败",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/translate/history/clear": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "删除当前用户的所有翻译历史记录",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Translation"
+                ],
+                "summary": "清空翻译历史记录",
+                "responses": {
+                    "200": {
+                        "description": "清空成功消息",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "用户未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "清空失败",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/translate/history/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "根据记录ID删除当前用户的一条翻译历史记录",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Translation"
+                ],
+                "summary": "删除指定翻译历史记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "历史记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功消息",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "无效的ID参数",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "用户未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "记录不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "删除失败",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/translate/languages": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "返回翻译服务支持的所有语言及其代码",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Translation"
+                ],
+                "summary": "获取支持的语言列表",
+                "responses": {
+                    "200": {
+                        "description": "语言代码与名称的映射表",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/update_articles/{id}": {
             "put": {
                 "security": [
@@ -559,6 +851,87 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/weather/top10": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "并行获取10个热门城市的天气数据，包括温度、天气状况、空气质量等信息",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Weather"
+                ],
+                "summary": "获取热门城市天气",
+                "responses": {
+                    "200": {
+                        "description": "10个城市的天气数据数组",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controllers.CitySummary"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "用户未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/weather/user": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "返回当前用户的名称、位置信息及对应城市的天气数据",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Weather"
+                ],
+                "summary": "获取用户信息及天气",
+                "responses": {
+                    "200": {
+                        "description": "用户信息、位置和天气数据",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "用户未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "获取失败",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1093,8 +1466,8 @@
         "controllers.ArticleResp": {
             "type": "object",
             "properties": {
-                "created": {
-                    "type": "integer"
+                "created_at": {
+                    "type": "string"
                 },
                 "id": {
                     "type": "integer"
@@ -1106,6 +1479,9 @@
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }
@@ -1129,6 +1505,49 @@
                     "type": "string"
                 },
                 "result": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.CitySummary": {
+            "type": "object",
+            "properties": {
+                "aqi": {
+                    "type": "integer"
+                },
+                "aqi_name": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "county": {
+                    "type": "string"
+                },
+                "degree": {
+                    "type": "string"
+                },
+                "error": {
+                    "description": "错误信息",
+                    "type": "string"
+                },
+                "province": {
+                    "type": "string"
+                },
+                "tomorrow_max": {
+                    "type": "string"
+                },
+                "tomorrow_min": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "weather": {
+                    "type": "string"
+                },
+                "weather_url": {
+                    "description": "天气的图标url",
                     "type": "string"
                 }
             }
@@ -1294,6 +1713,47 @@
                 },
                 "y": {
                     "type": "integer"
+                }
+            }
+        },
+        "controllers.TranslationRequest": {
+            "type": "object",
+            "required": [
+                "target_lang",
+                "text"
+            ],
+            "properties": {
+                "model": {
+                    "type": "string"
+                },
+                "source_lang": {
+                    "type": "string"
+                },
+                "target_lang": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.TranslationResponse": {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "string"
+                },
+                "original_text": {
+                    "type": "string"
+                },
+                "source_lang": {
+                    "type": "string"
+                },
+                "target_lang": {
+                    "type": "string"
+                },
+                "translated_text": {
+                    "type": "string"
                 }
             }
         },

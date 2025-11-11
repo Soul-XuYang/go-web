@@ -24,7 +24,7 @@ type Game2048SaveRequest struct {
 // Game2048SaveScore 保存2048游戏分数
 // @Summary 保存2048游戏分数
 // @Description 保存用户的2048游戏分数到数据库
-// @Tags 游戏
+// @Tags Game
 // @Accept json
 // @Produce json
 // @Param score body Game2048SaveRequest true "游戏分数"

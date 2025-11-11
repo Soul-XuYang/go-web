@@ -9,7 +9,11 @@
     <style>
         /* 与登录页保持同款版心与控件尺寸 */
         :root {
-            --control-h: 40px;
+            --control-h: 48px;
+            --card-radius: 18px;
+            --input-radius: 14px;
+            --input-border: #cbd5f5;
+            --input-border-focus: #2563eb;
         }
 
         body.auth-page {
@@ -46,9 +50,11 @@
         .card.auth-card {
             width: 100%;
             margin: 0 auto;
-            padding: 24px 22px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+            padding: 32px 28px;
+            border-radius: var(--card-radius);
+            background: #ffffff;
+            border: 1px solid rgba(203, 213, 224, 0.6);
+            box-shadow: 0 22px 55px rgba(15, 23, 42, 0.12);
         }
 
         .auth-card h2 {
@@ -59,47 +65,78 @@
         .input {
             position: relative;
             margin: 8px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .input input {
             height: var(--control-h);
             line-height: var(--control-h);
-            border-radius: 10px;
-            padding: 0 44px 0 12px;
+            flex: 1;
+            border-radius: var(--input-radius);
+            padding: 0 18px;
+            border: 1px solid var(--input-border);
+            background: #ffffff;
+            color: #1f2937;
+            font-size: 16px;
+            box-shadow: none;
+            outline: none;
+        }
+
+        .input input::placeholder {
+            color: #9aa6c1;
+        }
+
+        .input input:focus,
+        .input input:focus-visible {
+            border-color: var(--input-border-focus);
+            outline: none;
+            box-shadow: none;
         }
 
         .toggle {
-            position: absolute;
-            right: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 12px;
+            font-size: 13px;
+            color: #2563eb;
             cursor: pointer;
             user-select: none;
+            white-space: nowrap;
         }
 
         .actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
             margin-top: 6px;
         }
 
         #btn {
+            width: 100%;
             height: var(--control-h);
             border-radius: 10px;
         }
 
         .msg {
-            font-size: 12px;
+            display: none;
+            /* 默认隐藏 */
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            text-align: center;
         }
 
         .msg.ok {
-            color: #22c55e;
+            display: block;
+            /* 有内容时显示 */
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            color: #0369a1;
         }
 
         .msg.error {
-            color: #ef4444;
+            display: block;
+            /* 有内容时显示 */
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
         }
 
         .footer {
@@ -124,27 +161,30 @@
             <form id="form" autocomplete="on">
                 <label for="username">用户名</label>
                 <div class="input">
-                    <input id="username" name="username" autocomplete="username" required autofocus />
+                    <input id="username" name="username" autocomplete="username" placeholder="请输入用户名" required
+                        autofocus />
+                    <span class="toggle" style="visibility:hidden;">占位</span>
                 </div>
 
                 <label for="password">密码</label>
                 <div class="input">
-                    <input id="password" name="password" type="password" autocomplete="new-password" minlength="6"
-                        required />
+                    <input id="password" name="password" type="password" autocomplete="new-password"
+                        placeholder="请输入密码（至少6位）" minlength="6" required />
                     <span class="toggle" id="togglePwd">显示</span>
                 </div>
 
                 <label for="confirm">确认密码</label>
                 <div class="input">
-                    <input id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="6"
-                        required />
+                    <input id="confirm" name="confirm" type="password" autocomplete="new-password" placeholder="请再次输入密码"
+                        minlength="6" required />
                     <span class="toggle" id="toggleConfirm">显示</span>
                 </div>
 
                 <div class="actions">
                     <button id="btn" type="submit" class="btn-primary">创建账号</button>
-                    <div class="msg" id="msg" role="status" aria-live="polite"></div>
                 </div>
+
+                <div class="msg" id="msg" role="status" aria-live="polite"></div>
             </form>
 
             <div class="footer">

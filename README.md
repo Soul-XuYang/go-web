@@ -1,249 +1,161 @@
-# Go-Web 综合性Web应用项目
-
-## 📝 项目简介
-
-
 <div align="center">
 
-Go-Web 是一个基于 Go 语言开发的**综合性Web应用**，集成了多种实用功能模块，包括用户认证、游戏系统、汇率查询、天气信息、文章管理、翻译服务等。项目采用**前后端分离架构**，后端基于 RESTful API 设计，前端使用 HTML 模板渲染，实现了高性能、可扩展的 Web 服务。
+# Go-Web 综合性 Web 应用项目
 
 </div>
 
+## 📝 项目简介
+
+Go-Web 是目前一个以 Go 语言为核心构建的综合性 Web 应用，集成文章互动中心、文件管理、游戏大厅、天气与汇率查询、AI 翻译等多个业务模块。项目采用 **Gin + Gorm + Mysql + Redis + HTML模板渲染** 的轻量方案，同时提供完整的 RESTful API。
+
 ### 🎯 项目特色
 
-- 🎮 **游戏系统**：集成三款游戏（猜数字、地图寻路、2048），配备完整的排行榜系统
-- 🌐 **翻译服务**：基于 Kimi K2 大模型的多语言翻译
-- ☁️ **天气查询**：集成高德地图定位 + 腾讯天气API
-- 💱 **汇率查询**：实时汇率数据与 Top10 排行
-- 📊 **性能优化**：Redis 缓存 + 分布式锁设计
-- 📚 **完善文档**：Swagger 自动生成 API 文档
+- 🧾 **文章论坛系统**：各个用户的文章写作、点赞、评论、转发、收藏夹及收藏文件与广告位一应俱全
+- 📁 **文件管理**：基于配额的安全文件上传、下载、筛选与下载统计
+- 🎮 **多游戏大厅**：猜数字、地图寻路(三种迷宫生成算法)、2048 三款小游戏 + 实时排行榜
+- 🌦️ **天气与定位**：高德 IP 定位 + 腾讯天气数据 + AQI 展示
+- 💱 **汇率监控**：实时汇率、CNY Top10 榜单与手动刷新
+- 🌐 **AI 翻译**：对接 OpenAI 风格接口，支持多语言翻译与历史管理
+- 🔐 **安全与监控**：JWT + 角色权限 + Zap 日志 + 文件系统监控
+- 📚 **自动化的API文档**：Swag 驱动的 Swagger 文档，随代码同步更新
 
 ## 🛠️ 技术栈
 
-### 后端技术
-- **开发语言**：Go 1.21+
-- **Web框架**: Gin (高性能HTTP框架)
-- **ORM框架**: GORM (优雅的ORM库)
-- **数据库**: MySQL 5.7+ (主数据库)
-- **缓存**: Redis 6.0+ (缓存、会话存储、排行榜)
-- **日志系统**: Zap (Uber开源的高性能日志库)
-- **API文档**: Swagger/Swaggo (自动生成API文档)
-- **认证授权**: JWT (JSON Web Token)
-- **配置管理**: Viper (配置文件解析)
-- **Go标准库**：encoding/json、sync、container、strconv、context、io等
+### 后端
+- Go 1.24+
+- Gin、GORM、MySQL、Redis
+- Zap、fsnotify、Viper、JWT、bcrypt
+- Swaggo（Swagger 文档）
 
-### 前端技术
-- **模板引擎**: HTML5 + 原生 JavaScript
-- **样式**: CSS3 + CSS Variables (响应式设计)
-- **交互**: Fetch API (RESTful 通信)
-- **存储**: LocalStorage (Token、最佳分数)
+### 前端
+- HTML5 模板 + 原生 JavaScript
+- CSS Variables、响应式布局
+- Fetch API、LocalStorage
 
-### 第三方服务
-- **翻译服务**: Kimi K2 大模型 (OpenAI 风格 API)
-- **地图服务**: 高德地图 API (IP定位)
-- **天气服务**: 腾讯天气 API
-- **汇率服务**: Frankfurter API (实时汇率数据)
+### 外部服务
+- 高德地图 IP 定位
+- 腾讯天气开放接口
+- Frankfurter 汇率 API
+- Moonshot Kimi K2（OpenAI 风格翻译接口，可自行替换）
 
-## 功能特性
+## 🌟 核心模块速览
 
-### 用户系统
-- 用户注册、登录、登出
-- JWT认证机制
-- 角色权限管理（普通用户、管理员、超级管理员）
-- 用户信息管理
-
-### 汇率查询
-- 实时汇率数据获取
-- 人民币汇率Top10排行
-- 汇率数据可视化展示
-- 手动刷新汇率数据
-
-### 天气信息
-- 城市天气数据获取
-- Top10城市天气排行
-- 用户地理信息的定位
-- 地理位置相关天气信息
-- 空气质量指数(AQI)展示
-
-### 🎮 游戏系统
-
-#### **1. 数字猜猜乐**
-- 三轮递增难度的数字猜测游戏
-- 每轮猜测次数递减（9次 → 8次 → 7次）
-- 根据猜测次数计算得分
-- Redis 排行榜实时更新（分数越高越好）
-
-#### **2. 地图寻路挑战**
-- 三轮地图挑战（8×8 → 12×12 → 16×16）
-- 基于 A* 算法的路径寻找
-- 记录完成时间并排名（用时越短越好）
-- 键盘控制（WASD/方向键）移动
-
-#### **3. 2048 游戏**
-- 经典的数字合并益智游戏
-- 可选 90 秒倒计时挑战模式
-- 触摸屏/键盘双重操作支持
-- 自动保存最高分数到排行榜
-
-#### **游戏排行榜系统**
-- **Redis ZSET** 实现高效排行榜（实时更新）
-- **MySQL** 持久化历史记录（双重保障）
-- **统一排行榜页面**：三个游戏水平展示 + 个人成绩统计
-- **个性化排名**：显示个人最佳成绩和排名位置
-- 支持不同排序规则（升序/降序）
-
-### 文章管理
-- 文章列表展示
-- 文章详情页面
-- 文章点赞功能
-
-### 翻译服务
-- 基于Kimi K2模型的多语言翻译
-- 支持20+种语言互译
-- 自动语言检测
-- 翻译历史记录管理
-- 翻译使用限制(防滥用)
-
-### 系统监控
-- 文件系统实时监控
-- 资源使用情况监控
-- 日志文件变化追踪
-- 系统状态可视化展示
-- 
-### 🧮 计算器
-- 支持基本四则运算
-- 支持小数点计算
-- 支持括号运算
-- 键盘快捷操作
-
-### 🛠️ 其他功能
-- **图片代理服务**：解决跨域图片加载问题
-- **文件上传管理**：支持文件上传和列表查看
-- **Shell命令执行**：管理员功能（谨慎使用）
-- **管理员仪表板**：系统监控和管理
-- **用户地理位置**：基于IP的自动定位
-- **响应式UI设计**：适配PC、平板、手机
+- **用户与权限**：注册 / 登录 / 登出、JWT 鉴权、角色管理（user/admin/superadmin）
+- **文章中心**：
+  - Markdown 风格富文本（模板渲染）
+  - 文章增删改查、分页、排序、关键词搜索
+  - Redis 首页缓存、点赞 / 评论 / 收藏计数缓存
+  - 点赞开关、评论树、收藏夹分组管理（转发计数逻辑已实现，按需挂载路由）
+- **收藏夹系统**：
+  - 多收藏夹管理、文章去重逻辑
+  - 收藏次数冗余字段维护、并发加锁校准
+  - 收藏夹内容一键拉取，按加入时间倒序
+- **评论互动**：
+  - 支持多级回复的树形结构
+  - 3 秒频控防刷
+  - 评论计数与 Redis 文章存在性缓存
+- **游戏大厅**：
+  - 猜数字：难度递进 + 返回最佳成绩
+  - 地图寻路：A* 算法 + 用时排名
+  - 2048：前端逻辑，后端存储分数
+  - Redis ZSET 排行榜 + MySQL 历史持久化 + 个人排行
+- **天气 & 定位**：自动定位城市天气、热门城市榜单、天气图标代理、AQI
+- **汇率中心**：基础汇率 CRUD、CNY Top10、Redis Snapshot、手动刷新
+- **AI 翻译服务**：
+  - 自动或手动选择源语言，返回语言检测结果
+  - 请求限额、历史记录、单条 / 批量删除
+- **文件管理**：
+  - 单文件 / 总配额限制（MB）
+  - 安全路径拼接、临时文件写入、扩展名 + MIME 白名单
+  - 支持分页、关键字、扩展名、MIME、时间、大小条件过滤
+  - 下载次数统计、ETag/Range 支持、防止目录穿越
+- **系统监控**：
+  - Zap 日志（开发 / 生产模式）
+  - fsnotify 目录监控器
+  - 页面化仪表盘、Shell 页面入口（需管理员权限）
+- **图片代理**：白名单代理，解决跨域图片加载
 
 ## 📂 项目结构
 
 ```
 project/
-├── config/                      # 配置文件和配置处理
-│   ├── config.go               # 配置初始化
-│   ├── config.yaml             # 配置文件（数据库、Redis、API密钥等）
-│   ├── db.go                   # MySQL 数据库初始化
-│   ├── redis.go                # Redis 连接配置
-│   └── info.md                 # 配置说明文档
-├── controllers/                 # 控制器层（业务逻辑）
-│   ├── auth.go                 # 用户认证相关（注册、登录、登出）
-│   ├── game_guess_number.go    # 猜数字游戏逻辑
-│   ├── game_map_time.go        # 地图寻路游戏逻辑
-│   ├── game_2048.go            # 2048游戏分数保存
-│   ├── game_leaderboard.go     # 游戏排行榜（个人成绩查询）
-│   ├── game_boards.go          # 排行榜配置（游戏列表、排序规则）
-│   ├── top_game_display.go     # 公共排行榜展示
-│   ├── translator.go           # 翻译服务
-│   ├── weather_location.go     # 天气与地理位置
-│   ├── exchange_rate_controller.go  # 汇率查询
-│   ├── get_rate_top10.go       # 人民币汇率 Top10
-│   ├── proxy_image.go          # 图片代理服务
-│   ├── files_control.go        # 文件上传管理
-│   ├── calculator.go           # 计算器功能
-│   └── ...                     # 其他控制器
-├── docs/                        # Swagger API 自动生成文档
-│   ├── docs.go
-│   ├── swagger.json
-│   └── swagger.yaml
-├── global/                      # 全局变量
-│   └── global.go               # DB、Redis 连接实例
-├── log/                         # 日志系统
-│   ├── logger.go               # Zap 日志初始化
-│   └── monitor.go              # 文件系统监控
-├── middlewares/                 # 中间件
-│   ├── auth_middleware.go      # JWT 认证中间件
-│   ├── logger.go               # HTTP 请求日志中间件
-│   ├── recover.go              # Panic 恢复中间件
-│   └── role_permission.go      # 角色权限控制
-├── models/                      # 数据模型（ORM）
-│   ├── user.go                 # 用户模型
-│   ├── game.go                 # 游戏相关模型
-│   ├── article.go              # 文章模型
-│   └── ...                     # 其他模型
-├── router/                      # 路由配置
-│   ├── router.go               # 主路由注册
-│   ├── swagger.go              # Swagger 路由
-│   └── page.go                 # 页面路由
-├── static/                      # 静态资源
-│   ├── base.css                # 基础样式
-│   └── pictures/               # 图片资源
-├── templates/                   # HTML 模板（前端页面）
-│   ├── index.html              # 首页
-│   ├── game_selection.html     # 游戏选择中心
-│   ├── game_guess_number.html  # 猜数字游戏界面
-│   ├── game_map_time.html      # 地图寻路游戏界面
-│   ├── game_2048.html          # 2048游戏界面
-│   ├── game_leaderboards.html  # 游戏排行榜界面
-│   ├── calculator.html         # 计算器界面
-│   ├── translate.html          # 翻译界面
-│   ├── weather_display.html    # 天气展示界面
-│   ├── rmb_top10.html          # 汇率 Top10
-│   └── ...                     # 其他页面
-├── utils/                       # 工具函数
-│   └── utils.go                # 通用工具方法
-├── main.go                      # 应用入口
-├── go.mod                       # Go 模块依赖
-├── go.sum                       # 依赖校验和
-└── README.md                    # 项目文档
+├── assets/                         # 设计稿与素材资源
+├── config/                         # 配置及初始化
+│   ├── config.go                   # Viper 读取 + 统一初始化
+│   ├── config.yaml                 # 默认配置（数据库、Redis、API、上传配额等）
+│   ├── db.go                       # MySQL 初始化与迁移
+│   ├── redis.go                    # Redis 客户端
+│   └── info.md                     # 配置说明
+├── controllers/                    # 业务控制器
+│   ├── article_controller.go       # 文章 CRUD + 缓存 + 查询
+│   ├── colletion_repost_controller.go # 收藏夹、转发、频控
+│   ├── comments_likes_controller.go   # 点赞 / 评论树
+│   ├── exchange_rate_controller.go    # 汇率 & 用户信息
+│   ├── files_controller.go         # 文件上传 / 下载 / 列表
+│   ├── game_*.go                   # 游戏逻辑与排行榜
+│   ├── openAIapi.go                # 翻译服务接入层
+│   ├── translator.go               # 翻译业务逻辑
+│   ├── weather_location.go         # 定位 + 天气
+│   └── ...                         # 其他控制器
+├── docs/                           # Swag 自动生成的接口文档
+├── files/                          # 用户上传文件存储根目录（按用户/日期划分）
+├── global/                         # 全局句柄（DB、Redis、配置）
+├── log/                            # 日志与文件监控
+│   ├── logger.go
+│   └── monitor.go
+├── md_pictures/                    # README、文档插图
+├── middlewares/                    # 中间件（日志、恢复、JWT、权限）
+├── models/                         # GORM 数据模型
+│   ├── article.go                  # 文章、评论、收藏关联
+│   ├── exchange_rate.go
+│   ├── file.go
+│   ├── game.go
+│   ├── translation_history.go
+│   └── user.go
+├── router/
+│   ├── router.go                   # 主路由 & 页面
+│   └── swagger.go                  # Swagger 映射
+├── static/                         # 静态资源（CSS、图片、分享素材）
+├── templates/                      # HTML 模板
+│   ├── index.html                  # 首页
+│   ├── login.html / register.html  # 认证页面
+│   ├── articles_pages.html         # 文章列表
+│   ├── article_detail.html         # 文章详情
+│   ├── article_my_list.html        # 我的文章
+│   ├── article_create.html / edit.html
+│   ├── collections.html            # 收藏夹视图
+│   ├── game_selection.html         # 游戏大厅
+│   ├── game_guess_number.html
+│   ├── game_map_time.html
+│   ├── map_display.html
+│   ├── game_2048.html
+│   ├── game_leaderboards.html
+│   ├── translator.html / translator_history.html
+│   ├── weather.html
+│   ├── exchange_rates.html / rmb_top10.html
+│   ├── upload.html / file_lists.html
+│   ├── calculator.html
+│   ├── dashboard.html
+│   └── shell.html
+├── utils/                         # 工具函数（JWT、密码、路径等）
+├── Reference_learning_documents/  # 学习笔记与参考资料
+├── info.md                        # 项目信息
+├── main.go                        # 应用入口
+├── go.mod / go.sum
+└── README.md
 ```
 
-### 📊 项目规模统计
-- **Go 源码文件**：93 个
-- **HTML 模板文件**：23 个
-- **代码总行数**：约 15,000+ 行
+> **注**:📌 `files/` 目录用于持久化上传文件，请确保运行环境具备写权限；若目录不存在，应用会自动创建。
 
-## 📸 项目截图
+## ⚙️ 配置说明
 
-### 代码统计
-![代码统计](./static/pictures/image.png)
-
-### Swagger API 文档界面[默认端口:3000]
-访问地址：`http://localhost:3000/swagger/index.html`
-
-![Swagger界面](./static/pictures/swagger.png)
-
-### 游戏系统截图
-- 游戏选择中心：三款游戏卡片展示
-- 排行榜页面：三个排行榜水平排列 + 个人成绩统计
-- 2048游戏：可选倒计时模式、分数保存
-
----
-
-## 安装与运行
-
-### 环境要求
-
-- Go 1.16+
-- MySQL 5.7+
-- Redis 6.0+
-
-### 安装步骤
-
-1. 克隆项目
-```bash
-git clone <项目仓库地址>
-cd project
-```
-
-2. 安装依赖
-```bash
-go mod download
-```
-
-3. 配置数据库
-
-请在修改 `config/config.yaml` 文件中的数据库和Redis连接信息，这里可以自定义配置信息和数据:
+所有配置集中在 `config/config.yaml`，可根据实际环境覆盖：
 
 ```yaml
+app:
+  name: Go-Web
+  port: :3000             # 应用监听端口（支持 :3000 / 3000 两种写法）
+
 database:
   dsn: root:123456@tcp(127.0.0.1:13306)/test?charset=utf8mb4&parseTime=True&loc=Local
   MaxIdleConns: 11
@@ -261,400 +173,194 @@ superadmin:
 
 local_api:
   baseURL: "https://restapi.amap.com/v3/ip"
-  apiKey: 
+  apiKey: ""
   LocationDailyLimit: 100
 
 translation_api:
   provider: "Kimi K2"
-  apiKey: 
+  apiKey: ""
   baseURL: "https://api.moonshot.cn/v1"
   model: "moonshot-v1-8k"
-  LocationDailyLimit: 100
+
+upload:
+  totalSize: 500          # 单用户总容量上限（MB）
+  fileSize: 50            # 单文件大小上限（MB）
+  storagepath: "files"    # 相对存储目录
 ```
 
-4. 初始化数据库
+> 建议将敏感信息（数据库、API Key）通过环境变量或 CI/CD Secret 注入，避免直接提交到仓库。
 
-确保MySQL中已创建对应数据库，表结构会在应用启动时自动创建。
-
-5. 生成Swagger文档
-```bash
-swag init
-```
-
-6. 启动应用
-```bash
-go run main.go
-```
-
-应用默认运行在 `http://localhost:3000`
-
-## 📡 API 端点
-
-### 认证相关
-- `POST /api/auth/register` - 用户注册
-- `POST /api/auth/login` - 用户登录
-- `POST /api/auth/logout` - 用户登出
-- `GET /api/me` - 获取当前用户信息
-
-### 游戏相关
-- `POST /api/game/guess` - 猜数字游戏
-- `POST /api/game/reset` - 重置猜数字游戏
-- `POST /api/game/map/start` - 开始地图游戏
-- `POST /api/game/map/complete` - 完成地图游戏
-- `POST /api/game/map/reset` - 重置地图游戏
-- `GET /api/game/map/display` - 地图可视化
-- `POST /api/game/2048/save` - 保存2048游戏分数
-- `GET /api/game/leaderboards` - 获取所有游戏排行榜
-- `GET /api/game/leaderboard/me` - 获取排行榜+个人排名
-
-### 翻译相关
-- `POST /api/translate` - 翻译文本
-- `GET /api/translate/languages` - 获取支持的语言列表
-- `GET /api/translate/history` - 获取翻译历史
-- `DELETE /api/translate/history/:id` - 删除翻译历史
-
-### 天气相关
-- `GET /api/weather/info` - 获取用户本地天气
-- `GET /api/weather/top10` - 获取 Top10 城市天气
-
-### 汇率相关
-- `GET /api/exchangeRates` - 获取汇率列表
-- `POST /api/exchangeRates` - 创建汇率记录
-- `GET /api/rmb-top10` - 获取人民币汇率 Top10
-- `POST /api/rmb-top10/refresh` - 手动刷新汇率数据
-
-### 其他
-- `GET /api/proxy/image` - 图片代理服务
-- `GET /api/articles` - 获取文章列表
-- `POST /api/calculator` - 计算器运算
-
-## 📚 API 文档
-
-启动应用后，可以通过以下地址访问 **Swagger API 文档**:
-
-```
-http://localhost:3000/swagger/index.html
-```
-
-Swagger 提供：
-- 🔍 所有接口的详细说明
-- 📝 请求/响应示例
-- 🧪 在线接口测试
-- 📋 数据模型定义
-
-## 默认账号
-
-- **超级管理员**:
-  - 用户名: `superadmin`
-  - 密码: `admin123456`
-
-## 开发说明
-
-### 日志系统
-
-项目使用Zap日志库，实现了开发与生产环境的不同日志级别。日志流程如下:
-
-```
-请求到达
-↓
-GinLogger中间件开始 (记录start时间)
-↓
-c.Next() → 执行其他中间件
-↓
-c.Next() → 执行处理函数
-↓
-处理函数返回 (设置响应状态码)
-↓
-回到GinLogger (计算耗时，记录完整日志)
-↓
-返回响应
-```
-
-### 中间件
-
-- **日志中间件**: 记录请求处理时间和详细信息
-- **恢复中间件**: 捕获panic并记录错误堆栈
-- **认证中间件**: JWT token验证
-- **权限中间件**: 基于角色的访问控制
-
-### 游戏系统实现
-
-#### **游戏状态管理**
-游戏系统采用**内存 + 数据库混合存储**方式，确保游戏状态的实时性和持久化：
-
-```go
-// 内存存储游戏状态（单机架构）
-var game = &gameState{
-    Players: make(map[uint]*GamePlayer),
-    mu:      sync.Mutex,  // 互斥锁保护并发访问
-}
-```
-
-- **猜数字游戏**：使用全局 `sync.Mutex` 保护游戏状态，支持多用户并发
-- **地图寻路游戏**：动态生成地图（DFS算法），记录完成时间
-- **2048游戏**：前端逻辑实现，后端仅保存分数
-
-#### **排行榜系统架构**
-
-```
-玩家完成游戏
-    ↓
-保存到 MySQL (持久化)
-    ↓
-更新 Redis ZSET (Top10 缓存)
-    ↓
-前端查询排行榜
-    ↓
-优先从 Redis 读取 (O(log N))
-    ↓
-Redis 未命中 → 回退到 MySQL
-```
-
-**技术特点：**
-- 使用 **Redis ZSET** 自动排序（分数作为score，用户ID作为member）
-- 支持**升序/降序**排列（时间越短 vs 分数越高）
-- **批量查询用户名**（HMGet优化，避免N+1查询）
-- **双重存储**：Redis提供性能，MySQL保证可靠性
-
-### 翻译服务实现
-
-- 集成 **Kimi K2 大语言模型**实现高质量翻译
-- 支持自定义 API 配置（兼容 OpenAI 风格接口）
-- **请求限流**：防止 API 滥用（每用户每日限额）
-- **事务保存**：使用数据库事务保存翻译历史
-- **自动清理**：定期清理旧翻译记录，保持数据库性能
-- **历史记录**：支持查看和删除翻译历史
-
-### 天气服务实现
-
-- **地理定位**：集成高德地图 API 基于IP获取用户位置
-- **天气数据**：使用腾讯天气 API 获取实时天气信息
-- **缓存优化**：Redis 缓存天气数据（TTL 2小时），减少API调用
-- **Top10 展示**：支持热门城市天气排行
-- **空气质量**：显示 AQI 指数和等级
-- **图标代理**：解决天气图标跨域加载问题
-### 系统监控实现
-
-- **文件监控**：基于 fsnotify 库实现文件系统实时监控
-- **日志追踪**：监控应用运行时目录变化，记录日志文件操作
-- **资源展示**：提供系统资源使用情况的可视化展示
-- **自定义规则**：支持自定义监控规则和报警机制
-
-## 🏗️ 系统架构
-
-### 单机架构模式
-
-```
-┌─────────────────────────────────────────┐
-│           用户请求                       │
-│              ↓                          │
-│      ┌──────────────┐                   │
-│      │ Gin Router   │                   │
-│      │ (端口:3000)  │                   │
-│      └──────┬───────┘                   │
-│             │                           │
-│    ┌────────┴────────┐                  │
-│    │   Middlewares   │                  │
-│    │ - Logger        │                  │
-│    │ - Recover       │                  │
-│    │ - Auth (JWT)    │                  │
-│    │ - CORS          │                  │
-│    └────────┬────────┘                  │
-│             │                           │
-│    ┌────────▼────────┐                  │
-│    │   Controllers   │                  │
-│    │ - 游戏逻辑       │                  │
-│    │ - 翻译服务       │                  │
-│    │ - 汇率查询       │                  │
-│    └────┬───────┬────┘                  │
-│         │       │                       │
-│   ┌─────▼──┐  ┌─▼──────┐                │
-│   │ MySQL  │  │ Redis  │                │
-│   │ :3306  │  │ :6379  │                │
-│   └────────┘  └────────┘                │
-│   持久化存储    缓存/排行榜               │
-└─────────────────────────────────────────┘
-
-架构特点：
-✅ 单机部署，适合中小型项目
-✅ 组件分离（应用、数据库、缓存独立）
-✅ 使用 sync.Mutex 进行并发控制
-⚠️  单点故障风险（应用层无冗余）
-```
-
-### 数据流设计
-
-**游戏排行榜数据流：**
-```
-玩家完成游戏
-    ↓
-1. 保存到 MySQL
-   - 持久化历史记录
-   - 每用户最多保留10条
-    ↓
-2. 更新 Redis ZSET
-   - 判断是否进入 Top10
-   - 自动维护排名
-   - O(log N) 插入性能
-    ↓
-3. 前端查询
-   - 优先查 Redis（快）
-   - Redis 未命中查 MySQL（兜底）
-```
-
-**缓存策略：**
-| 数据类型   | 缓存位置     | TTL    | 更新策略     |
-| ---------- | ------------ | ------ | ------------ |
-| 游戏排行榜 | Redis ZSET   | 永久   | 实时更新     |
-| 天气数据   | Redis String | 2小时  | 过期重新获取 |
-| 汇率 Top10 | Redis String | 12小时 | 手动刷新     |
-| 用户会话   | JWT Token    | 24小时 | 登录时生成   |
 ## 🚀 快速开始
 
-```bash
-# 1. 克隆项目
-git clone <repository-url>
-cd project
+1. 克隆并进入项目
+   ```bash
+   git clone <repository-url>
+   cd project
+   ```
+2. 安装依赖
+   ```bash
+   go mod download
+   ```
+3. 准备配置  
+   - 按需修改 `config/config.yaml`  
+   - 确保 MySQL、Redis 服务已就绪  
+   - 同步创建数据库（表会在启动时自动迁移）
+4. （可选）重新生成 Swagger 文档
+   ```bash
+   go install github.com/swaggo/swag/cmd/swag@latest
+   swag init
+   ```
+5. 启动应用
+   ```bash
+   go run main.go
+   ```
+6. 访问入口  
+   - 页面入口：`http://localhost:3000`  
+   - Swagger：`http://localhost:3000/swagger/index.html`
 
-# 2. 安装依赖
-go mod download
+## 📡 API 速查
 
-# 3. 配置数据库和Redis（修改 config/config.yaml）
-vim config/config.yaml
+### 认证 / 用户
+- `POST /api/auth/register` 用户注册
+- `POST /api/auth/login` 用户登录
+- `POST /api/auth/logout` 用户登出
+- `GET /api/me` 当前登录用户信息
+- `GET /api/ad` 作者博客宣传位
 
-# 4. 生成 Swagger 文档
-swag init
+### 文章与互动
+- `GET /api/articles` 文章列表，支持分页/排序/搜索
+- `POST /api/create_articles` 创建文章
+- `PUT /api/update_articles/:id` 更新文章
+- `DELETE /api/articles/:id` 删除文章（级联清理评论/点赞/收藏缓存）
+- `GET /api/articles/me` 我的文章管理列表
+- `POST /api/articles/:article_id/like` 点赞 / 取消点赞
+- `GET /api/articles/:id/comments` 获取文章评论树
+- `POST /api/comments` 发表评论或回复
 
-# 5. 启动应用
-go run main.go
+### 收藏夹
+- `POST /api/collections` 新建收藏夹（带频控）
+- `GET /api/collections/all` 我的收藏夹列表
+- `GET /api/collections/all_items` 收藏夹 + 文章明细
+- `POST /api/collections/item` 将文章加入收藏夹
+- `DELETE /api/collections/item` 从收藏夹移除文章
+- `DELETE /api/collections/:collectionId` 删除收藏夹（自动维护计数）
 
-# 6. 访问应用
-# 主页: http://localhost:3000
-# Swagger: http://localhost:3000/swagger/index.html
-```
+### 文件中心
+- `POST /api/files/upload` 上传文件（multipart/form-data）
+- `GET /api/files/:id` 下载 / 预览文件（支持 `download=1`）
+- `DELETE /api/files/:id` 删除文件
+- `GET /api/files/lists` 文件列表，支持多条件筛选
 
-## 🎯 核心特性说明
+### 游戏中心
+- `POST /api/game/guess` 猜数字提交
+- `POST /api/game/reset` 猜数字重置
+- `POST /api/game/map/start` 地图游戏开始
+- `POST /api/game/map/complete` 地图游戏完成
+- `POST /api/game/map/reset` 地图游戏重置
+- `GET /api/game/map/display` 地图可视化数据
+- `POST /api/game/2048/save` 保存 2048 分数
+- `GET /api/game/leaderboards` 全部排行榜
+- `GET /api/game/leaderboard/me` 我的各游戏成绩
 
-### Redis 排行榜实现
+### 天气 & 定位
+- `GET /api/weather/info` 当前定位天气
+- `GET /api/weather/top10` 热门城市 TOP10
 
-```go
-// 游戏配置
-var boards = map[string]string{
-    "guess_game": "game:guess:top10:best",        // 数字猜猜乐
-    "map_game":   "game:map:top10:fastest",       // 地图寻路（时间）
-    "2048_game":  "game:2048:top10:best",         // 2048游戏
-}
+### 汇率
+- `GET /api/exchangeRates` 汇率列表
+- `POST /api/exchangeRates` 新增汇率记录
+- `PUT /api/exchangeRates/:id` 更新汇率
+- `DELETE /api/exchangeRates/:id` 删除汇率
+- `GET /api/rmb-top10` CNY Top10 快照
+- `POST /api/rmb-top10/refresh` 手动刷新榜单
 
-// 排序规则
-var lowerIsBetter = map[string]bool{
-    "map_game": true,  // 地图游戏：时间越短越好（升序）
-    // 其他游戏默认：分数越高越好（降序）
-}
-```
+### 翻译
+- `POST /api/translate` 翻译文本
+- `GET /api/translate/languages` 支持语言列表
+- `GET /api/translate/history` 翻译历史
+- `DELETE /api/translate/history/:id` 删除单条历史
+- `DELETE /api/translate/history` 清空历史
 
-### 并发控制
+### 工具 & 其他
+- `POST /api/calculator/calculate` 在线计算器
+- `GET /api/proxy/image` 图片代理服务
 
-```go
-// 使用 sync.Mutex 保护游戏状态
-var game = &gameState{
-    Players: make(map[uint]*GamePlayer),
-    mu:      sync.Mutex,
-}
+> 所有 `/api/**` 接口默认受 JWT 保护，需在请求头携带 `Authorization: Bearer <token>`。
 
-func GameGuess(c *gin.Context) {
-    game.mu.Lock()
-    defer game.mu.Unlock()
-    // 游戏逻辑...
-}
-```
+## 🧠 数据与缓存设计
+
+- **Redis**  
+  - 游戏排行榜：`game:*` ZSET
+  - 文章首页缓存：`articles:list:homepage:default`
+  - 点赞缓存：`articles:{id}:likes`、`articles:{id}:user:{uid}:like`
+  - 收藏计数、评论频控、预留转发缓存：`collection:*`、`comment:rate:*`、`repost:*`
+  - 汇率快照：`rmb_top10:cny`
+- **缓存策略**  
+  - 常规 TTL：2h/12h；文章存在性缓存 24h
+  - 缓存穿透保护：命中空值写 `0`
+  - 频控：评论 / 收藏夹 / 转发均设置 3 秒窗口
+  - 分布式锁：排行榜刷新使用短 TTL 锁
 
 ## 🔒 安全机制
 
-- ✅ **JWT 认证**：所有API端点需要有效Token
-- ✅ **角色权限**：超级管理员、管理员、普通用户三级权限
-- ✅ **密码加密**：使用 bcrypt 加密存储
-- ✅ **CORS 控制**：配置跨域访问策略
-- ✅ **请求限流**：防止API滥用（翻译、定位等）
-- ✅ **图片代理白名单**：防止 SSRF 攻击
-- ✅ **SQL注入防护**：使用 GORM 参数化查询
+- JWT + 角色权限控制
+- bcrypt 存储密码
+- Redis 频控防刷
+- 上传文件类型、MIME、体积三重校验
+- SafeJoin 防止文件路径穿越
+- Swagger Token 注入（`Authorize -> Bearer`）
+- GORM 参数化查询防止 SQL 注入
+- 图片代理白名单，避免 SSRF
 
-## 🐛 调试与日志
+## 📈 性能与监控
 
-### 日志级别
-```go
-// 开发模式：详细日志
-log.Init(false)
+- Gin Release 模式（生产环境）
+- MySQL / Redis 连接池与超时配置
+- 首页、排行榜、天气、汇率等热点数据缓存
+- Zap 结构化日志 + `tail -f log/app.log`
+- `log.NewMonitor()` 监听文件系统变化
+- 页面化 Dashboard 与 Shell（仅管理员可访问）
 
-// 生产模式：仅错误和警告
-log.Init(true)
-```
+## 📸 项目截图
 
-### 日志输出
-```bash
-# 查看日志文件
-tail -f logs/app.log
+- 代码统计：`./static/pictures/image.png`
+- Swagger：`http://localhost:3000/swagger/index.html`
+- 游戏大厅、排行榜、2048 体验截图均在 `./static/pictures/`
 
-# 日志包含：
-# - HTTP 请求日志（URL、方法、状态码、耗时）
-# - 错误日志（堆栈信息）
-# - 业务日志（游戏操作、翻译请求等）
-```
+## 默认账号
 
-## 📈 性能优化
+- 超级管理员：`superadmin / admin123456`  
+  登录后可访问 `/admin/dashboard`、`/page/shell` 等受限功能。
 
-### 已实施的优化
-- ✅ **Redis 缓存**：天气、汇率数据缓存，减少外部API调用
-- ✅ **批量查询**：排行榜用户名使用 HMGet 批量获取
-- ✅ **连接池**：MySQL 和 Redis 使用连接池复用连接
-- ✅ **索引优化**：数据库表添加合适的索引
-- ✅ **懒加载**：前端图片懒加载，减少初始加载时间
+## 开发小贴士
 
-### 性能指标
-- **API 响应时间**：平均 < 50ms
-- **排行榜查询**：< 10ms（Redis ZSET）
-- **并发支持**：单机可支持 500+ 并发请求
+- 开发模式初始化日志：`log.Init(false)`
+- 生产模式初始化日志：`log.Init(true)`
+- 常用调试命令：
+  ```bash
+  go test ./...
+  swag fmt       # 格式化注释（生成前可选）
+  tail -f log/app.log
+  ```
 
-## 🔄 未来规划
+## 📄 许可证与贡献
 
-### 功能扩展
-- [ ] 添加更多游戏（贪吃蛇、俄罗斯方块等）
-- [ ] 实现好友系统和社交功能
-- [ ] 添加实时聊天功能（WebSocket）
-- [ ] 游戏回放功能
-- [ ] 成就系统
+- 授权协议：MIT License
+- 欢迎 Issue / PR：
+  1. Fork 仓库
+  2. `git checkout -b feature/awesome`
+  3. 编写代码并补充文档 / 注释
+  4. `git commit -m "feat: add awesome feature"`
+  5. `git push origin feature/awesome`
+  6. 提交 PR
 
-### 技术升级
-- [ ] 改造为分布式系统（Docker Compose + Redis 分布式锁）
-- [ ] 实现 MySQL 主从复制（读写分离）
-- [ ] 添加 Redis Cluster 支持
-- [ ] 集成消息队列（RabbitMQ/Kafka）
-- [ ] 实现微服务架构
+## 👨‍💻 作者 & 联系方式
 
-## 🤝 贡献指南
-
-欢迎提交 Issue 和 Pull Request！
-
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
-
-## 📄 许可证
-
-本项目采用 [MIT License](LICENSE) 开源协议
-
-## 👨‍💻 作者
-
-- **项目作者**：wxy
-- **项目类型**：学习项目 / 综合性 Web 应用
-- **开发时间**：2025
-
-## 📮 联系方式
-
-如有问题或建议，欢迎通过以下方式联系：
-- 📧 个人Email: 610415432@qq.com
-- 🐛 [github地址](https://github.com/Soul-XuYang/go-web) 
+- 作者：soul-XuYang
+- 类型：学习 / 实战综合项目
+- 年份：2025
+- 邮箱610415432@qq.com
+- [GitHub](https://github.com/Soul-XuYang/go-web)
 
 ---
 
@@ -662,6 +368,6 @@ tail -f logs/app.log
 
 **如果这个项目对您有帮助，欢迎 ⭐ Star 支持！**
 
-Made with ❤️ by Go
+Made with ❤️ by Soul-XuYang
 
 </div>
