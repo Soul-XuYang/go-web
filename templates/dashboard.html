@@ -21,6 +21,8 @@
             --gradient-lime: linear-gradient(135deg, #22c55e, #a3e635);
             --gradient-cyan: linear-gradient(135deg, #0891b2, #22d3ee);
             --gradient-slate: linear-gradient(135deg, #475569, #94a3b8);
+            --gradient-teal: linear-gradient(135deg, #14b8a6, #2dd4bf);
+            --gradient-rose: linear-gradient(135deg, #f43f5e, #fb7185);
         }
 
         body {
@@ -60,13 +62,6 @@
             color: var(--text-muted);
         }
 
-        .topbar .tools {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-
         .surface {
             background: rgba(255, 255, 255, 0.86);
             backdrop-filter: blur(16px);
@@ -78,8 +73,15 @@
             gap: 12px;
         }
 
-        .surface input,
-        .surface select {
+        .surface.search-card {
+            justify-content: flex-start;
+        }
+
+        .surface.search-card .btn {
+            padding: 8px 16px;
+        }
+
+        .surface input {
             border: none;
             outline: none;
             background: rgba(255, 255, 255, 0.6);
@@ -91,8 +93,8 @@
             min-width: 140px;
         }
 
-        .surface select {
-            cursor: pointer;
+        .surface input {
+            width: min(320px, 100%);
         }
 
         .grid {
@@ -122,26 +124,36 @@
         .metric {
             grid-column: span 3;
             color: #0f172a;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 16px;
+            min-height: 150px;
+            padding: 24px 24px 20px;
         }
 
         .metric .metric-label {
             font-size: 14px;
             font-weight: 500;
             letter-spacing: 0.4px;
-            opacity: 0.85;
+            opacity: 0.9;
         }
 
         .metric .metric-value {
-            margin-top: 12px;
-            font-size: 28px;
+            font-size: 30px;
             font-weight: 700;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.6px;
+            line-height: 1.1;
         }
 
         .metric .metric-sub {
-            margin-top: 6px;
+            margin-top: 4px;
             font-size: 12px;
             opacity: 0.85;
+        }
+
+        .metric .metric-sub+.metric-sub {
+            margin-top: 4px;
         }
 
         .metric[data-theme="blue"] {
@@ -184,6 +196,43 @@
             color: #f8fafc;
         }
 
+        .metric[data-theme="teal"] {
+            background: var(--gradient-teal);
+            color: #ecfdf5;
+        }
+
+        .metric[data-theme="rose"] {
+            background: var(--gradient-rose);
+            color: #fff1f2;
+        }
+
+        .metric[data-theme="rose"] .metric-value {
+            font-size: 26px;
+            letter-spacing: 0.4px;
+            line-height: 1.2;
+        }
+
+        .metric[data-key="version"] .metric-value span {
+            display: block;
+        }
+
+        .metric.metric-time .metric-value {
+            font-size: 24px;
+            font-weight: 600;
+            white-space: pre-line;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .metric.metric-time .metric-sub {
+            font-size: 13px;
+            letter-spacing: 0.2px;
+            color: rgba(240, 253, 250, 0.92);
+        }
+
+        .metric.metric-time .metric-sub strong {
+            font-weight: 600;
+        }
+
         .metric::after {
             display: none;
         }
@@ -210,19 +259,15 @@
         .addition-list li {
             list-style: none;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            gap: 4px;
             font-size: 14px;
             color: var(--text-muted);
-            padding: 10px 12px;
-            border-radius: 12px;
+            padding: 14px 12px;
+            border-radius: 16px;
             background: rgba(148, 163, 184, 0.08);
-        }
-
-        .addition-list li strong {
-            font-size: 18px;
-            font-weight: 600;
-            color: #0f172a;
         }
 
         .addition-list li span {
@@ -230,36 +275,91 @@
             letter-spacing: 0.4px;
         }
 
+        .addition-list li strong {
+            font-size: 22px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
         .visuals {
             margin-top: 8px;
             align-items: stretch;
+            gap: 12px;
         }
 
         .chart {
-            grid-column: span 8;
-            padding: 24px 24px 12px;
+            grid-column: span 6;
+            padding: 24px 24px 20px;
         }
 
         .chart .card-head {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             gap: 12px;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
         }
 
         .chart-title {
             margin: 0;
             font-size: 18px;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        .chart-head-main {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
 
         .chart-meta {
             font-size: 12px;
             color: var(--text-muted);
-            display: flex;
+            display: inline-flex;
             gap: 6px;
             align-items: center;
+            letter-spacing: 0.2px;
+        }
+
+        .chart-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        .chip-group {
+            display: inline-flex;
+            padding: 4px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.32);
+            gap: 4px;
+            box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+        }
+
+        .chip {
+            border: none;
+            border-radius: 999px;
+            padding: 7px 16px;
+            font-size: 12px;
+            letter-spacing: 0.4px;
+            color: #1e293b;
+            background: transparent;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .chip:hover {
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .chip.active {
+            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            color: #f8fafc;
+            box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+            font-weight: 600;
         }
 
         .chart-canvas {
@@ -269,7 +369,7 @@
         }
 
         .table {
-            grid-column: span 4;
+            grid-column: span 6;
             display: flex;
             flex-direction: column;
             padding: 24px;
@@ -331,16 +431,15 @@
             color: #1d4ed8;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
+        .btn.compact {
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
         }
 
-        .actions {
-            grid-column: span 12;
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            padding: 20px 24px;
+        .btn:hover {
+            transform: translateY(-2px);
         }
 
         .footer-bar {
@@ -379,12 +478,9 @@
                 grid-column: span 4;
             }
 
-            .chart {
-                grid-column: span 7;
-            }
-
+            .chart,
             .table {
-                grid-column: span 5;
+                grid-column: span 12;
             }
         }
 
@@ -413,8 +509,7 @@
                 align-items: stretch;
             }
 
-            .surface input,
-            .surface select {
+            .surface input {
                 width: 100%;
             }
 
@@ -431,6 +526,10 @@
                 width: 100%;
                 text-align: center;
             }
+
+            .chart-controls {
+                justify-content: flex-start;
+            }
         }
     </style>
 </head>
@@ -441,21 +540,9 @@
             <h1>管理控制台
                 <span>实时掌握用户、内容、文件与小游戏全局态势</span>
             </h1>
-            <div class="surface tools">
+            <div class="surface search-card">
                 <input id="search" placeholder="搜索卡片…" />
-                <select id="dataset">
-                    <option value="users" selected>用户新增</option>
-                    <option value="files">文件新增</option>
-                    <option value="articles">文章新增</option>
-                </select>
-                <select id="range">
-                    <option value="7days">最近 7 天</option>
-                    <option value="30days" selected>最近 30 天</option>
-                    <option value="90days">最近 90 天</option>
-                    <option value="6months">最近 6 个月</option>
-                    <option value="1years">最近 1 年</option>
-                </select>
-                <button class="btn primary" id="btnRefresh">立即刷新</button>
+                <button class="btn secondary compact" id="btnUserManage">用户管理</button>
             </div>
         </div>
 
@@ -496,19 +583,30 @@
                 <div class="metric-sub">文档 / 资料</div>
             </div>
             <div class="card metric" data-key="totalGame2048Score" data-theme="slate">
-                <div class="metric-label">2048 累计得分</div>
+                <div class="metric-label">2048游戏用户数</div>
                 <div class="metric-value">--</div>
-                <div class="metric-sub">小游戏活跃</div>
+                <div class="metric-sub">2048小游戏活跃数</div>
             </div>
             <div class="card metric" data-key="totalGameGuessScore" data-theme="indigo">
-                <div class="metric-label">猜数字得分</div>
+                <div class="metric-label">猜数字游戏用户数</div>
                 <div class="metric-value">--</div>
-                <div class="metric-sub">猜数小游戏总分</div>
+                <div class="metric-sub">猜数小游戏活跃数</div>
             </div>
             <div class="card metric" data-key="totalGameMapTime" data-theme="orange">
-                <div class="metric-label">地图游戏时长</div>
+                <div class="metric-label">地图游戏用户数</div>
                 <div class="metric-value">--</div>
-                <div class="metric-sub">总累计时长</div>
+                <div class="metric-sub">地图游戏用户数</div>
+            </div>
+            <div class="card metric" data-key="version" data-theme="rose">
+                <div class="metric-label">系统版本</div>
+                <div class="metric-value">当前版本:<span id="versionText">--</span></div>
+                <div class="metric-sub">本app版本号</div>
+            </div>
+            <div class="card metric metric-time" data-theme="teal">
+                <div class="metric-label">后台时间</div>
+                <div class="metric-value" id="metricCurrentTime">--</div>
+                <div class="metric-sub" id="metricUptime">后台运行时长：--</div>
+                <div class="metric-sub" id="metricStart">服务器启动时间：--</div>
             </div>
         </div>
 
@@ -542,34 +640,42 @@
         <div class="grid visuals">
             <div class="card chart">
                 <div class="card-head">
-                    <h3 class="chart-title">新增趋势</h3>
-                    <div class="chart-meta" id="chartMeta">--</div>
+                    <div class="chart-head-main">
+                        <h3 class="chart-title">新增趋势</h3>
+                        <div class="chart-meta" id="chartMeta">--</div>
+                    </div>
+                    <div class="chart-controls">
+                        <div class="chip-group" id="datasetChips" role="group" aria-label="数据类别">
+                            <button type="button" class="chip active" data-dataset="users">用户新增</button>
+                            <button type="button" class="chip" data-dataset="files">文件新增</button>
+                            <button type="button" class="chip" data-dataset="articles">文章新增</button>
+                        </div>
+                        <div class="chip-group" id="rangeChips" role="group" aria-label="时间范围" data-default="7days">
+                            <button type="button" class="chip active" data-range="7days">近 7 天</button>
+                            <button type="button" class="chip" data-range="30days">近 30 天</button>
+                            <button type="button" class="chip" data-range="6months">近 6 个月</button>
+                        </div>
+                        <button class="btn primary compact" id="btnRefresh">刷新趋势</button>
+                    </div>
                 </div>
                 <div class="chart-canvas">
                     <canvas id="lineChart" height="240" aria-label="新增趋势折线图" role="img"></canvas>
                 </div>
             </div>
             <div class="card table">
-                <h3>最新动态</h3>
+                <h3>最新的数据增量动态</h3>
                 <table>
                     <thead>
                         <tr>
                             <th>时间</th>
-                            <th>内容</th>
-                            <th>用户</th>
+                            <th>新增内容</th>
+                            <th>数据量</th>
                             <th>描述</th>
                         </tr>
                     </thead>
                     <tbody id="recentTbody"></tbody>
                 </table>
             </div>
-        </div>
-
-        <div class="card actions" style="margin-top: var(--gap);">
-            <button class="btn secondary" id="btnUsers">用户管理</button>
-            <button class="btn secondary" id="btnSettings">系统设置</button>
-            <button class="btn secondary" id="btnFiles">文件中心</button>
-            <button class="btn secondary" id="btnArticles">文章中心</button>
         </div>
 
         <div class="footer-bar">
@@ -581,14 +687,23 @@
     <script>
         const chartCanvas = document.getElementById('lineChart');
         const totalGrid = document.getElementById('totalGrid');
-        const datasetSelector = document.getElementById('dataset');
-        const rangeSelector = document.getElementById('range');
         const searchInput = document.getElementById('search');
         const chartMetaEl = document.getElementById('chartMeta');
         const recentTbody = document.getElementById('recentTbody');
+        const datasetChips = document.querySelectorAll('[data-dataset]');
+        const rangeChips = document.querySelectorAll('[data-range]');
+        const refreshBtn = document.getElementById('btnRefresh');
+        const metricCurrentTimeEl = document.getElementById('metricCurrentTime');
+        const metricUptimeEl = document.getElementById('metricUptime');
+        const metricStartEl = document.getElementById('metricStart');
+        const versionTextEl = document.getElementById('versionText');
         let latestChartData = null;
+        let timeEventSource = null;
+        let currentDataset = 'users';
+        let currentRange = '7days';
 
         function formatNumber(num) {
+            if (typeof num === 'string') return num;
             if (num === null || num === undefined || Number.isNaN(num)) return '--';
             if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B';
             if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M';
@@ -611,8 +726,14 @@
             if (!data) return;
             totalGrid.querySelectorAll('.metric').forEach(card => {
                 const key = card.dataset.key;
+                if (!key) return;
                 const valueEl = card.querySelector('.metric-value');
-                valueEl.textContent = formatNumber(data[key]);
+                const formatted = formatNumber(data[key]);
+                if (key === 'version' && versionTextEl) {
+                    versionTextEl.textContent = formatted;
+                } else {
+                    valueEl.textContent = formatted;
+                }
             });
         }
 
@@ -704,12 +825,14 @@
             ctx.fill();
 
             ctx.fillStyle = '#475569';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
             const maxLabels = Math.min(6, labels.length);
             const step = Math.max(1, Math.floor(labels.length / maxLabels));
             labels.forEach((label, index) => {
                 if (index % step !== 0 && index !== labels.length - 1) return;
                 const x = pad.l + innerW * (index / (labels.length - 1 || 1));
-                ctx.fillText(label, x - 18, pad.t + innerH + 20);
+                ctx.fillText(label, x, pad.t + innerH + 18);
             });
         }
 
@@ -740,32 +863,34 @@
             const lengths = {
                 '7days': 7,
                 '30days': 30,
-                '90days': 30,
-                '6months': 6,
-                '1years': 12
+                '6months': 6
             };
-            const unit = rangeLabel.includes('months') || rangeLabel.includes('years') ? 'month' : 'day';
+            const unit = rangeLabel.includes('months') ? 'month' : 'day';
             const count = lengths[rangeLabel] || 30;
-            const labels = [];
-            const now = new Date();
-            for (let i = count - 1; i >= 0; i--) {
-                if (unit === 'day') {
-                    const d = new Date(now - i * 86400000);
-                    labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
-                } else if (rangeLabel.includes('months')) {
-                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                    labels.push(`${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`);
-                } else {
-                    labels.push(`${now.getFullYear() - i}`);
-                }
-            }
-            const series = labels.map(() => Math.round(100 + Math.random() * 150));
+            const series = Array.from({ length: count }, () => Math.round(100 + Math.random() * 150));
             return {
                 time_dimension: unit,
                 data: series,
-                data_length: series.length,
-                labels
+                data_length: series.length
             };
+        }
+
+        const monthPattern = /^\d{4}-(\d{1,2})$/;
+        function normalizeLabels(dimension, labels) {
+            if (dimension === 'month') {
+                return labels.map(label => {
+                    if (monthPattern.test(label)) {
+                        const match = monthPattern.exec(label);
+                        return `${Number(match?.[1] || 0)}月`;
+                    }
+                    const numeric = Number(label);
+                    if (!Number.isNaN(numeric) && numeric >= 1 && numeric <= 12) {
+                        return `${numeric}月`;
+                    }
+                    return label.includes('月') ? label : label;
+                });
+            }
+            return labels;
         }
 
         async function loadCurve(table, range) {
@@ -776,11 +901,13 @@
                 body: JSON.stringify(payload)
             }, () => fallbackCurve(range));
             if (!data) return;
-            const labels = data.labels ||
-                buildLabels(data.time_dimension, data.data_length);
-            latestChartData = { labels, series: data.data || [] };
+            const rawLabels = (data.labels && data.labels.length)
+                ? data.labels
+                : buildLabels(data.time_dimension, data.data_length);
+            const normalizedLabels = normalizeLabels(data.time_dimension, rawLabels);
+            latestChartData = { labels: normalizedLabels, series: data.data || [] };
             drawLineChart(chartCanvas, latestChartData.series, latestChartData.labels);
-            chartMetaEl.textContent = `当前指标：${table} ｜ 粒度：${data.time_dimension} ｜ 数据点数：${labels.length}`;
+            chartMetaEl.textContent = `当前数据指标：${table} \n 数据维度：${data.time_dimension}  \n总的数据点数: ${normalizedLabels.length}`;
         }
 
         function buildLabels(dimension, length) {
@@ -800,13 +927,62 @@
             return labels;
         }
 
+        function initTimeStream() {
+            if (!metricCurrentTimeEl || timeEventSource) return;
+            if (!window.EventSource) {
+                const fallback = new Date().toLocaleString().replace(' ', '\n');
+                metricCurrentTimeEl.textContent = fallback;
+                metricUptimeEl.innerHTML = '运行时长：<strong>浏览器不支持 SSE</strong>';
+                metricStartEl.innerHTML = '启动时间：<strong>--</strong>';
+                return;
+            }
+            timeEventSource = new EventSource('/api/dashboard/time/sse', { withCredentials: true });
+            const updateTime = (event) => {
+                try {
+                    const payload = JSON.parse(event.data || '{}');
+                    const currentTime = (payload.currentTime || '--').replace(' ', '\n');
+                    metricCurrentTimeEl.textContent = currentTime;
+                    metricUptimeEl.innerHTML = `运行时长：<strong>${payload.systemUptime || '--'}</strong>`;
+                    metricStartEl.innerHTML = `启动时间：<strong>${payload.startTime || '--'}</strong>`;
+                } catch (err) {
+                    console.warn('解析时间数据失败:', err);
+                }
+            };
+            timeEventSource.addEventListener('tick', updateTime);
+            timeEventSource.onerror = () => {
+                metricUptimeEl.innerHTML = '运行时长：<strong>连接中断，重试中…</strong>';
+            };
+        }
+
+        function setActiveChip(chips, attr, value) {
+            chips.forEach(btn => {
+                const isActive = btn.dataset[attr] === value;
+                btn.classList.toggle('active', isActive);
+            });
+        }
+
         function registerInteractions() {
-            datasetSelector.addEventListener('change', () => {
-                loadCurve(datasetSelector.value, rangeSelector.value);
+            setActiveChip(datasetChips, 'dataset', currentDataset);
+            setActiveChip(rangeChips, 'range', currentRange);
+
+            datasetChips.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = btn.dataset.dataset;
+                    if (!val || val === currentDataset) return;
+                    currentDataset = val;
+                    setActiveChip(datasetChips, 'dataset', currentDataset);
+                    loadCurve(currentDataset, currentRange);
+                });
             });
 
-            rangeSelector.addEventListener('change', () => {
-                loadCurve(datasetSelector.value, rangeSelector.value);
+            rangeChips.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const val = btn.dataset.range;
+                    if (!val || val === currentRange) return;
+                    currentRange = val;
+                    setActiveChip(rangeChips, 'range', currentRange);
+                    loadCurve(currentDataset, currentRange);
+                });
             });
 
             searchInput.addEventListener('input', () => {
@@ -818,11 +994,6 @@
                 });
             });
 
-            document.getElementById('btnRefresh').addEventListener('click', bootstrap);
-            document.getElementById('btnUsers').addEventListener('click', () => location.assign('/admin/users'));
-            document.getElementById('btnSettings').addEventListener('click', () => location.assign('/admin/settings'));
-            document.getElementById('btnFiles').addEventListener('click', () => location.assign('/admin/files'));
-            document.getElementById('btnArticles').addEventListener('click', () => location.assign('/admin/articles'));
             window.addEventListener('resize', () => {
                 if (latestChartData) {
                     drawLineChart(chartCanvas, latestChartData.series, latestChartData.labels);
@@ -841,7 +1012,7 @@
             const recent = additions ? buildRecentFromAdditions(additions) : fallbackRecent();
             renderRecent(recent);
 
-            await loadCurve(datasetSelector.value, rangeSelector.value);
+            await loadCurve(currentDataset, currentRange);
         }
 
         function buildRecentFromAdditions(additions) {
@@ -868,6 +1039,20 @@
         }
 
         registerInteractions();
+        document.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+            if (target.id === 'btnUserManage') {
+                event.preventDefault();
+                location.assign('/admin/users');
+            }
+        });
+        initTimeStream();
+        window.addEventListener('beforeunload', () => {
+            if (timeEventSource) {
+                timeEventSource.close();
+            }
+        });
         bootstrap();
     </script>
 </body>

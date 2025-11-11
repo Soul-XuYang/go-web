@@ -142,13 +142,18 @@ func SetupRouter() *gin.Engine {
 	admin := r.Group("/admin", middlewares.RolePermission("admin", "superadmin")) //给定用户的身份登记
 	{
 		admin.GET("/dashboard", func(c *gin.Context) { c.HTML(200, "dashboard.html", nil) })
+		admin.GET("/users", func(c *gin.Context) { c.HTML(200, "admin_users.html", nil) })
 	}
-
-	adminAPI := api.Group("/dashboard", middlewares.RolePermission("admin", "superadmin"))
+	adminDashboard := api.Group("/dashboard", middlewares.RolePermission("admin", "superadmin"))
 	{
-		adminAPI.GET("/total", controllers.GetDashboardTotalData)
-		adminAPI.GET("/add", controllers.GetDashboardAdd)
-		adminAPI.POST("/curve", controllers.GetDashboardCurveData)
+		adminDashboard.GET("/total", controllers.GetDashboardTotalData)
+		adminDashboard.GET("/add", controllers.GetDashboardAdd)
+		adminDashboard.POST("/curve", controllers.GetDashboardCurveData)
+		adminDashboard.GET("/time/sse", controllers.GetDashboardTimeInfo)
+		adminDashboard.GET("/users", controllers.GetUserList)
+		adminDashboard.POST("/user", controllers.AddUser)
+		adminDashboard.PUT("/user/:id", controllers.UpdateUser)
+		adminDashboard.DELETE("/user/:id", controllers.DeleteUserFromDashboard)
 	}
 	return r //返回路由组
 }

@@ -3,3 +3,5 @@
 /file
 files/*
 file/*
+# 忽略参考的学习数据
+/Reference_learning_documents

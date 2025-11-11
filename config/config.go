@@ -8,13 +8,14 @@ import (
 	"project/models"
 	"project/utils"
 	"strings"
-
+    "time"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
 // 项目版本信息在logger里
-const Version string = "0.0.1"
+const Version string = "Go-web 0.0.2"
+var StartTime = time.Now()
 
 type Config struct { //标明这个配置文件是可以全局使用的
 	App struct {

@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// 新建一个角色权限管理
+// 新建一个角色权限管理-这里函数输入是可变参数-可以传入多个角色
 func RolePermission(role_input ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization") // 这里的键是Authorization
@@ -23,12 +23,13 @@ func RolePermission(role_input ...string) gin.HandlerFunc {
 			c.Abort() //不中止
 			return
 		}
-		username, role, err := utils.ParseJWT(token) //不管什么用户我都让其通过
+		username, role, err := utils.ParseJWT(token) //不管什么用户我都让其通过-获取role角色
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			c.Abort()
 			return
 		}
+		// 遍历可变参数
 		for _, role_input := range role_input {
 			if role == role_input {
 				var u models.Users //查询用Select
@@ -50,4 +51,3 @@ func RolePermission(role_input ...string) gin.HandlerFunc {
 		c.Abort() //中止
 	}
 }
-
