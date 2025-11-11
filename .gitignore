@@ -1,0 +1,5 @@
+# 忽略File数据
+/files
+/file
+files/*
+file/*

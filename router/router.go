@@ -143,5 +143,12 @@ func SetupRouter() *gin.Engine {
 	{
 		admin.GET("/dashboard", func(c *gin.Context) { c.HTML(200, "dashboard.html", nil) })
 	}
+
+	adminAPI := api.Group("/dashboard", middlewares.RolePermission("admin", "superadmin"))
+	{
+		adminAPI.GET("/total", controllers.GetDashboardTotalData)
+		adminAPI.GET("/add", controllers.GetDashboardAdd)
+		adminAPI.POST("/curve", controllers.GetDashboardCurveData)
+	}
 	return r //返回路由组
 }

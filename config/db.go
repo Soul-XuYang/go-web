@@ -47,10 +47,18 @@ func runMigrations() {
 		&models.Comment{},
 		&models.UserLikeArticle{},   //点赞关联表
 		&models.UserArticleRepost{}, //转发关联表
-		&models.Collection{},  
+		&models.Collection{},
 		&models.CollectionItem{},
 		&models.UserCollectionItem{}, //收藏关联表
 	); err != nil {
 		log.L().Error("DataBase connection failed ,got error:", zap.Error(err))
+	}
+
+	// 确保翻译历史长文本字段能够保存超长内容
+	if err := global.DB.Migrator().AlterColumn(&models.TranslationHistory{}, "SourceText"); err != nil {
+		log.L().Warn("alter translation_histories.source_text failed", zap.Error(err))
+	}
+	if err := global.DB.Migrator().AlterColumn(&models.TranslationHistory{}, "TranslatedText"); err != nil {
+		log.L().Warn("alter translation_histories.translated_text failed", zap.Error(err))
 	}
 }

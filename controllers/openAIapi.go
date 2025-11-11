@@ -52,7 +52,7 @@ type Usage struct {
 }
 
 // 获取ai翻译文本-这里req是前端翻译文本的请求，req是响应体
-func GetTranslatedText(c *gin.Context, ctx context.Context, req TranslationRequest, reqBody []byte,automode bool) (*TranslationResponse, error) {
+func GetTranslatedText(c *gin.Context, ctx context.Context, req TranslationRequest, reqBody []byte, automode bool) (*TranslationResponse, error) {
 	apiKey := config.AppConfig.Translation_Api.ApiKey
 	reqURL := strings.TrimRight(config.AppConfig.Translation_Api.BaseURL, "/") + "/chat/completions" //先清除右'/'再+路径
 
@@ -113,20 +113,26 @@ func GetTranslatedText(c *gin.Context, ctx context.Context, req TranslationReque
 		Translation      string `json:"translation"`
 	}
 
-	if err := json.Unmarshal([]byte(content), &response); err != nil {  //这里是json格式的字符串-故而将结构体字符串解析为结构体
+	if err := json.Unmarshal([]byte(content), &response); err != nil { //这里是json格式的字符串-故而将结构体字符串解析为结构体
 		log.L().Error("failed to parse translation response:", zap.Error(err))
 		return nil, err
 	}
-	source_language := req.SourceLang
-    if automode{
-       source_language=response.DetectedLanguage
+	sourceLanguage := strings.TrimSpace(req.SourceLang)
+	if automode {
+		detected := strings.TrimSpace(response.DetectedLanguage)
+		if detected != "" {
+			sourceLanguage = detected
+		}
+	}
+	if sourceLanguage == "" {
+		sourceLanguage = "auto"
 	}
 
 	// 准备返回体
 	result := &TranslationResponse{ //统一解析后获得的响应体
 		OriginalText:   req.Text,
 		TranslatedText: response.Translation,
-		SourceLang:     source_language,
+		SourceLang:     sourceLanguage,
 		TargetLang:     req.TargetLang,
 		Model:          req.Model,
 	}

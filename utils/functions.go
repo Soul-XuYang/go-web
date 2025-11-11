@@ -23,12 +23,12 @@ func Get_size(data int64) string {
 	case data < KB:
 		return fmt.Sprintf("%.2fB ", float64(data)) //保证统一的格式
 	case data < MB:
-		return fmt.Sprintf("%.2fKB", float64(data))
+		return fmt.Sprintf("%.2fKB", float64(data)/float64(KB)) //这里 data/MB是整数触发，因为二者都是默认整数
 	case data < GB:
-		return fmt.Sprintf("%.2fMB", float64(data))
+		return fmt.Sprintf("%.2fMB", float64(data)/float64(MB))
 	case data < TB:
-		return fmt.Sprintf("%.2fGB", float64(data))
+		return fmt.Sprintf("%.2fGB", float64(data)/float64(GB))
 	default:
-		return fmt.Sprintf("%.2fTB", float64(data))
+		return fmt.Sprintf("%.2fTB", float64(data)/float64(TB)) 
 	}
 }

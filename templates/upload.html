@@ -344,8 +344,7 @@
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
 
-                const bytes = Number(f.size) || 0;
-                setStatus(`上传成功！ID: ${data.id ?? '-'}  文件大小: ${bytes.toLocaleString()}B`, 'ok');
+                setStatus(`上传成功！ID: ${data.id ?? '-'}  文件大小: ${data.size}`, 'ok');
             } catch (err) {
                 setStatus('文件上传失败：' + err.message, 'err');
             } finally {

@@ -144,14 +144,33 @@ Do NOT add any commentary, labels, or extra text. Preserve original formatting (
 
 	// 获取当前用户ID（健壮处理多种类型）
 	userID := c.GetUint("user_id")
-	if userID > 0 { //
+	if userID == 0 {
+		log.L().Warn("TranslateText called without user_id in context",
+			zap.Any("claims_username", c.GetString("username")))
+	} else { //
 		// 同步保存，但绑定短超时，避免请求长时间阻塞
 		db_ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 		defer cancel()
 		db := global.DB.WithContext(db_ctx)
-		if err := SaveTranslationHistory(db, userID, req.Text, result.TranslatedText, req.SourceLang, req.TargetLang, req.Model, config.AppConfig.Translation_Api.Provider); err != nil {
+		if err := SaveTranslationHistory(
+			db,
+			userID,
+			req.Text,
+			result.TranslatedText,
+			result.SourceLang,
+			result.TargetLang,
+			result.Model,
+			config.AppConfig.Translation_Api.Provider,
+		); err != nil {
 			// 记录错误但不影响主流程
 			log.L().Error("SaveTranslationHistory error: ", zap.Error(err))
+		} else {
+			log.L().Info("translation history stored",
+				zap.Uint("user_id", userID),
+				zap.String("source_lang", result.SourceLang),
+				zap.String("target_lang", result.TargetLang),
+				zap.String("model", result.Model),
+				zap.String("provider", config.AppConfig.Translation_Api.Provider))
 		}
 	}
 	c.JSON(http.StatusOK, result)
@@ -323,6 +342,17 @@ func ClearTranslationHistory(c *gin.Context) {
 
 // SaveTranslationHistory 保存翻译历史记录（可被单元测试替换）
 func SaveTranslationHistory(db *gorm.DB, userID uint, src, dst, srcLang, tgtLang, model, provider string) error {
+	srcLang = strings.TrimSpace(srcLang)
+	if srcLang == "" {
+		srcLang = "auto"
+	}
+	tgtLang = strings.TrimSpace(tgtLang)
+	if tgtLang == "" {
+		tgtLang = "en"
+	}
+	model = strings.TrimSpace(model)
+	provider = strings.TrimSpace(provider)
+
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 1) 插入
 		hist := models.TranslationHistory{
@@ -338,21 +368,32 @@ func SaveTranslationHistory(db *gorm.DB, userID uint, src, dst, srcLang, tgtLang
 			return err
 		}
 
-		// 2) 找出“第 4 条起”的旧记录 (按时间逆序+ID 兜底，确保稳定排序)
-		var oldIDs []uint
+		// 2) 统计总数，删除超过上限 (historyLimitPerUser) 的旧记录
+		var total int64
 		if err := tx.Model(&models.TranslationHistory{}).
 			Where("user_id = ?", userID).
-			Order("created_at DESC, id DESC").       //降序-最新的排前面
-			Offset(historyLimitPerUser).             // 跳过最新的 3 条 -队列优先级为最久弹出
-			Pluck("id", &oldIDs).Error; err != nil { //查询并存入到切片里
+			Count(&total).Error; err != nil {
 			return err
 		}
 
-		// 3) 删除这些旧记录
-		if len(oldIDs) > 0 {
-			if err := tx.Where("id IN ?", oldIDs).
-				Delete(&models.TranslationHistory{}).Error; err != nil {
-				return err
+		if total > int64(historyLimitPerUser) {
+			extra := int(total) - historyLimitPerUser
+			if extra > 0 {
+				var oldIDs []uint
+				if err := tx.Model(&models.TranslationHistory{}).
+					Where("user_id = ?", userID).
+					Order("created_at DESC, id DESC").
+					Offset(historyLimitPerUser).
+					Limit(extra).
+					Pluck("id", &oldIDs).Error; err != nil {
+					return err
+				}
+				if len(oldIDs) > 0 {
+					if err := tx.Where("id IN ?", oldIDs).
+						Delete(&models.TranslationHistory{}).Error; err != nil {
+						return err
+					}
+				}
 			}
 		}
 		return nil

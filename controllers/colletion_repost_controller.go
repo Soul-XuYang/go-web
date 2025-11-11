@@ -24,6 +24,35 @@ const (
 	minCollectionNameLength = 1
 )
 
+// repostResponse 成功响应
+type repostResponse struct {
+	// 是否已转发（本次或历史）
+	RepostFlag bool `json:"repost_flag" example:"true"`
+	// 本次是否为首次转发
+	FirstTime bool `json:"first_time" example:"true"`
+	// 该文章当前总转发数
+	TotalReposts int64 `json:"total_reposts" example:"42"`
+}
+
+// ErrorMsg 通用错误响应
+type errorMsg struct {
+	Error string `json:"error" example:"invalid article id"`
+}
+
+// Repost
+// @Summary 文章转发
+// @Description 用户对文章进行转发；同一篇文章仅首次转发计入总数，且对同一用户限制 3 秒一次。
+// @Tags articles
+// @Security Bearer
+// @Produce json
+// @Param article_id path int true "文章ID"
+// @Success 200 {object} repostResponse
+// @Failure 400 {object} ErrorMsg
+// @Failure 401 {object} ErrorMsg
+// @Failure 404 {object} ErrorMsg
+// @Failure 429 {object} ErrorMsg
+// @Failure 500 {object} ErrorMsg
+// @Router /articles/{article_id}/repost [post]
 func Repost(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -101,9 +130,8 @@ func Repost(c *gin.Context) {
 		if res.Error != nil {
 			return res.Error
 		}
-		inserted = (res.RowsAffected == 1)
-
-		if inserted {
+		inserted = (res.RowsAffected == 1) //首次转发才算1
+		if inserted {                      //这里转发只取首次加1即可
 			// 只有首次才 +1
 			if err := tx.Model(&models.Article{}).
 				Where("id = ?", articleID).
@@ -111,11 +139,10 @@ func Repost(c *gin.Context) {
 				return err
 			}
 		}
-
 		// 取最新计数
 		if err := tx.Model(&models.Article{}).
 			Where("id = ?", articleID).
-			Pluck("repost_count", &totalReposts).Error; err != nil {
+			Pluck("repost_count", &totalReposts).Error; err != nil { //专门用于从数据库中查询单个列的值，并将结果存入一个切片中。
 			return err
 		}
 		return nil
@@ -124,16 +151,16 @@ func Repost(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "operation failed"})
 		return
 	}
-
 	// 这里回写缓存
 	// 用户标记
 	_ = global.RedisDB.Set(userFlagKey, "1", 24*time.Hour).Err() //设定已经进行第一次点赞了
 	totalKey := fmt.Sprintf(config.RedisRepostKey, articleID)
 	_ = global.RedisDB.Set(totalKey, strconv.FormatInt(totalReposts, 10), 24*time.Hour).Err() //设定文章点赞总数
-	c.JSON(http.StatusOK, gin.H{
-		"repost_flag":   true,         // 现在（或之前）已经转发过
-		"first_time":    inserted,     // 这次是否首次
-		"total_reposts": totalReposts, // 最新总数
+	c.JSON(http.StatusOK, &repostResponse{
+		RepostFlag: true,
+		FirstTime: inserted,
+		TotalReposts: totalReposts,
+
 	})
 }
 
@@ -171,7 +198,6 @@ func CreateMycollection(c *gin.Context) { //创建个人的收藏夹
 		return
 	}
 	global.RedisDB.Set(rateKey, "1", 3*time.Second) //失效期
-
 
 	var req createCollectionReq //接受发送来的请求-只有名字
 	if err := c.ShouldBindJSON(&req); err != nil {
