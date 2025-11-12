@@ -12,8 +12,10 @@ import (
 
 // 设置redis表的key
 const (
+	// redis和lru公共的角色管理表名
+	RedisKeyUsers = "user:info:%s"
 	// redis的用户表名
-	RedisKeyUsernames = "game:usernames" //统一的用户表名
+	RedisKeyGameUsernames = "game:usernames" //统一的游戏用户表
 	//这里是redis中各个游戏的表名
 	RedisKeyTop10Best       = "game:guess:top10:best"  // 猜数字的游戏排行榜
 	RedisKeyTop10FastestMap = "game:map:top10:fastest" // 地图游戏排行榜（用时最短）
@@ -31,14 +33,21 @@ const (
 	RedisCommentRate          = "comment:rate:user:%d"
 	RedisRepostRate           = "repost:rate:user:%d"
 	RedisCreateCollectionRate = "collection:rate:user:%d"
+	// 注册登录限流
+	RedisLoginRate            = "login:rate:%s" // 登录限流 key
+	RedisRegisterRateIP       = "register:rate:ip:%s" // IP注册限流 key
+	RedisRegisterRateUser     = "register:rate:user:%s" // 用户名注册限流 key
 )
 const (
-	CacheTTL      = 120 * time.Minute // 缓存时间
-	LockTTL       = 10 * time.Second
+	CacheTTL      = 120 * time.Minute // 基本的缓存时间
+	LockTTL       = 10 * time.Second  // api请求的上锁时间
 	WaitWarmup    = 5 * time.Second
 	PollInterval  = 120 * time.Millisecond
 	Datasaved_TTL = 12 * time.Hour
 	Article_TTL   = 24 * time.Hour
+	RoleCacheTTL  = 3 * 24 * time.Hour
+    //登录-注册时间限流
+
 )
 
 func initRedis() {

@@ -16,6 +16,7 @@ import (
 // 项目版本信息在logger里
 const Version string = "Go-web 0.0.2"
 var StartTime = time.Now()
+const lru_size int = 1000
 
 type Config struct { //标明这个配置文件是可以全局使用的
 	App struct {
@@ -75,6 +76,8 @@ func InitConfig() {
 	initPath()
 	initDB()
 	initRedis()
+	initUserCache(lru_size)
+	// ensureCleanupRunning() //定时清理限流器
 	runMigrations()
 	superadmin_init()
 	printURL()

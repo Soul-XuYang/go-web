@@ -6,7 +6,7 @@ import (
 
 // 这里的id都是user_id而不是表的主键id即guess_score的id
 
-var redis_name_collection = config.RedisKeyUsernames
+var redis_name_collection = config.RedisKeyGameUsernames
 
 const topK = 10
 

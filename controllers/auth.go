@@ -3,13 +3,18 @@ package controllers
 // auth 身份认证 -包含各种对应路由的操作函数
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"project/config"
 	"project/global"
 	"project/models"
 	"project/utils"
 	"time"
 
+	"golang.org/x/time/rate"
+
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -40,7 +45,10 @@ func Register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
+	if !registerLimiter(c, in.Username) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many login attempts, please try again later"})
+		return
+	}
 	uname := in.Username
 
 	hash, err := utils.HashPassword(in.Password) // 对其加密
@@ -66,7 +74,7 @@ func Register(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "generate token failed"})
 		return
 	}
-	utils.SetAuthCookie(c, token, utils.Expire_hours*time.Hour) //给上下文签发token和
+	utils.SetAuthCookie(c, token, utils.Expire_hours*time.Hour) //给上下文签发token和过i时间
 	c.JSON(http.StatusCreated, gin.H{"token": token})
 }
 func CheckPassword(hash string, pwd string) bool {
@@ -89,8 +97,17 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
 	uname := in.Username
+	if in.Username == "" || in.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "username and password are required"})
+		return
+	}
+	// 添加请求频率限制（使用 Redis 限流，支持分布式）
+	if !loginLimiterRedis(in.Username) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many login attempts, please try again later"})
+		return
+	}
+
 	var user models.Users
 	if err := global.DB.Where("username = ?", uname).First(&user).Error; err != nil {
 		// 不区分“用户不存在/密码错误”，统一提示，避免枚举用户名
@@ -179,4 +196,72 @@ func DeleteUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"ok": true,
 	})
+}
+
+// 本地限流版本（如果是当前的单实例场景，性能更好）-注意如果使用这个函数main里要开启限流清楚器
+func loginLimiterLocal(username string) *rate.Limiter {
+	limiter, _ := config.LoginAttempts.LoadOrStore(username, rate.NewLimiter(5, 5)) // 每秒5次，突发5次
+	return limiter.(*rate.Limiter)                                                  //类型断言
+}
+
+// Redis 限流版本（分布式场景，与项目中其他限流保持一致）
+// 使用滑动窗口算法：60秒内最多5次登录尝试
+func loginLimiterRedis(username string) bool {
+	rateKey := fmt.Sprintf(config.RedisLoginRate, username) //缓存的key
+	now := time.Now().Unix()
+	window := int64(60)     // 60秒窗口
+	maxAttempts := int64(5) // 最多5次
+
+	pipe := global.RedisDB.Pipeline()
+	// 清理过期记录（60秒前的）
+	pipe.ZRemRangeByScore(rateKey, "0", fmt.Sprintf("%d", now-window))
+	// 统计当前窗口内的请求数
+	pipe.ZCard(rateKey)
+	// 添加当前请求的时间戳
+	pipe.ZAdd(rateKey, redis.Z{Score: float64(now), Member: fmt.Sprintf("%d", now)})
+	// 设置过期时间
+	pipe.Expire(rateKey, time.Duration(window)*time.Second)
+	results, err := pipe.Exec()
+
+	if err != nil {
+		return true
+	}
+
+	// 获取当前窗口内的请求数
+	count := results[1].(*redis.IntCmd).Val()
+	return count < maxAttempts
+}
+func registerLimiter(c *gin.Context, username string) bool {
+	clientIP := c.ClientIP()
+	ipKey := fmt.Sprintf(config.RedisRegisterRateIP, clientIP)
+	ipCount, err := global.RedisDB.Incr(ipKey).Result() //获得其计数
+	if err == nil {
+		if ipCount == 1 {
+			global.RedisDB.Expire(ipKey, time.Minute*10) // 第一次设置10分钟过期
+		}
+		if ipCount > 5 {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error": "注册过于频繁,请1小时后再试",
+			})
+			return false
+		}
+	}
+
+	// 2. 用户名限流：防止暴力枚举用户名
+	// 同一个用户名1小时内最多尝试注册 3 次
+	usernameKey := fmt.Sprintf(config.RedisRegisterRateUser, username)
+	usernameCount, err := global.RedisDB.Incr(usernameKey).Result()
+	if err == nil {
+		if usernameCount == 1 {
+			global.RedisDB.Expire(usernameKey, time.Hour)
+		}
+		if usernameCount > 3 {
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error": "该用户名注册尝试过于频繁，请稍后再试",
+			})
+			return false
+		}
+	}
+
+	return true
 }

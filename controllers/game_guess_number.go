@@ -302,7 +302,7 @@ func saveGameScore(uid uint, username string, score int) (err error) {
 		}
 		// 新增成功后更新 redis 排行（事务提交完毕后也会执行，因为 defer commit 在后）
 		// 为避免事务未提交即更新 redis，先尝试更新（若想更严格可在事务外再调用）
-		_ = updateTop10BestAfterDB(config.RedisKeyTop10Best,config.RedisKeyUsernames,uid, username, score) //更新缓存
+		_ = updateTop10BestAfterDB(config.RedisKeyTop10Best,config.RedisKeyGameUsernames,uid, username, score) //更新缓存
 		return
 	}
 
@@ -317,7 +317,7 @@ func saveGameScore(uid uint, username string, score int) (err error) {
 			rec := models.Game_Guess_Score{UserID: uid, Score: score, UserName: username}
 			err = tx.Create(&rec).Error
 			if err == nil {
-				_ = updateTop10BestAfterDB(config.RedisKeyTop10Best,config.RedisKeyUsernames,uid, username, score) //创建用户
+				_ = updateTop10BestAfterDB(config.RedisKeyTop10Best,config.RedisKeyGameUsernames,uid, username, score) //创建用户
 			}
 			return
 		}
@@ -335,7 +335,7 @@ func saveGameScore(uid uint, username string, score int) (err error) {
 	}
 
 	// 更新 redis 排行
-	_ = updateTop10BestAfterDB(config.RedisKeyTop10Best,config.RedisKeyUsernames,uid, username, score)
+	_ = updateTop10BestAfterDB(config.RedisKeyTop10Best,config.RedisKeyGameUsernames,uid, username, score)
 
 	return
 }

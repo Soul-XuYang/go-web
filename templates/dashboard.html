@@ -366,6 +366,15 @@
             border-radius: 12px;
             background: linear-gradient(180deg, rgba(59, 130, 246, 0.08), rgba(14, 165, 233, 0.04));
             padding: 12px;
+            position: relative;
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        .chart-canvas canvas {
+            display: block;
+            height: auto;
         }
 
         .table {
@@ -659,7 +668,7 @@
                     </div>
                 </div>
                 <div class="chart-canvas">
-                    <canvas id="lineChart" height="240" aria-label="新增趋势折线图" role="img"></canvas>
+                    <canvas id="lineChart" aria-label="新增趋势折线图" role="img"></canvas>
                 </div>
             </div>
             <div class="card table">
@@ -755,30 +764,46 @@
         }
 
         function drawLineChart(canvas, series = [], labels = []) {
+            if (!canvas) return;
             const ctx = canvas.getContext('2d');
             const ratio = window.devicePixelRatio || 1;
-            const width = canvas.clientWidth;
-            const height = canvas.height;
+            const container = canvas.parentElement;
+            const baseWidth = container ? container.clientWidth - 24 : canvas.clientWidth || 600;
+            const pointSpacing = 36;
+            const dynamicWidth = Math.max(baseWidth, pointSpacing * Math.max(series.length - 1, 1) + 80);
+            const width = dynamicWidth;
+            const height = Math.max(240, Math.min(400, width * 0.5));
+
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
             canvas.width = width * ratio;
             canvas.height = height * ratio;
             ctx.scale(ratio, ratio);
             ctx.clearRect(0, 0, width, height);
 
-            if (!series.length) {
+            if (!series.length || !labels.length) {
                 ctx.fillStyle = '#94a3b8';
                 ctx.font = '14px system-ui';
-                ctx.fillText('暂无数据', width / 2 - 28, height / 2);
+                ctx.textAlign = 'center';
+                ctx.fillText('暂无数据', width / 2, height / 2);
                 return;
             }
 
-            const pad = { l: 46, r: 16, t: 16, b: 32 };
+            const yLabelWidth = 50;
+            const xLabelHeight = 40;
+            const pad = { l: yLabelWidth, r: 20, t: 20, b: xLabelHeight };
             const innerW = width - pad.l - pad.r;
             const innerH = height - pad.t - pad.b;
+
             const minVal = Math.min(...series);
             const maxVal = Math.max(...series);
-            const scaleMin = minVal === maxVal ? minVal - 1 : minVal;
-            const scaleMax = minVal === maxVal ? maxVal + 1 : maxVal;
-            const stepCount = 4;
+            const range = maxVal - minVal;
+            const padding = range === 0
+                ? Math.max(1, Math.ceil(maxVal * 0.2))
+                : Math.max(1, Math.ceil(range * 0.15));
+            const scaleMin = Math.max(0, Math.floor(minVal - padding));
+            const scaleMax = Math.ceil(maxVal + padding);
+            const stepCount = 5;
 
             ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
             ctx.lineWidth = 1;
@@ -790,6 +815,8 @@
 
             ctx.fillStyle = '#64748b';
             ctx.font = '12px system-ui';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
             for (let i = 0; i <= stepCount; i++) {
                 const val = scaleMin + (scaleMax - scaleMin) * (i / stepCount);
                 const y = pad.t + innerH - innerH * (i / stepCount);
@@ -799,7 +826,7 @@
                 ctx.lineTo(pad.l + innerW, y);
                 ctx.stroke();
                 ctx.globalAlpha = 1;
-                ctx.fillText(Math.round(val), 6, y + 4);
+                ctx.fillText(Math.round(val).toString(), pad.l - 8, y);
             }
 
             const gradient = ctx.createLinearGradient(pad.l, pad.t, pad.l, pad.t + innerH);
@@ -827,12 +854,11 @@
             ctx.fillStyle = '#475569';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            const maxLabels = Math.min(6, labels.length);
-            const step = Math.max(1, Math.floor(labels.length / maxLabels));
+            ctx.font = '12px system-ui';
+            // 对于采样后的数据（最多12个点），显示所有标签
             labels.forEach((label, index) => {
-                if (index % step !== 0 && index !== labels.length - 1) return;
                 const x = pad.l + innerW * (index / (labels.length - 1 || 1));
-                ctx.fillText(label, x, pad.t + innerH + 18);
+                ctx.fillText(label, x, pad.t + innerH + 12);
             });
         }
 
@@ -901,13 +927,24 @@
                 body: JSON.stringify(payload)
             }, () => fallbackCurve(range));
             if (!data) return;
-            const rawLabels = (data.labels && data.labels.length)
+            const dataLength = data.data ? data.data.length : (data.data_length || 0);
+            const rawLabels = (data.labels && data.labels.length === dataLength)
                 ? data.labels
-                : buildLabels(data.time_dimension, data.data_length);
+                : buildLabels(data.time_dimension, dataLength);
             const normalizedLabels = normalizeLabels(data.time_dimension, rawLabels);
-            latestChartData = { labels: normalizedLabels, series: data.data || [] };
+            const series = data.data || [];
+            if (normalizedLabels.length !== series.length) {
+                console.warn('标签数量与数据数量不匹配，调整标签数量');
+                const minLen = Math.min(normalizedLabels.length, series.length);
+                latestChartData = {
+                    labels: normalizedLabels.slice(0, minLen),
+                    series: series.slice(0, minLen)
+                };
+            } else {
+                latestChartData = { labels: normalizedLabels, series: series };
+            }
             drawLineChart(chartCanvas, latestChartData.series, latestChartData.labels);
-            chartMetaEl.textContent = `当前数据指标：${table} \n 数据维度：${data.time_dimension}  \n总的数据点数: ${normalizedLabels.length}`;
+            chartMetaEl.textContent = `当前数据指标：${table} \n 数据维度：${data.time_dimension}  \n总的数据点数: ${latestChartData.labels.length}`;
         }
 
         function buildLabels(dimension, length) {
@@ -919,7 +956,7 @@
                     labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
                 } else if (dimension === 'month') {
                     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                    labels.push(`${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`);
+                    labels.push(`${d.getMonth() + 1}月`);
                 } else {
                     labels.push(`${now.getFullYear() - i}`);
                 }

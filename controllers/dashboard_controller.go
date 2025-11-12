@@ -332,11 +332,9 @@ func GetDashboardCurveData(c *gin.Context) {
 	now := time.Now()
 	var date time.Time
 	var startTime, endTime time.Time
-	dailyChan := make(chan int64, length) // length对应长度
 	errorChan := make(chan error, length)
 	results := make([]int64, length)
 	var wg sync.WaitGroup
-	var mu sync.Mutex
 	for i := length - 1; i >= 0; i-- { // 倒序，这里长度是间隔
 		switch time_dimension {
 		case "day":
@@ -358,12 +356,13 @@ func GetDashboardCurveData(c *gin.Context) {
 			// 获取年份的最后一天
 			endTime = time.Date(date.Year(), 12, 31, 23, 59, 59, 0, date.Location())
 		}
+		orderIndex := length - 1 - i
 		wg.Add(1)
-		// 查询当前时间段的新增用户数
+		// 查询当前时间段的新增用户数-并且有对应的索引
 		go func(idx int, start, end time.Time) {
 			defer wg.Done()
 			var Count int64
-			mu.Lock() //这里加锁保证对应的索引写对
+			// 数据库查询不需要加锁，因为每个goroutine写入的是不同的索引
 			err := global.DB.Table(input.Table).
 				Where("created_at >= ? AND created_at <= ?", start, end).
 				Count(&Count).Error
@@ -373,16 +372,17 @@ func GetDashboardCurveData(c *gin.Context) {
 				return
 			}
 			results[idx] = Count
-			mu.Unlock()
-		}(i, startTime, endTime)
+		}(orderIndex, startTime, endTime)
 	}
 	wg.Wait()
-	close(dailyChan)
 	close(errorChan)
-	if len(errorChan) > 0 {
-		for e := range errorChan {
-			log.L().Error("GetDashboardTotalData error:", zap.Error(e))
-		}
+	// 检查是否有错误
+	hasError := false
+	for e := range errorChan {
+		hasError = true
+		log.L().Error("GetDashboardCurveData error:", zap.Error(e))
+	}
+	if hasError {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询数据失败"})
 		return
 	}

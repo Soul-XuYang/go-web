@@ -300,10 +300,15 @@
         .pager {
             margin-top: 20px;
             display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
+            justify-content: center;
+        }
+
+        .pager-controls {
+            display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
         .pager button {
@@ -322,6 +327,10 @@
         }
 
         .pager span {
+            color: var(--muted);
+        }
+
+        .pager-controls span {
             color: var(--muted);
         }
 
@@ -423,17 +432,6 @@
             box-shadow: 0 16px 28px rgba(33, 105, 245, 0.28);
         }
 
-        .back-card {
-            padding: 18px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .back-card button {
-            width: 240px;
-            border-radius: 12px;
-        }
-
         @media (max-width: 768px) {
             header.top {
                 flex-direction: column;
@@ -445,13 +443,12 @@
                 grid-template-columns: 1fr;
             }
 
-            .pager {
-                flex-direction: column;
-                align-items: stretch;
+            .pager-controls {
+                width: 100%;
             }
 
-            .pager button {
-                width: 100%;
+            .pager-controls button {
+                flex: 1 1 auto;
             }
         }
     </style>
@@ -529,16 +526,13 @@
             </div>
 
             <div class="pager">
-                <div style="display:flex;gap:10px;">
+                <div class="pager-controls">
                     <button id="prevPage">上一页</button>
+                    <span id="pageInfo">第 1 / 1 页</span>
                     <button id="nextPage">下一页</button>
+                    <button id="backDashboard">返回仪表盘</button>
                 </div>
-                <span id="pageInfo">第 1 / 1 页</span>
             </div>
-        </section>
-
-        <section class="panel back-card">
-            <button id="backDashboard">返回仪表盘</button>
         </section>
     </main>
 

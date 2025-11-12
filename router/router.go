@@ -139,7 +139,7 @@ func SetupRouter() *gin.Engine {
 		}
 	}
 	// 超级管理员系统
-	admin := r.Group("/admin", middlewares.RolePermission("admin", "superadmin")) //给定用户的身份登记
+	admin := r.Group("/admin", middlewares.AuthMiddleWare(), middlewares.RolePermission("admin", "superadmin")) //给定用户的身份登记
 	{
 		admin.GET("/dashboard", func(c *gin.Context) { c.HTML(200, "dashboard.html", nil) })
 		admin.GET("/users", func(c *gin.Context) { c.HTML(200, "admin_users.html", nil) })
