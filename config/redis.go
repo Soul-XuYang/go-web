@@ -34,9 +34,9 @@ const (
 	RedisRepostRate           = "repost:rate:user:%d"
 	RedisCreateCollectionRate = "collection:rate:user:%d"
 	// 注册登录限流
-	RedisLoginRate            = "login:rate:%s" // 登录限流 key
-	RedisRegisterRateIP       = "register:rate:ip:%s" // IP注册限流 key
-	RedisRegisterRateUser     = "register:rate:user:%s" // 用户名注册限流 key
+	RedisLoginRate        = "login:rate:%s"         // 登录限流 key
+	RedisRegisterRateIP   = "register:rate:ip:%s"   // IP注册限流 key
+	RedisRegisterRateUser = "register:rate:user:%s" // 用户名注册限流 key
 )
 const (
 	CacheTTL      = 120 * time.Minute // 基本的缓存时间
@@ -46,8 +46,11 @@ const (
 	Datasaved_TTL = 12 * time.Hour
 	Article_TTL   = 24 * time.Hour
 	RoleCacheTTL  = 3 * 24 * time.Hour
-    //登录-注册时间限流
-
+	TerminalTTL   = 30 * time.Second //终端限流时间
+	//登录-注册时间限流
+	RedisRegisterRateTTL = time.Minute * 10 //注册登录限流时间
+	RedisRateMaxAttempts = 5                //注册登录限流最大尝试次数
+	RedisWindow          = 60
 )
 
 func initRedis() {

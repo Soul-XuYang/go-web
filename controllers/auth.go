@@ -207,21 +207,21 @@ func loginLimiterLocal(username string) *rate.Limiter {
 // Redis 限流版本（分布式场景，与项目中其他限流保持一致）
 // 使用滑动窗口算法：60秒内最多5次登录尝试
 func loginLimiterRedis(username string) bool {
-	rateKey := fmt.Sprintf(config.RedisLoginRate, username) //缓存的key
-	now := time.Now().Unix()
-	window := int64(60)     // 60秒窗口
-	maxAttempts := int64(5) // 最多5次
+	rateKey := fmt.Sprintf(config.RedisLoginRate, username) //缓存的key-表名
+	now := time.Now().Unix() 
+    window := int64(config.RedisWindow)
+	maxAttempts := int64(config.RedisRateMaxAttempts) // 最多5次
 
 	pipe := global.RedisDB.Pipeline()
 	// 清理过期记录（60秒前的）
-	pipe.ZRemRangeByScore(rateKey, "0", fmt.Sprintf("%d", now-window))
+	pipe.ZRemRangeByScore(rateKey, "0", fmt.Sprintf("%d", now-window)) //删除
 	// 统计当前窗口内的请求数
 	pipe.ZCard(rateKey)
 	// 添加当前请求的时间戳
-	pipe.ZAdd(rateKey, redis.Z{Score: float64(now), Member: fmt.Sprintf("%d", now)})
+	pipe.ZAdd(rateKey, redis.Z{Score: float64(now), Member: fmt.Sprintf("%d", now)}) //ZSet是排序集合-Score为排序的元素，Member为对应存储的值
 	// 设置过期时间
-	pipe.Expire(rateKey, time.Duration(window)*time.Second)
-	results, err := pipe.Exec()
+	pipe.Expire(rateKey, time.Duration(window)*time.Second) 
+	results, err := pipe.Exec()  //一次性执行所有命令
 
 	if err != nil {
 		return true
@@ -229,7 +229,7 @@ func loginLimiterRedis(username string) bool {
 
 	// 获取当前窗口内的请求数
 	count := results[1].(*redis.IntCmd).Val()
-	return count < maxAttempts
+	return count <= maxAttempts
 }
 func registerLimiter(c *gin.Context, username string) bool {
 	clientIP := c.ClientIP()
@@ -237,31 +237,28 @@ func registerLimiter(c *gin.Context, username string) bool {
 	ipCount, err := global.RedisDB.Incr(ipKey).Result() //获得其计数
 	if err == nil {
 		if ipCount == 1 {
-			global.RedisDB.Expire(ipKey, time.Minute*10) // 第一次设置10分钟过期
+			global.RedisDB.Expire(ipKey, config.RedisRegisterRateTTL) // 第一次设置10分钟过期
 		}
-		if ipCount > 5 {
+		if ipCount > config.RedisRateMaxAttempts {
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "注册过于频繁,请1小时后再试",
+				"error": "注册过于频繁,请"+config.RedisRegisterRateTTL.String()+"后再试",
 			})
 			return false
 		}
 	}
 
-	// 2. 用户名限流：防止暴力枚举用户名
-	// 同一个用户名1小时内最多尝试注册 3 次
 	usernameKey := fmt.Sprintf(config.RedisRegisterRateUser, username)
 	usernameCount, err := global.RedisDB.Incr(usernameKey).Result()
 	if err == nil {
 		if usernameCount == 1 {
-			global.RedisDB.Expire(usernameKey, time.Hour)
+			global.RedisDB.Expire(usernameKey, config.RedisRegisterRateTTL)
 		}
-		if usernameCount > 3 {
+		if usernameCount > config.RedisRateMaxAttempts  {
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "该用户名注册尝试过于频繁，请稍后再试",
+				"error": "该用户名注册尝试过于频繁，请于"+config.RedisRegisterRateTTL.String()+"后再试",
 			})
 			return false
 		}
 	}
-
 	return true
 }

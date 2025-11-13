@@ -552,6 +552,7 @@
             <div class="surface search-card">
                 <input id="search" placeholder="搜索卡片…" />
                 <button class="btn secondary compact" id="btnUserManage">用户管理</button>
+                <button class="btn primary compact" id="btnTerminalPage">终端页面</button>
             </div>
         </div>
 
@@ -1082,6 +1083,9 @@
             if (target.id === 'btnUserManage') {
                 event.preventDefault();
                 location.assign('/admin/users');
+            } else if (target.id === 'btnTerminalPage') {
+                event.preventDefault();
+                window.open('/admin/superadmin/terminal', '_blank', 'noopener');
             }
         });
         initTimeStream();

@@ -65,11 +65,14 @@ func SetupRouter() *gin.Engine {
 		//文件管理界面
 		page.GET("/files", func(c *gin.Context) { c.HTML(200, "upload.html", nil) })
 		page.GET("/files/manage", func(c *gin.Context) { c.HTML(200, "file_lists.html", nil) })
+
 	}
 
 	// 受保护的 API（数据接口，需要登录）
 	api := r.Group("/api", middlewares.AuthMiddleWare())
 	{
+		api.GET("/ws/terminal", controllers.TerminalWS)
+		api.GET("/ws/terminal/info", controllers.GetTerminalInfo)
 		api.GET("/proxy/image", controllers.ProxyImage)
 
 		// 基本信息获取模块
@@ -143,6 +146,10 @@ func SetupRouter() *gin.Engine {
 	{
 		admin.GET("/dashboard", func(c *gin.Context) { c.HTML(200, "dashboard.html", nil) })
 		admin.GET("/users", func(c *gin.Context) { c.HTML(200, "admin_users.html", nil) })
+		superadminPage := admin.Group("/superadmin", middlewares.RolePermission("superadmin"))
+		{
+			superadminPage.GET("/terminal", func(c *gin.Context) { c.HTML(200, "terminal.html", nil) })
+		}
 	}
 	adminDashboard := api.Group("/dashboard", middlewares.RolePermission("admin", "superadmin"))
 	{
@@ -154,6 +161,11 @@ func SetupRouter() *gin.Engine {
 		adminDashboard.POST("/user", controllers.AddUser)
 		adminDashboard.PUT("/user/:id", controllers.UpdateUser)
 		adminDashboard.DELETE("/user/:id", controllers.DeleteUserFromDashboard)
+		superadmin := api.Group("/superadmin", middlewares.RolePermission("superadmin"))
+		{
+			superadmin.GET("/terminal", controllers.TerminalWS)
+			superadmin.GET("/terminal/info", controllers.GetTerminalInfo)
+		}
 	}
 	return r //返回路由组
 }
