@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Go web终端</title>
+    <link rel="stylesheet" href="/static/terminal.css">
+</head>
+
+<body>
+    <div class="terminal-container">
+        <header class="terminal-header">
+            <div class="terminal-dots">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+            </div>
+            <div class="terminal-title">Go-Web管理员终端</div>
+        </header>
+        <main class="terminal-screen" id="output" tabindex="0"></main>
+        <footer class="terminal-footer">
+            <label for="command-input" class="prompt">cmd&gt;</label>
+            <input id="command-input" class="command-input" type="text" spellcheck="false" autocomplete="off"
+                placeholder="输入/help获取当前系统支持的命令" />
+            <button id="send-btn" class="send-btn" type="button">执行</button>
+        </footer>
+        <div class="terminal-info" id="terminal-info">环境信息加载中…</div>
+        <div class="terminal-actions">
+            <div class="terminal-status">
+                <span class="notice-text">该终端仅允许管理员进行读取型命令，禁止写操作。当前状态：</span>
+                <span id="status" class="status status--idle">未连接</span>
+            </div>
+            <button id="toggle-line-mode" class="terminal-link-btn terminal-link-btn--secondary" type="button">
+                <span class="icon">☐</span>
+                <span class="label">按行输出（关）</span>
+            </button>
+            <button id="open-terminal-page" class="terminal-link-btn" type="button">返回控制台</button>
+        </div>
+    </div>
+    <script src="/static/js/terminal.js"></script>
+</body>
+
+</html>

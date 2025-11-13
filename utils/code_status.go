@@ -292,8 +292,11 @@ func (cc *CodeCounter) PrintReport() {
 
 	fmt.Println(strings.Repeat("=", 75))
 	total, totalUint := chooseSize(totalSize)
+	
 	fmt.Printf("%s: %d个文件数| %d行数 |%.2f"+totalUint+"\n",
 		"总计", totalFiles, totalLines, total)
+
+	
 
 	// 文件数量 Top5
 	fmt.Printf("\n🏆 文件数量排名:\n")

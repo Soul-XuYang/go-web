@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"project/config"
 	"project/log"
 	"time"
 
@@ -26,7 +25,6 @@ func GinLogger() gin.HandlerFunc { // 返回对应中间件的函数
 			zap.Int("status", c.Writer.Status()),
 			zap.Duration("latency", time.Since(start)),
 			zap.Int("response size", c.Writer.Size()), // 响应的大小
-			zap.String("version", config.Version),
 		}
 		// 记录完整的日志信息-每一次链接打印一边信息
 		if errMsg != "" {

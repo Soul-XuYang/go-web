@@ -1,5 +1,7 @@
 # 忽略File数据
 /files
 /file
-files/*
+files/**
 file/*
+# 忽略参考的学习数据
+/Reference_learning_documents

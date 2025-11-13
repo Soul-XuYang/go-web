@@ -16,6 +16,7 @@ type Users struct {
 	Username   string `gorm:"size:64;uniqueIndex"`
 	Password   string
 	Role string  `gorm:"type:varchar(16);not null;default:'user';check:role in ('user','admin','superadmin')"` // 用户角色
+	Status string  	// 用户状态-可随意填写
 }
 
 // 显示使用名称

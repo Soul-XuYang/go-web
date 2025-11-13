@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>用户管理中心</title>
+    <link rel="stylesheet" href="/static/base.css" />
+    <style>
+        :root {
+            --muted: #94a3b8;
+            --surface: rgba(255, 255, 255, 0.06);
+            --border: rgba(148, 163, 184, 0.18);
+            --accent: #6066f9;
+            --accent-soft: rgba(96, 102, 249, 0.12);
+            --danger: #ef4444;
+            --success: #22c55e;
+            --bg: radial-gradient(110% 110% at 50% 0%, rgba(207, 228, 255, 0.42), rgba(248, 250, 252, 0.96));
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            color: #0f172a;
+        }
+
+        header.top {
+            max-width: 1280px;
+            margin: 28px auto 16px;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: .4px;
+        }
+
+        .brand p {
+            margin: 0;
+            color: var(--muted);
+            letter-spacing: 0.3px;
+        }
+
+        .userbox {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            background: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(150deg, #6366f1, #22d3ee);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .uname {
+            color: #1e293b;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        main {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px 64px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+        }
+
+        .stats-card {
+            padding: 20px 22px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(226, 232, 240, 0.7);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stats-card h3 {
+            margin: 0;
+            font-size: 0.92rem;
+            color: var(--muted);
+            letter-spacing: 0.3px;
+        }
+
+        .stats-card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.86);
+            border-radius: 22px;
+            padding: 26px;
+            border: 1px solid rgba(226, 232, 240, 0.65);
+            box-shadow: 0 24px 55px rgba(15, 23, 42, 0.15);
+        }
+
+        .panel-head {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .panel-head h2 {
+            margin: 0;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-head h2 span {
+            font-size: 0.95rem;
+            font-weight: 400;
+            color: var(--muted);
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(56, 189, 248, 0.1));
+            padding: 18px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+
+        .toolbar input,
+        .toolbar select,
+        .toolbar button {
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            background: rgba(255, 255, 255, 0.92);
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .toolbar input:focus,
+        .toolbar select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.18);
+        }
+
+        .toolbar button {
+            cursor: pointer;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, #2169f5, #17a4ff);
+            border: none;
+            box-shadow: 0 12px 24px rgba(33, 105, 245, 0.25);
+        }
+
+        .toolbar button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 28px rgba(33, 105, 245, 0.28);
+        }
+
+        .toolbar .ghost {
+            background: linear-gradient(135deg, #2169f5, #17a4ff);
+            color: #fff;
+            border: none;
+            box-shadow: 0 12px 24px rgba(33, 105, 245, 0.22);
+        }
+
+        .table-wrap {
+            overflow: hidden;
+            border-radius: 18px;
+            border: 1px solid rgba(226, 232, 240, 0.85);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.96);
+        }
+
+        thead th {
+            background: rgba(148, 163, 184, 0.16);
+            padding: 14px 18px;
+            text-align: left;
+            font-size: 0.94rem;
+            color: #475569;
+        }
+
+        tbody td {
+            padding: 14px 18px;
+            border-top: 1px solid rgba(226, 232, 240, 0.8);
+            color: #1f2937;
+            font-size: 0.95rem;
+        }
+
+        tbody tr:hover {
+            background: rgba(129, 140, 248, 0.12);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        .role-admin {
+            background: rgba(96, 102, 249, 0.16);
+            color: #3730a3;
+        }
+
+        .role-user {
+            background: rgba(52, 211, 153, 0.18);
+            color: #047857;
+        }
+
+        .role-superadmin {
+            background: rgba(250, 204, 21, 0.18);
+            color: #92400e;
+        }
+
+        .status-active {
+            background: rgba(45, 212, 191, 0.18);
+            color: #0f766e;
+        }
+
+        .status-banned {
+            background: rgba(248, 113, 113, 0.16);
+            color: #b91c1c;
+        }
+
+        .action-cell {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-cell button {
+            border: none;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .action-edit {
+            background: rgba(59, 130, 246, 0.15);
+            color: #1d4ed8;
+        }
+
+        .action-delete {
+            background: rgba(248, 113, 113, 0.16);
+            color: #b91c1c;
+        }
+
+        .action-cell button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
+        }
+
+        .pager {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .pager-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .pager button {
+            padding: 9px 18px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        .pager button:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .pager span {
+            color: var(--muted);
+        }
+
+        .pager-controls span {
+            color: var(--muted);
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(6px);
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal-card {
+            width: min(560px, 92vw);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 18px;
+            padding: 24px 26px;
+            box-shadow: 0 32px 70px rgba(15, 23, 42, 0.25);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        .modal-card h3 {
+            margin: 0 0 14px;
+            font-size: 1.26rem;
+        }
+
+        .modal-card form {
+            display: grid;
+            gap: 14px;
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-row label {
+            font-size: 0.9rem;
+            color: #475569;
+        }
+
+        .form-row input,
+        .form-row select {
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            background: rgba(255, 255, 255, 0.96);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 6px;
+        }
+
+        .modal-actions button {
+            padding: 10px 18px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: rgba(148, 163, 184, 0.22);
+            color: #475569;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #6366f1, #22d3ee);
+            color: #fff;
+            box-shadow: 0 12px 24px rgba(99, 102, 241, 0.25);
+        }
+
+        #backDashboard,
+        .pager button,
+        .modal-actions .btn-submit {
+            background: linear-gradient(135deg, #2169f5, #17a4ff);
+            color: #fff;
+            border: none;
+            box-shadow: 0 12px 24px rgba(33, 105, 245, 0.25);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        #backDashboard:hover,
+        .pager button:hover,
+        .modal-actions .btn-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 28px rgba(33, 105, 245, 0.28);
+        }
+
+        @media (max-width: 768px) {
+            header.top {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 14px;
+            }
+
+            .toolbar {
+                grid-template-columns: 1fr;
+            }
+
+            .pager-controls {
+                width: 100%;
+            }
+
+            .pager-controls button {
+                flex: 1 1 auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="top">
+        <div class="brand">
+            <h1>用户管理中心</h1>
+            <p>掌控平台用户增长态势，支持筛选、增删改操作</p>
+        </div>
+        <div class="userbox">
+            <div class="avatar" id="avatar">A</div>
+            <span class="uname" id="username">加载中…</span>
+        </div>
+    </header>
+
+    <main>
+        <section class="stats-grid">
+            <div class="stats-card">
+                <h3>总用户数</h3>
+                <div class="value" id="statsTotalUsers">--</div>
+            </div>
+            <div class="stats-card">
+                <h3>管理员数</h3>
+                <div class="value" id="statsAdmins">--</div>
+            </div>
+            <div class="stats-card">
+                <h3>普通用户数</h3>
+                <div class="value" id="statsUsers">--</div>
+            </div>
+            <div class="stats-card">
+                <h3>禁用用户数</h3>
+                <div class="value" id="statsBanned">--</div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <h2>用户列表 <span id="summary">共 -- 位用户</span></h2>
+            </div>
+
+            <div class="toolbar">
+                <input id="keyword" placeholder="输入用户名关键词过滤" />
+                <select id="orderSelect">
+                    <option value="created_desc">注册时间 · 最新在前</option>
+                    <option value="created_asc">注册时间 · 最早在前</option>
+                </select>
+                <select id="pageSizeSelect">
+                    <option value="10">每页 10 条</option>
+                    <option value="20" selected>每页 20 条</option>
+                    <option value="50">每页 50 条</option>
+                </select>
+                <button id="refreshBtn">刷新数据</button>
+                <button id="addUserBtn">新增用户</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>角色</th>
+                            <th>状态</th>
+                            <th>注册时间</th>
+                            <th style="text-align:center;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTbody">
+                        <tr>
+                            <td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">正在加载…</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pager">
+                <div class="pager-controls">
+                    <button id="prevPage">上一页</button>
+                    <span id="pageInfo">第 1 / 1 页</span>
+                    <button id="nextPage">下一页</button>
+                    <button id="backDashboard">返回仪表盘</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal-backdrop" id="userModal">
+        <div class="modal-card">
+            <h3 id="modalTitle">新增用户</h3>
+            <form id="modalForm">
+                <div class="form-row">
+                    <label for="modalUsername">用户名</label>
+                    <input id="modalUsername" name="username" placeholder="请输入用户名" required />
+                </div>
+                <div class="form-row" id="passwordRow">
+                    <label for="modalPassword">密码</label>
+                    <input id="modalPassword" name="password" type="password" placeholder="请输入密码" required />
+                </div>
+                <div class="form-row">
+                    <label for="modalRole">角色</label>
+                    <select id="modalRole" name="role" required>
+                        <option value="admin">管理员</option>
+                        <option value="user" selected>普通用户</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="modalStatus">状态</label>
+                    <input id="modalStatus" name="status" placeholder="如 active 或 banned" />
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" id="modalCancel">取消</button>
+                    <button type="submit" class="btn-submit" id="modalSubmit">确认</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const $ = selector => document.querySelector(selector);
+
+        const state = {
+            page: 1,
+            size: 20,
+            order: 'created_desc',
+            keyword: '',
+            total: 0,
+            items: []
+        };
+
+        const keywordInput = $('#keyword');
+        const orderSelect = $('#orderSelect');
+        const pageSizeSelect = $('#pageSizeSelect');
+        const refreshBtn = $('#refreshBtn');
+        const addUserBtn = $('#addUserBtn');
+        const tbody = $('#userTbody');
+        const summary = $('#summary');
+        const pageInfo = $('#pageInfo');
+        const prevBtn = $('#prevPage');
+        const nextBtn = $('#nextPage');
+        const backDashboard = $('#backDashboard');
+        const usernameEl = $('#username');
+        const avatarEl = $('#avatar');
+        const modalBackdrop = $('#userModal');
+        const modalTitle = $('#modalTitle');
+        const modalForm = $('#modalForm');
+        const modalUsername = $('#modalUsername');
+        const modalPassword = $('#modalPassword');
+        const modalRole = $('#modalRole');
+        const modalStatus = $('#modalStatus');
+        const modalCancel = $('#modalCancel');
+        const passwordRow = $('#passwordRow');
+        const statsTotalUsers = $('#statsTotalUsers');
+        const statsAdmins = $('#statsAdmins');
+        const statsUsers = $('#statsUsers');
+        const statsBanned = $('#statsBanned');
+
+        let modalMode = 'create';
+        let activeUserId = null;
+
+        function formatDate(ts) {
+            if (!ts) return '--';
+            const d = new Date(ts * 1000);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+
+        function roleBadge(role) {
+            switch (role) {
+                case 'superadmin': return '<span class="badge role-superadmin">superadmin</span>';
+                case 'admin': return '<span class="badge role-admin">admin</span>';
+                default: return '<span class="badge role-user">user</span>';
+            }
+        }
+
+        function statusBadge(status) {
+            if (!status) return '<span class="badge status-active">active</span>';
+            const lower = String(status).toLowerCase();
+            if (lower.includes('ban') || lower.includes('禁')) return '<span class="badge status-banned">' + status + '</span>';
+            return '<span class="badge status-active">' + status + '</span>';
+        }
+
+        function setUserInfo(name = '') {
+            const display = name || '管理员';
+            usernameEl.textContent = display;
+            avatarEl.textContent = display.trim() ? display.trim()[0].toUpperCase() : 'A';
+        }
+
+        async function loadCurrentUser() {
+            try {
+                const res = await fetch('/api/me', { credentials: 'include' });
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                setUserInfo(data.username || data.name || '管理员');
+            } catch {
+                setUserInfo('管理员');
+            }
+        }
+
+        function renderTable() {
+            const filtered = state.keyword
+                ? state.items.filter(item => (item.username || '').toLowerCase().includes(state.keyword.toLowerCase()))
+                : state.items;
+
+            if (!filtered.length) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">暂无数据</td></tr>`;
+            } else {
+                tbody.innerHTML = filtered.map(item => `
+                    <tr data-id="${item.id}">
+                        <td>${item.username}</td>
+                        <td>${roleBadge(item.role)}</td>
+                        <td>${statusBadge(item.status || 'active')}</td>
+                        <td>${formatDate(item.created_at)}</td>
+                        <td>
+                            <div class="action-cell">
+                                <button data-action="edit" data-id="${item.id}" class="action-edit">编辑</button>
+                                <button data-action="delete" data-id="${item.id}" class="action-delete">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            summary.textContent = `共 ${state.total} 位用户`;
+            const totalPages = Math.max(1, Math.ceil(state.total / state.size));
+            pageInfo.textContent = `第 ${state.page} / ${totalPages} 页`;
+            prevBtn.disabled = state.page <= 1;
+            nextBtn.disabled = state.page >= totalPages;
+
+            updateStats();
+        }
+
+        async function fetchUsers() {
+            const params = new URLSearchParams({
+                page: String(state.page),
+                page_size: String(state.size),
+                order: state.order
+            });
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">加载中…</td></tr>`;
+            try {
+                const res = await fetch(`/api/dashboard/users?${params.toString()}`, { credentials: 'include' });
+                if (!res.ok) throw new Error(`请求失败 ${res.status}`);
+                const data = await res.json();
+                state.items = data.Items || data.items || [];
+                state.total = data.Total || data.total || 0;
+                state.page = data.Page || data.page || state.page;
+                state.size = data.Size || data.size || state.size;
+                renderTable();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:24px;">加载失败：${err.message}</td></tr>`;
+            }
+        }
+
+        function updateStats() {
+            const admins = state.items.filter(item => item.role === 'admin').length;
+            const superAdmins = state.items.filter(item => item.role === 'superadmin').length;
+            const users = state.items.filter(item => item.role === 'user').length;
+            const banned = state.items.filter(item => String(item.status).toLowerCase().includes('ban')).length;
+
+            statsTotalUsers.textContent = state.total;
+            statsAdmins.textContent = admins + superAdmins;
+            statsUsers.textContent = users;
+            statsBanned.textContent = banned;
+        }
+
+        function handleKeywordInput() {
+            state.keyword = keywordInput.value.trim();
+            renderTable();
+        }
+
+        let keywordTimer = null;
+        keywordInput.addEventListener('input', () => {
+            clearTimeout(keywordTimer);
+            keywordTimer = setTimeout(handleKeywordInput, 250);
+        });
+
+        orderSelect.addEventListener('change', () => {
+            state.order = orderSelect.value;
+            state.page = 1;
+            fetchUsers();
+        });
+
+        pageSizeSelect.addEventListener('change', () => {
+            state.size = Number(pageSizeSelect.value) || 20;
+            state.page = 1;
+            fetchUsers();
+        });
+
+        refreshBtn.addEventListener('click', () => {
+            fetchUsers();
+        });
+
+        addUserBtn.addEventListener('click', () => {
+            openModal('create');
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (state.page > 1) {
+                state.page -= 1;
+                fetchUsers();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            const totalPages = Math.max(1, Math.ceil(state.total / state.size));
+            if (state.page < totalPages) {
+                state.page += 1;
+                fetchUsers();
+            }
+        });
+
+        backDashboard.addEventListener('click', () => {
+            location.assign('/admin/dashboard');
+        });
+
+        modalCancel.addEventListener('click', closeModal);
+
+        modalForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(modalForm);
+            const payload = {
+                username: formData.get('username').trim(),
+                role: formData.get('role'),
+                status: formData.get('status')
+            };
+
+            if (!payload.username) {
+                alert('用户名不能为空');
+                return;
+            }
+
+            try {
+                if (modalMode === 'create') {
+                    const password = formData.get('password').trim();
+                    if (!password) {
+                        alert('密码不能为空');
+                        return;
+                    }
+                    payload.password = password;
+                    await submitCreate(payload);
+                } else if (modalMode === 'edit' && activeUserId !== null) {
+                    await submitUpdate(activeUserId, payload);
+                }
+                closeModal();
+                fetchUsers();
+            } catch (err) {
+                alert(err.message || '操作失败');
+            }
+        });
+
+        tbody.addEventListener('click', async (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+            const action = target.dataset.action;
+            const id = Number(target.dataset.id);
+            if (!action || !id) return;
+            if (action === 'edit') {
+                const user = state.items.find(item => item.id === id);
+                if (!user) return;
+                openModal('edit', user);
+            } else if (action === 'delete') {
+                const user = state.items.find(item => item.id === id);
+                if (!user) return;
+                if (confirm(`确认删除用户「${user.username}」？该操作不可恢复。`)) {
+                    try {
+                        await submitDelete(id);
+                        fetchUsers();
+                    } catch (err) {
+                        alert(err.message || '删除失败');
+                    }
+                }
+            }
+        });
+
+        function openModal(mode, user = null) {
+            modalMode = mode;
+            activeUserId = user ? user.id : null;
+            if (mode === 'create') {
+                modalTitle.textContent = '新增用户';
+                modalUsername.value = '';
+                modalPassword.value = '';
+                modalRole.value = 'user';
+                modalStatus.value = 'active';
+                passwordRow.style.display = '';
+                modalPassword.required = true;
+            } else {
+                modalTitle.textContent = `编辑用户`;
+                modalUsername.value = user.username || '';
+                modalRole.value = user.role || 'user';
+                modalStatus.value = user.status || 'active';
+                passwordRow.style.display = 'none';
+                modalPassword.required = false;
+            }
+            modalBackdrop.classList.add('show');
+            modalUsername.focus();
+        }
+
+        function closeModal() {
+            modalBackdrop.classList.remove('show');
+            modalForm.reset();
+            modalMode = 'create';
+            activeUserId = null;
+        }
+
+        async function submitCreate(payload) {
+            const res = await fetch('/api/dashboard/user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || '新增用户失败');
+            }
+        }
+
+        async function submitUpdate(id, payload) {
+            const res = await fetch(`/api/dashboard/user/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || '更新用户失败');
+            }
+        }
+
+        async function submitDelete(id) {
+            const res = await fetch(`/api/dashboard/user/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || '删除用户失败');
+            }
+        }
+
+        loadCurrentUser();
+        fetchUsers();
+    </script>
+</body>
+
+</html>

@@ -105,7 +105,7 @@ func GameLeaderboardMe(c *gin.Context) {
 
 	// 顺手把用户名写入统一 Hash（幂等；避免老数据没有名字） - 防御性编程
 	if global.RedisDB != nil && uname != "" {
-		_ = global.RedisDB.HSet(config.RedisKeyUsernames, strconv.FormatUint(uint64(uid), 10), uname).Err()
+		_ = global.RedisDB.HSet(config.RedisKeyGameUsernames, strconv.FormatUint(uint64(uid), 10), uname).Err()
 	}
 
 	// 支持多种功能的查询

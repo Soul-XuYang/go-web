@@ -129,7 +129,7 @@ func save2048Score(uid uint, username string, score int) error {
 		}
 	}
 	// 上述的情况都已满足-无论是缓存满不满都要加入到redis里
-    _ = updateTop10BestAfterDB(config.RedisKeyTop10Game2048,config.RedisKeyUsernames,uid, username, score)
+    _ = updateTop10BestAfterDB(config.RedisKeyTop10Game2048,config.RedisKeyGameUsernames,uid, username, score)
 	// 提交事务
 	return tx.Commit().Error
 }

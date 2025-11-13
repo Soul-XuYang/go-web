@@ -514,7 +514,7 @@ func go_next(arr [][]byte, start_point P, step int, step_rand int) {
 // media难度
 func primMaze(arr [][]byte, start P) { //这里是因为权重都为1，所以先不设置最小堆
 	arr[start.X][start.Y] = 'o' //起点设置
-	walls := make([]P, 0) //这里是初始化待破墙的队列
+	walls := make([]P, 0)       //这里是初始化待破墙的队列
 	// 添加起始点周围的墙
 	Point_addWalls := func(p P) { //构建进入点函数
 		for i := 0; i < len(dir); i++ { //
@@ -740,7 +740,7 @@ func updateTop10FastestAfterDB(userID uint, username string, timeSeconds float64
 	}
 	member := strconv.FormatUint(uint64(userID), 10)
 	_, err := luaUpdateTop10Fastest.Run(global.RedisDB,
-		[]string{config.RedisKeyTop10FastestMap, config.RedisKeyUsernames}, // key2和key2
+		[]string{config.RedisKeyTop10FastestMap, config.RedisKeyGameUsernames}, // key2和key2
 		member,      // ARGV[1]
 		timeSeconds, // ARGV[2] - 用时（秒）
 		10,          // ARGV[3] TopK=10
