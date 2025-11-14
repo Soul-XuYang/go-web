@@ -329,11 +329,93 @@ body {
         border-radius: 0;
     }
 
-    .command-input {
+    .prompt-input {
         font-size: 14px;
     }
+}
 
-    .send-btn {
-        padding: 9px 16px;
+/* 新增：终端内嵌输入行 */
+.prompt-line {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    outline: none;
+}
+
+.prompt-line:focus,
+.prompt-line:focus-within {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.prompt-line .prefix .timestamp {
+    color: #60a5fa;
+}
+
+.prompt-line .prefix .label {
+    color: #60a5fa;
+}
+
+.prompt-input {
+    flex: 1;
+    min-height: 24px;
+    outline: none;
+    border: none;
+    background: transparent;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+    font-size: 15px;
+    font-family: var(--terminal-font);
+    line-height: inherit;
+    white-space: pre;
+    caret-color: #60a5fa;
+    padding: 0;
+}
+
+.prompt-input:focus,
+.prompt-input:focus-visible {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* 未聚焦：隐藏原生插入符并显示自定义闪烁光标 */
+.prompt-input[data-focused="false"] {
+    caret-color: transparent;
+    position: relative;
+}
+
+.prompt-input[data-focused="false"]::after {
+    content: attr(data-cursor);
+    color: #60a5fa;
+    margin-left: 2px;
+    animation: cursorBlink 1s steps(1, end) infinite;
+}
+
+@keyframes cursorBlink {
+
+    0%,
+    49% {
+        opacity: 1;
     }
+
+    50%,
+    100% {
+        opacity: 0;
+    }
+}
+
+.prompt-input[data-focused="true"] {
+    caret-color: #60a5fa;
+}
+
+.prompt-input[data-focused="true"]::after {
+    content: '';
 }

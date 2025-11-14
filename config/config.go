@@ -14,7 +14,7 @@ import (
 )
 
 // 项目版本信息在logger里
-const Version string = "Go-web 0.0.2"
+const Version string = "Go-web 0.0.3"
 var StartTime = time.Now()
 const lru_size int = 1000
 

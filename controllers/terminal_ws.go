@@ -165,11 +165,11 @@ Utilities:
 Help:
     /help: Display this help message
     /version: Display the version of the server
-	/stop: Stop the current CommandByLine
+  /stop: Stop the current CommandByLine
 	
     ` //go中的多行字符串要用反引号
-
-	writeMu sync.Mutex //全局写入的锁
+	// 锁和cmd的使用
+	writeMu sync.Mutex //全局写入的锁-即每个用户进入那个循环的锁
 )
 
 // === 断开时机 ===
@@ -248,7 +248,7 @@ func TerminalWS(c *gin.Context) {
 	ctx, cancel := context.WithCancel(c.Request.Context())
 	defer cancel()
 
-	//写锁
+	//读写锁-确保并发安全避免数据竞争
 	send := func(msg terminalMessage) { //发送给前端数据加锁
 		writeMu.Lock() //只有发送数据加锁防止并发竞争
 		defer writeMu.Unlock()
@@ -258,49 +258,49 @@ func TerminalWS(c *gin.Context) {
 		}
 	}
 	// 初始信息
-	// 这里不用地址是因为1不需要共享状态2信息不需要修改-不会出现值拷贝
+	// 这里不用地址数据是因为1不需要共享状态2信息不需要修改-不会出现值拷贝
 	send(terminalMessage{
 		Type:      "ready",
 		Data:      "terminal websocket ready, send /help to search for all commands",
 		Timestamp: time.Now(),
 	})
+	// ------------------------------
 
+	// 单个用户控制自己面板的命令结构体
 	type runningCommand struct {
-		cancel context.CancelFunc
-		done   chan struct{}
-		name   string
+		cancel context.CancelFunc //用于取消正在运行的函数
+		done   chan struct{}      //用于通知函数已经完成
+		name   string             //用于记录命令名称
 	}
-
-	var (
-		activeMu  sync.Mutex
-		activeCmd *runningCommand
+	var ( // 单个用户在自己websocket中的全局变量-用于控制for循环里的指令
+		activeMu  sync.Mutex      //互斥锁保护公共即全局变量句柄的并发访问
+		activeCmd *runningCommand //获取当前的命令的情况
 	)
-
 	stopActive := func(emitFeedback bool) {
 		activeMu.Lock()
-		current := activeCmd
+		current := activeCmd //立马获取当前的命令
 		activeMu.Unlock()
 
-		if current == nil {
+		if current == nil { //获取当前的指令
 			if emitFeedback {
 				send(terminalMessage{
 					Type:      "stdout",
-					Data:      "No command need to stop",
+					Data:      "No command need to stop now",
 					Timestamp: time.Now(),
 				})
 			}
 			return
 		}
-
-		current.cancel()
+		current.cancel() //取消
+		// 这里进程的终端处理很关键
 		if current.done != nil {
 			select {
-			case <-current.done:
-			case <-time.After(3 * time.Second):
+			case <-current.done: //等待命令执行完成
+			case <-time.After(3 * time.Second): //等待3秒-超时保护
 			}
 		}
-
-		if emitFeedback {
+		// 这里停止截止----------------------------------
+		if emitFeedback { //是否发送停止信息
 			send(terminalMessage{
 				Type:      "stdout",
 				Data:      "This command stopped successfully",
@@ -308,49 +308,52 @@ func TerminalWS(c *gin.Context) {
 			})
 		}
 
+		// 重置全局变量
 		activeMu.Lock()
 		if activeCmd == current {
 			activeCmd = nil
 		}
 		activeMu.Unlock()
 	}
-
-	launchCommand := func(req terminalRequest) {
+	//启动程序
+	launchCommand := func(req terminalRequest) { //获得请求
 		activeMu.Lock()
 		if activeCmd != nil {
 			activeMu.Unlock()
 			send(terminalMessage{
 				Type:      "status",
-				Data:      "A command is already running. Use /stop to cancel it first.",
+				Data:      "A command has already running. Use /stop to cancel this command first.",
 				Timestamp: time.Now(),
 			})
 			return
-		}
-		cmdCtx, cancelCmd := context.WithCancel(ctx)
-		running := &runningCommand{
+		} //保护
+
+		cmdCtx, cancelCmd := context.WithCancel(ctx) //借助上下文取消-这里
+		running := &runningCommand{                  //取消程序的句柄
 			cancel: cancelCmd,
 			done:   make(chan struct{}),
 			name:   strings.TrimSpace(req.Command),
 		}
-		activeCmd = running
+		activeCmd = running //赋值尽量要加锁
 		activeMu.Unlock()
-
+		// 这里开启一个进程
 		go func(r *runningCommand, execReq terminalRequest, execCtx context.Context) {
-			defer close(r.done)
-			defer r.cancel()
+			defer close(r.done) //关闭进程通道
+			defer r.cancel()    //控制进程的关闭
 			var err error
 			if execReq.LineChoice {
 				err = runTerminalCommandByline(execCtx, execReq, send)
 			} else {
 				err = runTerminalCommand(execCtx, execReq, send)
 			}
-			if err != nil && !errors.Is(err, context.Canceled) {
+			if err != nil && !errors.Is(err, context.Canceled) { //不是我们取消的错误
 				send(terminalMessage{
 					Type:      "error",
 					Data:      err.Error(),
 					Timestamp: time.Now(),
 				})
 			}
+			// 执行完释放资源
 			activeMu.Lock()
 			if activeCmd == r {
 				activeCmd = nil
@@ -360,7 +363,8 @@ func TerminalWS(c *gin.Context) {
 	}
 
 	commandChannel := make(chan terminalRequest, 20) //通道为请求数据,缓存为10
-	// 开启一个线程
+
+	// 开启一个线程-接受前端websocket发来的数据
 	go func() {
 		defer close(commandChannel) //持续收到前端发来的数据，最后要关闭
 		for {
@@ -389,7 +393,7 @@ func TerminalWS(c *gin.Context) {
 	//当前的后端线程发送响应的线程
 	ticker := time.NewTicker(1 * time.Second) //1s计时器
 	defer ticker.Stop()
-
+	//主循环
 	for {
 		select {
 		case <-ctx.Done():
@@ -412,7 +416,7 @@ func TerminalWS(c *gin.Context) {
 			}
 			if strings.HasPrefix(req.Command, "/") {
 				if req.Command == "/stop" {
-					stopActive(true)
+					stopActive(false)
 					continue
 				}
 				if data, exists := customCommands[req.Command]; exists {
@@ -438,9 +442,8 @@ func TerminalWS(c *gin.Context) {
 				})
 				continue
 			}
-			launchCommand(req)
-		}
-
+			launchCommand(req) //新开一个线程保证不影响主程序
+		} //select
 	}
 }
 
@@ -449,7 +452,6 @@ func runTerminalCommand(parentCtx context.Context, req terminalRequest, send fun
 	if _, ok := allowedCommands[cmdName]; !ok {
 		return fmt.Errorf("this command %q is not permitted", cmdName)
 	}
-
 	args := make([]string, 0, len(req.Args))
 	for _, raw := range req.Args {
 		arg := strings.TrimSpace(raw)
@@ -464,7 +466,6 @@ func runTerminalCommand(parentCtx context.Context, req terminalRequest, send fun
 		}
 		args = append(args, arg)
 	}
-
 	ctx, cancel := context.WithTimeout(parentCtx, config.TerminalTTL)
 	defer cancel()
 	// 构建执行命令

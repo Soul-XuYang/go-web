@@ -2,14 +2,20 @@
 'use strict';
 (function () {
     const outputEl = document.getElementById('output');
-    const inputEl = document.getElementById('command-input');
+    const promptLineEl = document.getElementById('prompt-line');
+    const promptInputEl = document.getElementById('prompt-input');
+    const promptPrefixEl = document.getElementById('prompt-prefix');
+    const promptTsEl = document.getElementById('prompt-ts');
+    const promptUserEl = document.getElementById('prompt-user');
+    const legacyInputEl = document.getElementById('command-input');
+    const inputEl = promptInputEl || legacyInputEl;
     const buttonEl = document.getElementById('send-btn');
     const statusEl = document.getElementById('status');
     const infoEl = document.getElementById('terminal-info');
     const jumpBtn = document.getElementById('open-terminal-page');
     const lineModeBtn = document.getElementById('toggle-line-mode');
 
-    if (!outputEl || !inputEl || !buttonEl || !statusEl) {
+    if (!outputEl || !inputEl || !statusEl) {
         console.error('Terminal elements missing');
         return;
     }
@@ -29,7 +35,7 @@
     let reconnectAttempts = 0;
     const maxReconnect = 5;
     let infoLoaded = false;
-    let userLabel = 'stdout';
+    let userLabel = isSuperadminContext ? 'superadmin' : 'stdout';
     let lineModeEnabled = false;
 
     function setStatus(state, text) {
@@ -38,9 +44,24 @@
         statusEl.textContent = text;
     }
 
+    function formatHHMMSS(dateInput = new Date()) {
+        const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+        const two = (n) => String(n).padStart(2, '0');
+        return `${two(date.getHours())}:${two(date.getMinutes())}:${two(date.getSeconds())}`;
+    }
+
+    function updatePromptPrefix() {
+        if (promptTsEl) promptTsEl.textContent = `[${formatHHMMSS()}]`;
+        if (promptUserEl) promptUserEl.textContent = `${userLabel}>`;
+    }
+
     function appendLine(message) {
         if (message.type === 'clear') {
-            outputEl.innerHTML = '';
+            const children = Array.from(outputEl.childNodes);
+            for (const node of children) {
+                if (promptLineEl && node === promptLineEl) continue;
+                outputEl.removeChild(node);
+            }
             return;
         }
         const line = document.createElement('div');
@@ -48,7 +69,7 @@
 
         const prefix = document.createElement('span');
         prefix.className = 'prefix';
-        const timestamp = new Date(message.timestamp || Date.now()).toLocaleTimeString();
+        const timestamp = formatHHMMSS(message.timestamp || Date.now());
         const type = message.type || 'stdout';
         const label = (() => {
             if (type === 'command') return `${userLabel}>`;
@@ -84,7 +105,11 @@
 
         line.appendChild(prefix);
         line.appendChild(content);
-        outputEl.appendChild(line);
+        if (promptLineEl) {
+            outputEl.insertBefore(line, promptLineEl);
+        } else {
+            outputEl.appendChild(line);
+        }
         outputEl.scrollTop = outputEl.scrollHeight;
     }
 
@@ -99,6 +124,7 @@
         userLabel = info?.username || userLabel;
         infoEl.classList.remove('terminal-info--error');
         infoEl.innerHTML = rows.map(([label, value]) => `<span><strong>${label}：</strong>${value}</span>`).join('');
+        updatePromptPrefix();
     }
 
     async function loadTerminalInfo() {
@@ -128,8 +154,9 @@
                 break;
             }
             case 'time': {
-                const ts = new Date(message.timestamp || Date.now()).toLocaleTimeString();
+                const ts = formatHHMMSS(message.timestamp || Date.now());
                 setStatus('connected', `心率 ${ts}`);
+                updatePromptPrefix();
                 break;
             }
             case 'clear': {
@@ -151,7 +178,8 @@
     }
 
     function sendCommand() {
-        const raw = inputEl.value.trim();
+        const rawSource = inputEl.tagName === 'INPUT' ? inputEl.value : inputEl.textContent;
+        const raw = (rawSource || '').trim();
         if (!raw || !socket || socket.readyState !== WebSocket.OPEN) {
             return;
         }
@@ -167,7 +195,11 @@
             // 后端会再发 clear 消息，此处让用户指令保留，实际清屏交给 appendLine 处理
         }
         socket.send(JSON.stringify({ command, args, lineChoice: lineModeEnabled }));
-        inputEl.value = '';
+        if (inputEl.tagName === 'INPUT') {
+            inputEl.value = '';
+        } else {
+            inputEl.textContent = '';
+        }
     }
 
     function connect() {
@@ -230,11 +262,32 @@
         setTimeout(connect, delay);
     }
 
-    buttonEl.addEventListener('click', sendCommand);
+    if (buttonEl) {
+        buttonEl.addEventListener('click', sendCommand);
+    }
     inputEl.addEventListener('keydown', (event) => {
+        // Enter 执行命令（排除 Shift+Enter）
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             sendCommand();
+            return;
+        }
+
+        // Ctrl+C 发送 /stop，并在输出区追加 ^C
+        if (event.ctrlKey && (event.key === 'c' || event.key === 'C')) {
+            event.preventDefault();
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ command: '/stop', args: [], lineChoice: lineModeEnabled }));
+                appendLine({ type: 'stdout', data: '^C', timestamp: new Date().toISOString() });
+            }
+            return;
+        }
+
+        // Ctrl+L 本地清屏（同时保留后端 clear 的处理）
+        if (event.ctrlKey && (event.key === 'l' || event.key === 'L')) {
+            event.preventDefault();
+            appendLine({ type: 'clear' });
+            return;
         }
     });
 
@@ -255,7 +308,30 @@
 
     // 支持点击输出区域后使用快捷键（如 Ctrl+C/Ctrl+F）
     outputEl.addEventListener('click', () => {
-        outputEl.focus();
+        inputEl.focus();
+    });
+
+    function setupPromptCursor() {
+        const set = (focused) => inputEl.setAttribute('data-focused', focused ? 'true' : 'false');
+        set(document.activeElement === inputEl);
+        inputEl.addEventListener('focus', () => set(true));
+        inputEl.addEventListener('blur', () => set(false));
+    }
+    setupPromptCursor();
+
+    setInterval(updatePromptPrefix, 1000);
+
+    // 防止 contenteditable 换行与粘贴带段落
+    inputEl.addEventListener('beforeinput', (event) => {
+        if (event.inputType === 'insertParagraph') {
+            event.preventDefault();
+        }
+    });
+    inputEl.addEventListener('paste', (event) => {
+        event.preventDefault();
+        const text = (event.clipboardData || window.clipboardData).getData('text');
+        const clean = String(text || '').replace(/\r?\n/g, ' ');
+        document.execCommand('insertText', false, clean);
     });
 
     connect();
