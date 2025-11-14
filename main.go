@@ -12,8 +12,7 @@ import (
 )
 
 // @title       Go-Web项目 API
-// @version     0.0.1
-// @description Go-Web 综合性Web应用接口文档
+// @version     0.0./ver// @description Go-Web 综合性Web应用接口文档
 // @BasePath    /api
 func main() {
 	//初始化日志以及监控代码程序

@@ -17,13 +17,15 @@
             </div>
             <div class="terminal-title">Go-Web管理员终端</div>
         </header>
-        <main class="terminal-screen" id="output" tabindex="0"></main>
-        <footer class="terminal-footer">
-            <label for="command-input" class="prompt">cmd&gt;</label>
-            <input id="command-input" class="command-input" type="text" spellcheck="false" autocomplete="off"
-                placeholder="输入/help获取当前系统支持的命令" />
-            <button id="send-btn" class="send-btn" type="button">执行</button>
-        </footer>
+        <main class="terminal-screen" id="output" tabindex="0">
+            <div class="line prompt-line" id="prompt-line">
+                <div class="prefix">
+                    <span class="timestamp" id="prompt-ts">[--:--:--]</span>
+                    <span class="label" id="prompt-user">user&gt;</span>
+                </div>
+                <span id="prompt-input" class="content prompt-input" contenteditable="true" spellcheck="false" data-focused="false" data-cursor="▋"></span>
+            </div>
+        </main>
         <div class="terminal-info" id="terminal-info">环境信息加载中…</div>
         <div class="terminal-actions">
             <div class="terminal-status">

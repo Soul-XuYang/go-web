@@ -16,7 +16,7 @@ var (
 	// 全局LRU缓存实例
 	LocalUserCache *lru.Cache[string, models.Users] //后续存的是一个结构体
 	cacheOnce      sync.Once
-	// 令牌限流器                       //确保其只执行一次即可-极其关键-确保初始化一次
+	//  登录注册令牌限流器                       //确保其只执行一次即可-极其关键-确保初始化一次
 	cleanupOnce   sync.Once
 	LoginAttempts = sync.Map{}
 )
