@@ -25,14 +25,20 @@ type CalculatorResponse struct {
 // Calculate 处理计算器计算请求
 // @Summary 计算器计算
 // @Description 支持基本的四则运算，包括小数点计算
-// @Tags 计算器
+// @Security Bearer
+// @Tags Calculator
 // @Accept json
 // @Produce json
 // @Param expression body CalculatorRequest true "计算表达式"
 // @Success 200 {object} CalculatorResponse
 // @Failure 400 {object} map[string]string
-// @Router /api/calculator/calculate [post]
+// @Router /calculator/calculate [post]
 func Calculate(c *gin.Context) {
+	userID := c.GetUint("userID")
+	if userID == 0 {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未登录,无权限"})
+		return
+	}
 	var req CalculatorRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求参数"})
@@ -182,7 +188,7 @@ func applyOp(numStack *[]float64, opStack *[]rune) error {
 		result = a * b
 	case '/':
 		if b == 0 {
-			return fmt.Errorf("除数不能为零")
+			return fmt.Errorf("除数不能为零,无效运算")
 		}
 		result = a / b
 	default:

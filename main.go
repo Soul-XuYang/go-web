@@ -12,8 +12,9 @@ import (
 )
 
 // @title       Go-Web项目 API
-// @version     0.0./ver// @description Go-Web 综合性Web应用接口文档
-// @BasePath    /api
+// @version     0.0.3
+// @description Go-Web综合性应用API接口文档
+// @BasePath    /
 func main() {
 	//初始化日志以及监控代码程序
 	if err := log.Init(false); err != nil { // 初始化日志-false 表示开发模式
@@ -25,7 +26,7 @@ func main() {
 	if err != nil {
 		log.L().Error("Failed to get Path", zap.Error(err))
 	}
-	Monitor.StartMonitor(dir)
+	Monitor.StartMonitor(dir) // 这里输入的路径是项目根目录
 	defer Monitor.StopMonitor()
 
 	//配置初始化

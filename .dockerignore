@@ -1,0 +1,23 @@
+# 代码仓库
+.git
+.gitignore
+
+# 构建产物与依赖缓存
+bin/
+dist/
+tmp/
+*.log
+coverage/
+.cache/
+vendor/
+
+# 本地配置与数据（运行时挂载）
+files/
+# 防止密钥泄露可以通过环境变量传入再把config.yaml的相关文件删除
+
+# IDE & OS 垃圾
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.ppt

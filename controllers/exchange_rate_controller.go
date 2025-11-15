@@ -91,7 +91,7 @@ func Get_advertisement(c *gin.Context) { //展示当前界面的广告
 // @Failure 404 {object} map[string]interface{} "汇率记录不存在"
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Security ApiKeyAuth
-// @Router       /api/exchangeRates/{id} [delete]
+// @Router       /exchangeRates/{id} [delete]
 func DeleteExchangeRate(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -151,7 +151,7 @@ type updateRateResponse struct {
 // @Failure     401   {object}  map[string]interface{}  "未授权"
 // @Failure     500   {object}  map[string]interface{}  "服务器内部错误"
 // @Security    ApiKeyAuth
-// @Router      /api/exchangeRates/{id} [put]
+// @Router      /exchangeRates/{id} [put]
 func UpdataRate(c *gin.Context) { 
 	userID := c.GetUint("user_id")
 	if userID == 0 {

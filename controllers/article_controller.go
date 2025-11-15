@@ -61,7 +61,7 @@ type ArticleListResp struct {
 // @Failure      400   {object}  map[string]string
 // @Failure      401   {object}  map[string]string
 // @Failure      500   {object}  map[string]string
-// @Router       /api/create_articles [post]
+// @Router       /create_articles [post]
 func CreateArticle(c *gin.Context) {
 	uid := c.GetUint("user_id") // 中间件放进去的当前用户ID
 	uname := c.GetString("username")
@@ -106,7 +106,7 @@ func CreateArticle(c *gin.Context) {
 // @Failure      401   {object}  map[string]string
 // @Failure      404   {object}  map[string]string
 // @Failure      500   {object}  map[string]string
-// @Router       /api/update_articles/{id} [put]
+// @Router       /update_articles/{id} [put]
 // PUT/PATCH请求-更新文章
 func UpdateArticle(c *gin.Context) {
 	user_id := c.GetUint("user_id") // 中间件放进去的当前登录用户ID,实际上前端管理文章用id就行
@@ -180,7 +180,7 @@ func UpdateArticle(c *gin.Context) {
 // @Success      200  {array}   controllers.ArticleListResp
 // @Failure      401  {object}  map[string]string
 // @Failure      500  {object}  map[string]string
-// @Router       /api/articles [get]
+// @Router       /articles [get]
 func Get_All_Articles(c *gin.Context) {
 	title := strings.TrimSpace(c.Query("title"))
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -291,7 +291,7 @@ type MyArticleItem struct {
 // @Success      200        {array} controllers.MyArticleItem
 // @Failure      401        {object} map[string]string
 // @Failure      500        {object} map[string]string
-// @Router       /api/articles/me [get]
+// @Router       /articles/me [get]
 func GetMyArticles(c *gin.Context) {
 	userID := c.GetUint("user_id") // 从中间件获取
 
@@ -375,13 +375,13 @@ func GetMyArticles(c *gin.Context) {
 // @Accept       json
 // @Produce      json
 // @Param        id   path  uint  true  "文章ID"
-// @Success      200  {object}  map[string]string  {"msg": "deleted permanently"}
-// @Failure      400  {object}  map[string]string  {"error": "invalid article id"}
-// @Failure      401  {object}  map[string]string  {"error": "unauthorized"}
-// @Failure      403  {object}  map[string]string  {"error": "access denied"} // 可选，但建议用 404 隐藏存在性
-// @Failure      404  {object}  map[string]string  {"error": "article not found or access denied"}
-// @Failure      500  {object}  map[string]string  {"error": "internal server error"}
-// @Router       /api/articles/{id} [delete]
+// @Success      200  {object}  map[string]string  "删除成功"
+// @Failure      400  {object}  map[string]string  "文章ID无效"
+// @Failure      401  {object}  map[string]string  "未认证"
+// @Failure      403  {object}  map[string]string  "无权限访问" // 可选，但建议用 404 隐藏存在性
+// @Failure      404  {object}  map[string]string  "文章不存在或无权限"
+// @Failure      500  {object}  map[string]string  "服务器内部错误"
+// @Router       /articles/{id} [delete]
 func DeleteArticle(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {

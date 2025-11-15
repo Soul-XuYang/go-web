@@ -102,7 +102,7 @@ func RefreshRmbTop10(c *gin.Context) {
 // @Security Bearer
 // @Produce json
 // @Success 200 {array} map[string]interface{}
-// @Router /api/rmb-top10 [get]
+// @Router /rmb-top10 [get]
 func GetRmbTop10(c *gin.Context) {
 	ctx := c.Request.Context() //获得当前请求的context以构建何时都可以退出的情况
 

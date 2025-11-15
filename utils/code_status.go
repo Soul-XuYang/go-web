@@ -27,9 +27,10 @@ type FileStats struct {
 type CodeCounter struct {
 	FileTypes      map[string][]string
 	IgnoreDirs     map[string]bool
+	ignorePatterns []string // 单独忽略的文件或通配符
 	Results        map[string]FileStats
 	ExtToLang      map[string]string // 文件名+后缀
-	lastDir        string            //上一次分析的目录
+	lastDir        string            // 上一次分析的目录
 	history_record *ListQueue
 	totalFiles     int
 	totalLines     int
@@ -55,8 +56,9 @@ func NewCodeCounter() *CodeCounter {
 			"XML":        {".xml"},
 			"SQL":        {".sql"},
 			"txt":        {".txt"},
+			"Docker":     {".dockerfile", ".dockerignore"},
 		},
-		IgnoreDirs: map[string]bool{
+		IgnoreDirs: map[string]bool{ // 忽略的目录-这里是提前写死了
 			".git":         true,
 			"node_modules": true,
 			"vendor":       true,
@@ -74,9 +76,8 @@ func NewCodeCounter() *CodeCounter {
 		ExtToLang:      make(map[string]string),
 		history_record: NewListQueue(), // 初始化历史记录队列
 	}
-
-	// 生成反向索引：文件名 -> 语言(后缀名)
-	for lang, files := range cc.FileTypes { //遍历语言文件-lang是键，exts是值
+	// 构建反向索引：文件名 -> 语言(后缀名)
+	for lang, files := range cc.FileTypes { // 遍历语言文件-lang是键，exts是值
 		// 内部遍历文件名
 		for _, file := range files {
 			cc.ExtToLang[strings.ToLower(file)] = lang //转换为小名
@@ -88,23 +89,39 @@ func NewCodeCounter() *CodeCounter {
 	return cc
 }
 
-func (cc *CodeCounter) Analyze(dir string) error {
-	cc.lastDir = dir //设置为当前路径
+func (cc *CodeCounter) Analyze(dir string, gitignore *GitIgnore) error { // 分析当前路径
+	cc.lastDir = dir // 设置为当前路径
 	cc.totalFiles = 0
 	cc.totalLines = 0
-	defer cc.save(dir)                                                               //最后保存文件
-	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error { //实现这一接口
+	defer cc.save(dir)                                                               // 最后保存文件
+	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error { // 实现这一接口-递归走法2
 		if err != nil {
 			// 权限等问题直接跳过该节点
 			return nil
 		}
-		name := d.Name()
-
-		// 跳过忽略目录
-		if d.IsDir() {
-			if cc.IgnoreDirs[name] {
-				return fs.SkipDir
+		// gitignore匹配
+		if gitignore != nil { //如果文件不存在就不考虑
+			ignored, matchErr := gitignore.MatchGitIgnore(path, d.IsDir())
+			if matchErr != nil {
+				return fmt.Errorf("failed to match gitignore for %s: %w", path, matchErr)
 			}
+			if ignored { // 如果给出忽略标志
+				if d.IsDir() {
+					return fs.SkipDir
+				}
+				return nil
+			}
+		}
+		name := d.Name()
+		// 跳过先前自定义的忽略目录
+		if d.IsDir() { // 是目录
+			if cc.IgnoreDirs[name] {
+				return fs.SkipDir // 直接跳过文件夹
+			}
+			return nil
+		}
+		// 跳过自定义的忽略文件或通配符
+		if cc.shouldIgnoreFile(path, name) { // 判断是否是我们需要忽略的文件
 			return nil
 		}
 
@@ -292,11 +309,9 @@ func (cc *CodeCounter) PrintReport() {
 
 	fmt.Println(strings.Repeat("=", 75))
 	total, totalUint := chooseSize(totalSize)
-	
+
 	fmt.Printf("%s: %d个文件数| %d行数 |%.2f"+totalUint+"\n",
 		"总计", totalFiles, totalLines, total)
-
-	
 
 	// 文件数量 Top5
 	fmt.Printf("\n🏆 文件数量排名:\n")
@@ -332,4 +347,37 @@ func chooseSize(size int64) (float64, string) {
 	default:
 		return float64(size) / GB, "GB"
 	}
+}
+
+// IgnoreFiles 允许外部注入需要忽略的文件或通配符（如 *.log、docs/*.md）
+func (cc *CodeCounter) IgnoreFiles(patterns ...string) *CodeCounter {
+	for _, p := range patterns { // 遍历可变参数
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		cc.ignorePatterns = append(cc.ignorePatterns, filepath.ToSlash(p))
+	}
+	return cc
+}
+
+// 这里是自定义的文件进行忽略
+func (cc *CodeCounter) shouldIgnoreFile(path, name string) bool {
+	if len(cc.ignorePatterns) == 0 { // 如果忽略的文件或通配符为空，则不忽略
+		return false
+	}
+	normalized := filepath.ToSlash(path)
+	for _, pattern := range cc.ignorePatterns {
+		target := name
+		if strings.Contains(pattern, "/") { // 包含/则用标准化的完整路径来替代使用
+			target = normalized
+		}
+		if ok, err := filepath.Match(pattern, target); err == nil && ok {
+			return true
+		}
+		if target == pattern {
+			return true
+		}
+	}
+	return false
 }

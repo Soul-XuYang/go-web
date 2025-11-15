@@ -35,7 +35,7 @@ type LoginDTO struct {
 // @Tags        Auth
 // @Accept      json
 // @Produce     json
-// @Param       body  body      controllers.LoginDTO  true  "注册参数"
+// @Param       body  body      controllers.RegisterDTO  true  "注册参数"
 // @Success     200   {object}  map[string]string
 // @Failure     400   {object}  map[string]string
 // @Router      /auth/register [post]
@@ -160,11 +160,11 @@ type deleteInput struct {
 // @Accept       json
 // @Produce      json
 // @Param        data  body      deleteInput  true  "User credentials"
-// @Success      200   {object}  gin.H        {"ok": true}
-// @Failure      400   {object}  gin.H        {"error": "error message"}
-// @Failure      401   {object}  gin.H        {"error": "error message"}
-// @Failure      500   {object}  gin.H        {"error": "error message"}
-// @Router       /api/user/delete [delete]
+// @Success      200   {object}  map[string]interface{}  "退出成功"
+// @Failure      400   {object}  map[string]interface{}  "请求参数错误"
+// @Failure      401   {object}  map[string]interface{}  "未认证"
+// @Failure      500   {object}  map[string]interface{}  "服务器错误"
+// @Router       /user/delete [delete]
 // 这个是在登录之后的注销页面
 func DeleteUser(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -208,8 +208,8 @@ func loginLimiterLocal(username string) *rate.Limiter {
 // 使用滑动窗口算法：60秒内最多5次登录尝试
 func loginLimiterRedis(username string) bool {
 	rateKey := fmt.Sprintf(config.RedisLoginRate, username) //缓存的key-表名
-	now := time.Now().Unix() 
-    window := int64(config.RedisWindow)
+	now := time.Now().Unix()
+	window := int64(config.RedisWindow)
 	maxAttempts := int64(config.RedisRateMaxAttempts) // 最多5次
 
 	pipe := global.RedisDB.Pipeline()
@@ -220,8 +220,8 @@ func loginLimiterRedis(username string) bool {
 	// 添加当前请求的时间戳
 	pipe.ZAdd(rateKey, redis.Z{Score: float64(now), Member: fmt.Sprintf("%d", now)}) //ZSet是排序集合-Score为排序的元素，Member为对应存储的值
 	// 设置过期时间
-	pipe.Expire(rateKey, time.Duration(window)*time.Second) 
-	results, err := pipe.Exec()  //一次性执行所有命令
+	pipe.Expire(rateKey, time.Duration(window)*time.Second)
+	results, err := pipe.Exec() //一次性执行所有命令
 
 	if err != nil {
 		return true
@@ -241,7 +241,7 @@ func registerLimiter(c *gin.Context, username string) bool {
 		}
 		if ipCount > config.RedisRateMaxAttempts {
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "注册过于频繁,请"+config.RedisRegisterRateTTL.String()+"后再试",
+				"error": "注册过于频繁,请" + config.RedisRegisterRateTTL.String() + "后再试",
 			})
 			return false
 		}
@@ -253,9 +253,9 @@ func registerLimiter(c *gin.Context, username string) bool {
 		if usernameCount == 1 {
 			global.RedisDB.Expire(usernameKey, config.RedisRegisterRateTTL)
 		}
-		if usernameCount > config.RedisRateMaxAttempts  {
+		if usernameCount > config.RedisRateMaxAttempts {
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "该用户名注册尝试过于频繁，请于"+config.RedisRegisterRateTTL.String()+"后再试",
+				"error": "该用户名注册尝试过于频繁，请于" + config.RedisRegisterRateTTL.String() + "后再试",
 			})
 			return false
 		}

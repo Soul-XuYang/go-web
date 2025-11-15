@@ -3,18 +3,20 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"project/config"
 	"project/global"
 	"project/models"
 	"sync"
-	"project/config"
 
 	"github.com/gin-gonic/gin"
 )
 
 const game2048_number = 10
+
 var (
-    game2048Mutex sync.Mutex
+	game2048Mutex sync.Mutex
 )
+
 // 场景用户A和用户B同时在玩2048游戏 用户A得分1024，用户B得分1024 两个用户几乎同时点击保存分数
 // 用户A的请求进来，创建了自己的锁 mu_A 用户B的请求进来，创建了自己的锁 mu_B 这两个锁是不同的对象，无法实现互斥访问
 type Game2048SaveRequest struct {
@@ -25,12 +27,13 @@ type Game2048SaveRequest struct {
 // @Summary 保存2048游戏分数
 // @Description 保存用户的2048游戏分数到数据库
 // @Tags Game
+// @Security ApiKeyAuth
 // @Accept json
 // @Produce json
 // @Param score body Game2048SaveRequest true "游戏分数"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
-// @Router /api/game/2048/save [post]
+// @Router /game/2048/save [post]
 func Game2048SaveScore(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	username := c.GetString("username")
@@ -38,8 +41,7 @@ func Game2048SaveScore(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "this User has no permission"})
 		return
 	}
-    
-	
+
 	var req Game2048SaveRequest //获取保存请求
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request parameters"})
@@ -50,7 +52,7 @@ func Game2048SaveScore(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invaild Score"})
 		return
 	}
-    game2048Mutex.Lock()
+	game2048Mutex.Lock()
 	defer game2048Mutex.Unlock()
 	// Save to database
 	err := save2048Score(userID, username, req.Score)
@@ -129,7 +131,7 @@ func save2048Score(uid uint, username string, score int) error {
 		}
 	}
 	// 上述的情况都已满足-无论是缓存满不满都要加入到redis里
-    _ = updateTop10BestAfterDB(config.RedisKeyTop10Game2048,config.RedisKeyGameUsernames,uid, username, score)
+	_ = updateTop10BestAfterDB(config.RedisKeyTop10Game2048, config.RedisKeyGameUsernames, uid, username, score)
 	// 提交事务
 	return tx.Commit().Error
 }

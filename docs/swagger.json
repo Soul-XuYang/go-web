@@ -1,12 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Go-Web 综合性Web应用接口文档",
+        "description": "Go-Web综合性应用API接口文档",
         "title": "Go-Web项目 API",
         "contact": {},
-        "version": "0.0.1"
+        "version": "0.0.3"
     },
-    "basePath": "/api",
+    "basePath": "/",
     "paths": {
         "/ad": {
             "get": {
@@ -35,7 +35,100 @@
                 }
             }
         },
-        "/api/articles": {
+        "/admin/dashboard/terminal": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "建立WebSocket连接，提供受控的命令行访问能力，支持实时命令执行和输出显示",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Terminal"
+                ],
+                "summary": "WebSocket终端接口",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "superadmin",
+                        "description": "用户角色",
+                        "name": "role",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "WebSocket连接升级成功",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "WebSocket升级失败",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "无权限访问",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/dashboard/terminal/info": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取服务器终端的系统信息，包括操作系统、架构和Go版本",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "获取终端信息",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.terminalInfo"
+                        }
+                    },
+                    "401": {
+                        "description": "no permission",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/articles": {
             "get": {
                 "security": [
                     {
@@ -49,13 +142,39 @@
                     "Articles"
                 ],
                 "summary": "获取全部文章",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "关键字（匹配文件名，模糊）",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码（默认1）",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页的条数（默认10，最大100）",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序：共8种组合，两种排序方式-上传日期 created_desc（默认）/created_asc/likes_desc/likes_asc/comments_desc/comments_asc/reposts_desc/reposts_asc/collections_desc/collections_asc",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/controllers.ArticleResp"
+                                "$ref": "#/definitions/controllers.ArticleListResp"
                             }
                         }
                     },
@@ -80,8 +199,476 @@
                 }
             }
         },
-        "/api/calculator/calculate": {
+        "/articles/me": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Articles"
+                ],
+                "summary": "获取当前用户的文章列表（管理用）",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码（默认1）",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页条数（默认10，最大50）",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序：created_desc(默认)/created_asc/likes_desc/updated_desc",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controllers.MyArticleItem"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/articles/{article_id}/like": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "对指定文章进行点赞或取消点赞（切换）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Interactions"
+                ],
+                "summary": "点赞/取消点赞文章",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文章ID",
+                        "name": "article_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "返回点赞状态与总数",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/articles/{article_id}/repost": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "用户对文章进行转发；同一篇文章仅首次转发计入总数，且对同一用户限制 3 秒一次。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "articles"
+                ],
+                "summary": "文章转发",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文章ID",
+                        "name": "article_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.repostResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorMsg"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorMsg"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorMsg"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorMsg"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorMsg"
+                        }
+                    }
+                }
+            }
+        },
+        "/articles/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据文章ID永久删除当前用户拥有的文章。该操作不可恢复。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Articles"
+                ],
+                "summary": "永久删除当前用户的文章",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文章ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "文章ID无效",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "未认证",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "无权限访问\" // 可选，但建议用 404 隐藏存在性",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "文章不存在或无权限",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/articles/{id}/comments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "返回某篇文章的所有评论（包括回复），按时间升序排列，前端可自行递归遍历多叉树结构",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "获取文章评论列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "文章ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controllers.commentListResp"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "无效的文章ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "文章不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "用户登录",
+                "parameters": [
+                    {
+                        "description": "登录参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.LoginDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "token,result_url",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "退出登录",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "用户注册",
+                "parameters": [
+                    {
+                        "description": "注册参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.RegisterDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/calculator/calculate": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "支持基本的四则运算，包括小数点计算",
                 "consumes": [
                     "application/json"
@@ -90,7 +677,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "计算器"
+                    "Calculator"
                 ],
                 "summary": "计算器计算",
                 "parameters": [
@@ -123,7 +710,354 @@
                 }
             }
         },
-        "/api/create_articles": {
+        "/collections": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "给当前登录用户创建一个收藏夹（名称 1~50 字）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Collections"
+                ],
+                "summary": "create a collection",
+                "parameters": [
+                    {
+                        "description": "收藏夹信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.createCollectionReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.collectionResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/collections/all_items": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "返回当前登录用户的所有收藏夹及各自包含的文章（按加入时间倒序）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Collections"
+                ],
+                "summary": "我的收藏夹（含各夹内全部文章）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.MyCollectionsWithItemsResp"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/collections/item": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "将指定文章加入到指定收藏夹；同一收藏夹不可重复加入同一文章",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Collections"
+                ],
+                "summary": "添加文章到我的收藏夹",
+                "parameters": [
+                    {
+                        "description": "收藏夹ID与文章ID",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.addItemReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok: true",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "从指定收藏夹里删除指定文章；若该用户对该文的总收藏数从 1-\u003e0，则文章的 collection_count -1|注意:对应的两个参数都在请求里",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Collections"
+                ],
+                "summary": "从收藏夹移除文章",
+                "parameters": [
+                    {
+                        "description": "收藏夹ID与文章ID",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.removeItemReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.removeItemResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/collections/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "删除指定收藏夹；会逐条移除该夹内的文章，并正确维护计数后再删除收藏夹本身-内部的文章会全部删除",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Collections"
+                ],
+                "summary": "删除用户指定的收藏夹",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "收藏夹ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok: true",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.deleteResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/comments": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "用户对某篇文章发表评论，支持一级评论和回复（嵌套评论）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "创建评论",
+                "parameters": [
+                    {
+                        "description": "评论内容",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.CommentCreateReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "创建成功",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.commentResp"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "文章不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "429": {
+                        "description": "评论过于频繁",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/create_articles": {
             "post": {
                 "security": [
                     {
@@ -188,204 +1122,39 @@
                 }
             }
         },
-        "/api/game/2048/save": {
-            "post": {
-                "description": "保存用户的2048游戏分数到数据库",
-                "consumes": [
-                    "application/json"
+        "/dashboard/add": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
                 ],
+                "description": "返回用户/文件/文章在 Last7Days、Last3Months、LastDay 三个窗口内的新增数量（按此顺序）",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "游戏"
+                    "Dashboard"
                 ],
-                "summary": "保存2048游戏分数",
-                "parameters": [
-                    {
-                        "description": "游戏分数",
-                        "name": "score",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controllers.Game2048SaveRequest"
-                        }
-                    }
-                ],
+                "summary": "仪表盘-新增统计",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/controllers.DashboardAdd"
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
                                 "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/game/leaderboard/me": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "返回指定游戏的公共排行榜Top10和当前用户在该游戏中的成绩与排名\n不传game参数时，返回所有游戏的排行榜和个人数据\n传game参数时，只返回指定游戏的排行榜和个人数据",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "游戏排行榜"
-                ],
-                "summary": "获取游戏排行榜及个人排名",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "游戏代号（可选值：guess_game, map_game, 2048_game）不传则返回所有游戏",
-                        "name": "game",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "返回单个游戏排行榜（传game参数）",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "game": {
-                                    "type": "string"
-                                },
-                                "leaderboard": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/controllers.LBEntry"
-                                    }
-                                },
-                                "my_rank": {
-                                    "type": "object",
-                                    "properties": {
-                                        "best": {
-                                            "type": "integer"
-                                        },
-                                        "rank": {
-                                            "type": "integer"
-                                        },
-                                        "user_id": {
-                                            "type": "integer"
-                                        },
-                                        "username": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "无效的游戏代号",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "未授权",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
                             }
                         }
                     },
                     "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "error": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/game/map/complete": {
-            "post": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Game"
-                ],
-                "summary": "完成地图游戏",
-                "responses": {
-                    "200": {
-                        "description": "响应数据",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.completeMapGameResp"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/game/map/display": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "根据choice参数生成不同算法的地图并返回最优路径\nchoice=1: 递归路径生成算法（简单随机路径，适合初学者）\nchoice=2: Prim迷宫生成算法（中等难度，生成随机迷宫）\nchoice=3: DFS深度优先迷宫算法（困难难度，生成复杂迷宫）\n前端建议：使用三个按钮分别对应三种算法，按钮文字可为\"简单路径\"、\"Prim迷宫\"、\"DFS迷宫\"",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Game"
-                ],
-                "summary": "地图游戏可视化展示 - 支持三种地图生成算法",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "地图生成算法选择: 1=递归路径, 2=Prim迷宫, 3=DFS迷宫",
-                        "name": "choice",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "返回地图数据、起终点、最优路径",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.DisplayResp"
-                        }
-                    },
-                    "400": {
-                        "description": "无效的choice参数",
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -396,125 +1165,14 @@
                 }
             }
         },
-        "/api/game/map/reset": {
+        "/dashboard/curve": {
             "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
                 ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Game"
-                ],
-                "summary": "重置地图游戏状态",
-                "responses": {
-                    "200": {
-                        "description": "响应数据",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.resetMapGameResp"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/game/map/start": {
-            "post": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Game"
-                ],
-                "summary": "开始地图游戏",
-                "responses": {
-                    "200": {
-                        "description": "响应数据",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.startMapGameResp"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/gameguess": {
-            "post": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Game"
-                ],
-                "summary": "猜数字游戏",
-                "parameters": [
-                    {
-                        "description": "请求参数",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controllers.guessReq"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "响应数据",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.guessResp"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/rmb-top10": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Exchange"
-                ],
-                "summary": "读取当前人民币对Top10地区的汇率快照（来自 Redis）",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "additionalProperties": true
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/translate": {
-            "post": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "使用AI模型翻译文本，支持自动检测源语言，翻译结果会保存到历史记录",
+                "description": "按 day/month/year 维度返回指定表在各时间段的新增数量",
                 "consumes": [
                     "application/json"
                 ],
@@ -522,296 +1180,17 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Translation"
+                    "Dashboard"
                 ],
-                "summary": "翻译文本",
+                "summary": "仪表盘折线数据",
                 "parameters": [
                     {
-                        "description": "翻译请求参数",
+                        "description": "请求体",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controllers.TranslationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "翻译成功响应",
-                        "schema": {
-                            "$ref": "#/definitions/controllers.TranslationResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "429": {
-                        "description": "服务繁忙，请稍后重试",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/translate/history": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "分页查询当前用户的翻译历史记录",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Translation"
-                ],
-                "summary": "获取翻译历史记录",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "页码，默认为1",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 10,
-                        "description": "每页记录数，默认10，最大100",
-                        "name": "page_size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "历史记录列表及分页信息",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "用户未授权",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "查询失败",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/translate/history/clear": {
-            "delete": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "删除当前用户的所有翻译历史记录",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Translation"
-                ],
-                "summary": "清空翻译历史记录",
-                "responses": {
-                    "200": {
-                        "description": "清空成功消息",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "用户未授权",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "清空失败",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/translate/history/{id}": {
-            "delete": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "根据记录ID删除当前用户的一条翻译历史记录",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Translation"
-                ],
-                "summary": "删除指定翻译历史记录",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "历史记录ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "删除成功消息",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "无效的ID参数",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "用户未授权",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "记录不存在",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "删除失败",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/translate/languages": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "返回翻译服务支持的所有语言及其代码",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Translation"
-                ],
-                "summary": "获取支持的语言列表",
-                "responses": {
-                    "200": {
-                        "description": "语言代码与名称的映射表",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/update_articles/{id}": {
-            "put": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Articles"
-                ],
-                "summary": "更新文章数据",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "文章ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "更新文章参数",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controllers.UpdateArticleDTO"
+                            "$ref": "#/definitions/controllers.CurveInput"
                         }
                     }
                 ],
@@ -819,7 +1198,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controllers.ArticleResp"
+                            "$ref": "#/definitions/controllers.DailyData"
                         }
                     },
                     "400": {
@@ -840,8 +1219,79 @@
                             }
                         }
                     },
-                    "404": {
-                        "description": "Not Found",
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/time/sse": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "这里用SSE协议，每 60 秒推送一次当前时间与系统运行时长；连接成功后立即推送一条。服务器会定期发送 ping 维持长连。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "仪表盘-时间心跳（WebSocket）",
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/total": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "返回各模型的总数统计（仅管理员可访问）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "仪表盘-汇总数据",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.TotalData"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -861,68 +1311,130 @@
                 }
             }
         },
-        "/api/weather/top10": {
+        "/dashboard/user": {
             "get": {
                 "security": [
                     {
-                        "Bearer": []
+                        "ApiKeyAuth": []
                     }
                 ],
-                "description": "并行获取10个热门城市的天气数据，包括温度、天气状况、空气质量等信息",
+                "description": "获取用户列表，支持分页和排序",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Weather"
+                    "UserManagement"
                 ],
-                "summary": "获取热门城市天气",
+                "summary": "获取用户列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "created_asc",
+                            "created_desc"
+                        ],
+                        "type": "string",
+                        "default": "created_desc",
+                        "description": "排序方式",
+                        "name": "order",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "10个城市的天气数据数组",
+                        "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/controllers.CitySummary"
-                            }
+                            "$ref": "#/definitions/controllers.UserListResponse"
                         }
                     },
                     "401": {
-                        "description": "用户未授权",
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/user/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "管理员更新指定用户的信息，包括用户名、角色和状态",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "UserManagement"
+                ],
+                "summary": "更新用户信息",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "用户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "用户更新信息",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.userUpdateDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
                                 "type": "string"
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/api/weather/user": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "返回当前用户的名称、位置信息及对应城市的天气数据",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Weather"
-                ],
-                "summary": "获取用户信息及天气",
-                "responses": {
-                    "200": {
-                        "description": "用户信息、位置和天气数据",
+                    },
+                    "400": {
+                        "description": "请求参数错误",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "401": {
-                        "description": "用户未授权",
+                        "description": "未授权访问",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -931,7 +1443,7 @@
                         }
                     },
                     "500": {
-                        "description": "获取失败",
+                        "description": "服务器内部错误",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -940,10 +1452,14 @@
                         }
                     }
                 }
-            }
-        },
-        "/auth/login": {
+            },
             "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "管理员添加新用户，需要提供用户名、密码、角色等信息",
                 "consumes": [
                     "application/json"
                 ],
@@ -951,23 +1467,29 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "UserManagement"
                 ],
-                "summary": "用户登录",
+                "summary": "添加新用户",
                 "parameters": [
                     {
-                        "description": "登录参数",
-                        "name": "body",
+                        "description": "用户信息",
+                        "name": "data",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controllers.LoginDTO"
+                            "$ref": "#/definitions/controllers.addUserReqDTO"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "token,result_url",
+                        "description": "添加成功",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.addUserResDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -975,8 +1497,17 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "401": {
+                        "description": "未授权访问",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -985,10 +1516,14 @@
                         }
                     }
                 }
-            }
-        },
-        "/auth/register": {
-            "post": {
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "从仪表盘删除指定ID的用户（仅管理员可访问）",
                 "consumes": [
                     "application/json"
                 ],
@@ -996,32 +1531,45 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Auth"
+                    "UserManagement"
                 ],
-                "summary": "用户注册",
+                "summary": "删除用户",
                 "parameters": [
                     {
-                        "description": "注册参数",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controllers.LoginDTO"
-                        }
+                        "type": "integer",
+                        "description": "用户ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
+                            "$ref": "#/definitions/controllers.deleteUserDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
                             "type": "object",
                             "additionalProperties": {
                                 "type": "string"
                             }
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1054,6 +1602,137 @@
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/exchangeRates/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "根据ID更新指定的汇率记录信息",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ExchangeRate"
+                ],
+                "summary": "更新汇率记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "汇率记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新汇率请求体",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.updateRate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功更新",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.updateRateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "无效的请求参数",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "根据ID删除指定的汇率记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ExchangeRate"
+                ],
+                "summary": "删除汇率记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "汇率记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "成功删除",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "无效的ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "汇率记录不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -1125,7 +1804,7 @@
                     },
                     {
                         "type": "integer",
-                        "description": "每页的条数（默认20，最大100）",
+                        "description": "每页的条数（默认10，最大100）",
                         "name": "page_size",
                         "in": "query"
                     },
@@ -1342,6 +2021,302 @@
                 }
             }
         },
+        "/game/2048/save": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "保存用户的2048游戏分数到数据库",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "保存2048游戏分数",
+                "parameters": [
+                    {
+                        "description": "游戏分数",
+                        "name": "score",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.Game2048SaveRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/game/leaderboard/me": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "返回指定游戏的公共排行榜Top10和当前用户在该游戏中的成绩与排名\n不传game参数时，返回所有游戏的排行榜和个人数据\n传game参数时，只返回指定游戏的排行榜和个人数据",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "GameLeaderboard"
+                ],
+                "summary": "获取游戏排行榜及个人排名",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "游戏代号（可选值：guess_game, map_game, 2048_game）不传则返回所有游戏",
+                        "name": "game",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "返回单个游戏排行榜（传game参数）",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "game": {
+                                    "type": "string"
+                                },
+                                "leaderboard": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/controllers.LBEntry"
+                                    }
+                                },
+                                "my_rank": {
+                                    "type": "object",
+                                    "properties": {
+                                        "best": {
+                                            "type": "integer"
+                                        },
+                                        "rank": {
+                                            "type": "integer"
+                                        },
+                                        "user_id": {
+                                            "type": "integer"
+                                        },
+                                        "username": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "无效的游戏代号",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/game/map/complete": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "完成地图游戏",
+                "responses": {
+                    "200": {
+                        "description": "响应数据",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.completeMapGameResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/map/display": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "根据choice参数生成不同算法的地图并返回最优路径\nchoice=1: 递归路径生成算法（简单随机路径，适合初学者）\nchoice=2: Prim迷宫生成算法（中等难度，生成随机迷宫）\nchoice=3: DFS深度优先迷宫算法（困难难度，生成复杂迷宫）\n前端建议：使用三个按钮分别对应三种算法，按钮文字可为\"简单路径\"、\"Prim迷宫\"、\"DFS迷宫\"",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "地图游戏可视化展示 - 支持三种地图生成算法",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "地图生成算法选择: 1=递归路径, 2=Prim迷宫, 3=DFS迷宫",
+                        "name": "choice",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "返回地图数据、起终点、最优路径",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.DisplayResp"
+                        }
+                    },
+                    "400": {
+                        "description": "无效的choice参数",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/game/map/reset": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "重置地图游戏状态",
+                "responses": {
+                    "200": {
+                        "description": "响应数据",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.resetMapGameResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/game/map/start": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "开始地图游戏",
+                "responses": {
+                    "200": {
+                        "description": "响应数据",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.startMapGameResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/gameguess": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Game"
+                ],
+                "summary": "猜数字游戏",
+                "parameters": [
+                    {
+                        "description": "请求参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.guessReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "响应数据",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.guessResp"
+                        }
+                    }
+                }
+            }
+        },
         "/me": {
             "get": {
                 "security": [
@@ -1434,6 +2409,34 @@
                 }
             }
         },
+        "/rmb-top10": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exchange"
+                ],
+                "summary": "读取当前人民币对Top10地区的汇率快照（来自 Redis）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/rmb-top10/refresh": {
             "post": {
                 "security": [
@@ -1460,9 +2463,534 @@
                     }
                 }
             }
+        },
+        "/translate": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "使用AI模型翻译文本，支持自动检测源语言，翻译结果会保存到历史记录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Translation"
+                ],
+                "summary": "翻译文本",
+                "parameters": [
+                    {
+                        "description": "翻译请求参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.TranslationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "翻译成功响应",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.TranslationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "服务繁忙，请稍后重试",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/translate/history": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "分页查询当前用户的翻译历史记录",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Translation"
+                ],
+                "summary": "获取翻译历史记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码，默认为1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页记录数，默认10，最大100",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "历史记录列表及分页信息",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "用户未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "查询失败",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/translate/history/clear": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "删除当前用户的所有翻译历史记录",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Translation"
+                ],
+                "summary": "清空翻译历史记录",
+                "responses": {
+                    "200": {
+                        "description": "清空成功消息",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "用户未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "清空失败",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/translate/history/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "根据记录ID删除当前用户的一条翻译历史记录",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Translation"
+                ],
+                "summary": "删除指定翻译历史记录",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "历史记录ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功消息",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "无效的ID参数",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "用户未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "记录不存在",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "删除失败",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/translate/languages": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "返回翻译服务支持的所有语言及其代码",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Translation"
+                ],
+                "summary": "获取支持的语言列表",
+                "responses": {
+                    "200": {
+                        "description": "语言代码与名称的映射表",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/update_articles/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Articles"
+                ],
+                "summary": "更新文章数据",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "文章ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "更新文章参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.UpdateArticleDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controllers.ArticleResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user/delete": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete the current user's account after password verification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Delete user account",
+                "parameters": [
+                    {
+                        "description": "User credentials",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.deleteInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "退出成功",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "请求参数错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "未认证",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "服务器错误",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/weather/top10": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "并行获取10个热门城市的天气数据，包括温度、天气状况、空气质量等信息",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Weather"
+                ],
+                "summary": "获取热门城市天气",
+                "responses": {
+                    "200": {
+                        "description": "10个城市的天气数据数组",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/controllers.CitySummary"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "用户未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/weather/user": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "返回当前用户的名称、位置信息及对应城市的天气数据",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Weather"
+                ],
+                "summary": "获取用户信息及天气",
+                "responses": {
+                    "200": {
+                        "description": "用户信息、位置和天气数据",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "用户未授权",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "获取失败",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "controllers.ArticleListResp": {
+            "type": "object",
+            "properties": {
+                "collection_count": {
+                    "type": "integer"
+                },
+                "commentcount": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "likes": {
+                    "type": "integer"
+                },
+                "preview": {
+                    "type": "string"
+                },
+                "repost_count": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "controllers.ArticleResp": {
             "type": "object",
             "properties": {
@@ -1552,6 +3080,90 @@
                 }
             }
         },
+        "controllers.CollectionBriefResp": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "item_count": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.CollectionItemResp": {
+            "type": "object",
+            "properties": {
+                "article_id": {
+                    "type": "integer"
+                },
+                "author_id": {
+                    "type": "integer"
+                },
+                "author_name": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "integer"
+                },
+                "item_id": {
+                    "type": "integer"
+                },
+                "preview": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.CollectionWithItemsResp": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "item_count": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controllers.CollectionItemResp"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.CommentCreateReq": {
+            "type": "object",
+            "required": [
+                "article_id",
+                "content"
+            ],
+            "properties": {
+                "article_id": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 123
+                },
+                "content": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "example": "写得真好！"
+                },
+                "parent_id": {
+                    "description": "为空表示一级评论",
+                    "type": "integer",
+                    "example": 456
+                }
+            }
+        },
         "controllers.CreateArticleDTO": {
             "type": "object",
             "required": [
@@ -1570,6 +3182,80 @@
                     "type": "string",
                     "maxLength": 200,
                     "minLength": 1
+                }
+            }
+        },
+        "controllers.CurveInput": {
+            "description": "折线数据请求体",
+            "type": "object",
+            "required": [
+                "table",
+                "time_range"
+            ],
+            "properties": {
+                "table": {
+                    "description": "统计的数据表\nswagger:enum\nenum: users,files,articles\nexample: users",
+                    "type": "string",
+                    "enum": [
+                        "users",
+                        "files",
+                        "articles"
+                    ],
+                    "example": "users"
+                },
+                "time_range": {
+                    "description": "时间范围，格式如 \"7days\" / \"6months\" / \"1year\"\nswagger:enum\nexample: 7days",
+                    "type": "string",
+                    "example": "7days"
+                }
+            }
+        },
+        "controllers.DailyData": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "数量序列（按时间从旧到新）",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "data_length": {
+                    "description": "序列长度",
+                    "type": "integer",
+                    "example": 7
+                },
+                "time_dimension": {
+                    "description": "时间维度: day / month / year\nenum: day,month,year",
+                    "type": "string",
+                    "example": "day"
+                }
+            }
+        },
+        "controllers.DashboardAdd": {
+            "description": "依次返回以下三个时间窗口内的新增数量：Last7Days、Last3Months、LastDay",
+            "type": "object",
+            "properties": {
+                "articles_add": {
+                    "description": "文章新增数量序列（顺序：7天、3个月、1天）\nexample: [7, 98, 0]",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "files_add": {
+                    "description": "文件新增数量序列（顺序：7天、3个月、1天）\nexample: [34, 560, 3]",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "user_add": {
+                    "description": "用户新增数量序列（顺序：7天、3个月、1天）\nexample: [12, 120, 1]",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 }
             }
         },
@@ -1596,6 +3282,15 @@
                 },
                 "startPoint": {
                     "$ref": "#/definitions/controllers.P"
+                }
+            }
+        },
+        "controllers.ErrorMsg": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "invalid article id"
                 }
             }
         },
@@ -1705,6 +3400,66 @@
                 }
             }
         },
+        "controllers.MyArticleItem": {
+            "type": "object",
+            "properties": {
+                "collection_count": {
+                    "type": "integer"
+                },
+                "comment_count": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "likes": {
+                    "type": "integer"
+                },
+                "preview": {
+                    "type": "string"
+                },
+                "repost_count": {
+                    "type": "integer"
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.MyCollectionsResp": {
+            "type": "object",
+            "properties": {
+                "lists": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controllers.CollectionBriefResp"
+                    }
+                },
+                "sum": {
+                    "type": "integer"
+                }
+            }
+        },
+        "controllers.MyCollectionsWithItemsResp": {
+            "type": "object",
+            "properties": {
+                "lists": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controllers.CollectionWithItemsResp"
+                    }
+                },
+                "sum": {
+                    "type": "integer"
+                }
+            }
+        },
         "controllers.P": {
             "type": "object",
             "properties": {
@@ -1713,6 +3468,84 @@
                 },
                 "y": {
                     "type": "integer"
+                }
+            }
+        },
+        "controllers.RegisterDTO": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "minLength": 6
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 3
+                }
+            }
+        },
+        "controllers.TotalData": {
+            "description": "仪表盘顶部各项总数",
+            "type": "object",
+            "properties": {
+                "totalArticles": {
+                    "description": "文章总数",
+                    "type": "integer",
+                    "example": 567
+                },
+                "totalCollectionItems": {
+                    "description": "收藏夹条目总数",
+                    "type": "integer",
+                    "example": 345
+                },
+                "totalCollections": {
+                    "description": "收藏夹总数",
+                    "type": "integer",
+                    "example": 89
+                },
+                "totalFiles": {
+                    "description": "文件总数",
+                    "type": "integer",
+                    "example": 78
+                },
+                "totalGame2048Score": {
+                    "description": "2048 总分",
+                    "type": "integer",
+                    "example": 9999
+                },
+                "totalGameGuessScore": {
+                    "description": "猜数字总分",
+                    "type": "integer",
+                    "example": 8888
+                },
+                "totalGameMapTime": {
+                    "description": "地图游戏总时长（单位自定）",
+                    "type": "integer",
+                    "example": 12345
+                },
+                "totalLikes": {
+                    "description": "点赞总数",
+                    "type": "integer",
+                    "example": 3456
+                },
+                "totalReposts": {
+                    "description": "转发总数",
+                    "type": "integer",
+                    "example": 12
+                },
+                "totalUsers": {
+                    "description": "用户总数",
+                    "type": "integer",
+                    "example": 1234
+                },
+                "version": {
+                    "type": "string"
                 }
             }
         },
@@ -1788,6 +3621,175 @@
                 }
             }
         },
+        "controllers.UserList": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.UserListResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controllers.UserList"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "controllers.addItemReq": {
+            "type": "object",
+            "required": [
+                "article_id",
+                "collection_id"
+            ],
+            "properties": {
+                "article_id": {
+                    "type": "integer"
+                },
+                "collection_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "controllers.addUserReqDTO": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "admin",
+                        "user"
+                    ]
+                },
+                "status": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.addUserResDTO": {
+            "type": "object",
+            "required": [
+                "username"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "admin",
+                        "user"
+                    ]
+                },
+                "status": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.collectionResp": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer",
+                    "example": 123
+                },
+                "item_count": {
+                    "type": "integer",
+                    "example": 0
+                },
+                "name": {
+                    "type": "string",
+                    "example": "我的收藏夹"
+                }
+            }
+        },
+        "controllers.commentListResp": {
+            "type": "object",
+            "properties": {
+                "children": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/controllers.commentListResp"
+                    }
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "parent_id": {
+                    "description": "null = 一级评论-实际上根据当前评论往下走",
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.commentResp": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "parent_id": {
+                    "description": "改为 *uint",
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "controllers.completeMapGameResp": {
             "type": "object",
             "properties": {
@@ -1813,6 +3815,47 @@
                 "totalTime": {
                     "description": "累计总时间（秒）",
                     "type": "number"
+                }
+            }
+        },
+        "controllers.createCollectionReq": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.deleteInput": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.deleteResp": {
+            "type": "object",
+            "properties": {
+                "ok": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "controllers.deleteUserDTO": {
+            "type": "object",
+            "properties": {
+                "deleted": {
+                    "description": "是否删除成功",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -1850,6 +3893,54 @@
                 },
                 "totalScore": {
                     "type": "integer"
+                }
+            }
+        },
+        "controllers.removeItemReq": {
+            "type": "object",
+            "required": [
+                "article_id",
+                "collection_id"
+            ],
+            "properties": {
+                "article_id": {
+                    "type": "integer"
+                },
+                "collection_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "controllers.removeItemResp": {
+            "type": "object",
+            "properties": {
+                "item_count": {
+                    "type": "integer",
+                    "example": 4
+                },
+                "ok": {
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
+        "controllers.repostResponse": {
+            "type": "object",
+            "properties": {
+                "first_time": {
+                    "description": "本次是否为首次转发",
+                    "type": "boolean",
+                    "example": true
+                },
+                "repost_flag": {
+                    "description": "是否已转发（本次或历史）",
+                    "type": "boolean",
+                    "example": true
+                },
+                "total_reposts": {
+                    "description": "该文章当前总转发数",
+                    "type": "integer",
+                    "example": 42
                 }
             }
         },
@@ -1897,6 +3988,80 @@
                 },
                 "totalTime": {
                     "type": "number"
+                }
+            }
+        },
+        "controllers.terminalInfo": {
+            "type": "object",
+            "properties": {
+                "architecture": {
+                    "type": "string"
+                },
+                "go_version": {
+                    "type": "string"
+                },
+                "os": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.updateRate": {
+            "type": "object",
+            "properties": {
+                "from_currency": {
+                    "type": "string"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "to_currency": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.updateRateResponse": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "from_currency": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "rate": {
+                    "type": "number"
+                },
+                "to_currency": {
+                    "type": "string"
+                }
+            }
+        },
+        "controllers.userUpdateDTO": {
+            "type": "object",
+            "properties": {
+                "role": {
+                    "description": "用户角色，只能是admin或user",
+                    "type": "string",
+                    "enum": [
+                        "admin",
+                        "user"
+                    ]
+                },
+                "status": {
+                    "description": "用户状态，非必填字段",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "用户名，长度1-20字符",
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
                 }
             }
         }

@@ -61,7 +61,7 @@ type CitySummary struct {
 // @Success     200  {object}  map[string]interface{}  "用户信息、位置和天气数据"
 // @Failure     401  {object}  map[string]string       "用户未授权"
 // @Failure     500  {object}  map[string]string       "获取失败"
-// @Router      /api/weather/user [get]
+// @Router      /weather/user [get]
 func GetUser_Info(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	uname := c.GetString("username")
@@ -108,7 +108,7 @@ func GetUser_Info(c *gin.Context) {
 // @Produce     json
 // @Success     200  {array}   CitySummary         "10个城市的天气数据数组"
 // @Failure     401  {object}  map[string]string  "用户未授权"
-// @Router      /api/weather/top10 [get]
+// @Router      /weather/top10 [get]
 func GetWeatherData_top10(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	uname := c.GetString("username")

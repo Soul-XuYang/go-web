@@ -1,5 +1,24 @@
-basePath: /api
+basePath: /
 definitions:
+  controllers.ArticleListResp:
+    properties:
+      collection_count:
+        type: integer
+      commentcount:
+        type: integer
+      id:
+        type: integer
+      likes:
+        type: integer
+      preview:
+        type: string
+      repost_count:
+        type: integer
+      title:
+        type: string
+      username:
+        type: string
+    type: object
   controllers.ArticleResp:
     properties:
       created_at:
@@ -59,6 +78,63 @@ definitions:
         description: 天气的图标url
         type: string
     type: object
+  controllers.CollectionBriefResp:
+    properties:
+      id:
+        type: integer
+      item_count:
+        type: integer
+      name:
+        type: string
+    type: object
+  controllers.CollectionItemResp:
+    properties:
+      article_id:
+        type: integer
+      author_id:
+        type: integer
+      author_name:
+        type: string
+      created_at:
+        type: integer
+      item_id:
+        type: integer
+      preview:
+        type: string
+      title:
+        type: string
+    type: object
+  controllers.CollectionWithItemsResp:
+    properties:
+      id:
+        type: integer
+      item_count:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/controllers.CollectionItemResp'
+        type: array
+      name:
+        type: string
+    type: object
+  controllers.CommentCreateReq:
+    properties:
+      article_id:
+        example: 123
+        minimum: 1
+        type: integer
+      content:
+        example: 写得真好！
+        maxLength: 1000
+        type: string
+      parent_id:
+        description: 为空表示一级评论
+        example: 456
+        type: integer
+    required:
+    - article_id
+    - content
+    type: object
   controllers.CreateArticleDTO:
     properties:
       content:
@@ -73,6 +149,75 @@ definitions:
     - content
     - preview
     - title
+    type: object
+  controllers.CurveInput:
+    description: 折线数据请求体
+    properties:
+      table:
+        description: |-
+          统计的数据表
+          swagger:enum
+          enum: users,files,articles
+          example: users
+        enum:
+        - users
+        - files
+        - articles
+        example: users
+        type: string
+      time_range:
+        description: |-
+          时间范围，格式如 "7days" / "6months" / "1year"
+          swagger:enum
+          example: 7days
+        example: 7days
+        type: string
+    required:
+    - table
+    - time_range
+    type: object
+  controllers.DailyData:
+    properties:
+      data:
+        description: 数量序列（按时间从旧到新）
+        items:
+          type: integer
+        type: array
+      data_length:
+        description: 序列长度
+        example: 7
+        type: integer
+      time_dimension:
+        description: |-
+          时间维度: day / month / year
+          enum: day,month,year
+        example: day
+        type: string
+    type: object
+  controllers.DashboardAdd:
+    description: 依次返回以下三个时间窗口内的新增数量：Last7Days、Last3Months、LastDay
+    properties:
+      articles_add:
+        description: |-
+          文章新增数量序列（顺序：7天、3个月、1天）
+          example: [7, 98, 0]
+        items:
+          type: integer
+        type: array
+      files_add:
+        description: |-
+          文件新增数量序列（顺序：7天、3个月、1天）
+          example: [34, 560, 3]
+        items:
+          type: integer
+        type: array
+      user_add:
+        description: |-
+          用户新增数量序列（顺序：7天、3个月、1天）
+          example: [12, 120, 1]
+        items:
+          type: integer
+        type: array
     type: object
   controllers.DisplayResp:
     properties:
@@ -90,6 +235,12 @@ definitions:
         type: array
       startPoint:
         $ref: '#/definitions/controllers.P'
+    type: object
+  controllers.ErrorMsg:
+    properties:
+      error:
+        example: invalid article id
+        type: string
     type: object
   controllers.ErrorResponse:
     properties:
@@ -161,12 +312,111 @@ definitions:
     - password
     - username
     type: object
+  controllers.MyArticleItem:
+    properties:
+      collection_count:
+        type: integer
+      comment_count:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      likes:
+        type: integer
+      preview:
+        type: string
+      repost_count:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  controllers.MyCollectionsResp:
+    properties:
+      lists:
+        items:
+          $ref: '#/definitions/controllers.CollectionBriefResp'
+        type: array
+      sum:
+        type: integer
+    type: object
+  controllers.MyCollectionsWithItemsResp:
+    properties:
+      lists:
+        items:
+          $ref: '#/definitions/controllers.CollectionWithItemsResp'
+        type: array
+      sum:
+        type: integer
+    type: object
   controllers.P:
     properties:
       x:
         type: integer
       "y":
         type: integer
+    type: object
+  controllers.RegisterDTO:
+    properties:
+      password:
+        maxLength: 64
+        minLength: 6
+        type: string
+      username:
+        maxLength: 32
+        minLength: 3
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  controllers.TotalData:
+    description: 仪表盘顶部各项总数
+    properties:
+      totalArticles:
+        description: 文章总数
+        example: 567
+        type: integer
+      totalCollectionItems:
+        description: 收藏夹条目总数
+        example: 345
+        type: integer
+      totalCollections:
+        description: 收藏夹总数
+        example: 89
+        type: integer
+      totalFiles:
+        description: 文件总数
+        example: 78
+        type: integer
+      totalGame2048Score:
+        description: 2048 总分
+        example: 9999
+        type: integer
+      totalGameGuessScore:
+        description: 猜数字总分
+        example: 8888
+        type: integer
+      totalGameMapTime:
+        description: 地图游戏总时长（单位自定）
+        example: 12345
+        type: integer
+      totalLikes:
+        description: 点赞总数
+        example: 3456
+        type: integer
+      totalReposts:
+        description: 转发总数
+        example: 12
+        type: integer
+      totalUsers:
+        description: 用户总数
+        example: 1234
+        type: integer
+      version:
+        type: string
     type: object
   controllers.TranslationRequest:
     properties:
@@ -215,6 +465,119 @@ definitions:
       url:
         type: string
     type: object
+  controllers.UserList:
+    properties:
+      created_at:
+        type: integer
+      id:
+        type: integer
+      role:
+        type: string
+      status:
+        type: string
+      username:
+        type: string
+    type: object
+  controllers.UserListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/controllers.UserList'
+        type: array
+      page:
+        type: integer
+      size:
+        type: integer
+      total:
+        type: integer
+    type: object
+  controllers.addItemReq:
+    properties:
+      article_id:
+        type: integer
+      collection_id:
+        type: integer
+    required:
+    - article_id
+    - collection_id
+    type: object
+  controllers.addUserReqDTO:
+    properties:
+      password:
+        type: string
+      role:
+        enum:
+        - admin
+        - user
+        type: string
+      status:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  controllers.addUserResDTO:
+    properties:
+      id:
+        type: integer
+      role:
+        enum:
+        - admin
+        - user
+        type: string
+      status:
+        type: string
+      username:
+        type: string
+    required:
+    - username
+    type: object
+  controllers.collectionResp:
+    properties:
+      id:
+        example: 123
+        type: integer
+      item_count:
+        example: 0
+        type: integer
+      name:
+        example: 我的收藏夹
+        type: string
+    type: object
+  controllers.commentListResp:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/controllers.commentListResp'
+        type: array
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      parent_id:
+        description: null = 一级评论-实际上根据当前评论往下走
+        type: integer
+      username:
+        type: string
+    type: object
+  controllers.commentResp:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      parent_id:
+        description: 改为 *uint
+        type: integer
+      username:
+        type: string
+    type: object
   controllers.completeMapGameResp:
     properties:
       gameComplete:
@@ -234,6 +597,33 @@ definitions:
       totalTime:
         description: 累计总时间（秒）
         type: number
+    type: object
+  controllers.createCollectionReq:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  controllers.deleteInput:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  controllers.deleteResp:
+    properties:
+      ok:
+        example: true
+        type: boolean
+    type: object
+  controllers.deleteUserDTO:
+    properties:
+      deleted:
+        description: 是否删除成功
+        example: true
+        type: boolean
     type: object
   controllers.guessReq:
     properties:
@@ -258,6 +648,40 @@ definitions:
         description: low/high/correct
         type: string
       totalScore:
+        type: integer
+    type: object
+  controllers.removeItemReq:
+    properties:
+      article_id:
+        type: integer
+      collection_id:
+        type: integer
+    required:
+    - article_id
+    - collection_id
+    type: object
+  controllers.removeItemResp:
+    properties:
+      item_count:
+        example: 4
+        type: integer
+      ok:
+        example: true
+        type: boolean
+    type: object
+  controllers.repostResponse:
+    properties:
+      first_time:
+        description: 本次是否为首次转发
+        example: true
+        type: boolean
+      repost_flag:
+        description: 是否已转发（本次或历史）
+        example: true
+        type: boolean
+      total_reposts:
+        description: 该文章当前总转发数
+        example: 42
         type: integer
     type: object
   controllers.resetMapGameResp:
@@ -291,11 +715,61 @@ definitions:
       totalTime:
         type: number
     type: object
+  controllers.terminalInfo:
+    properties:
+      architecture:
+        type: string
+      go_version:
+        type: string
+      os:
+        type: string
+      username:
+        type: string
+    type: object
+  controllers.updateRate:
+    properties:
+      from_currency:
+        type: string
+      rate:
+        type: number
+      to_currency:
+        type: string
+    type: object
+  controllers.updateRateResponse:
+    properties:
+      date:
+        type: string
+      from_currency:
+        type: string
+      id:
+        type: integer
+      rate:
+        type: number
+      to_currency:
+        type: string
+    type: object
+  controllers.userUpdateDTO:
+    properties:
+      role:
+        description: 用户角色，只能是admin或user
+        enum:
+        - admin
+        - user
+        type: string
+      status:
+        description: 用户状态，非必填字段
+        type: string
+      username:
+        description: 用户名，长度1-20字符
+        maxLength: 20
+        minLength: 1
+        type: string
+    type: object
 info:
   contact: {}
-  description: Go-Web 综合性Web应用接口文档
+  description: Go-Web综合性应用API接口文档
   title: Go-Web项目 API
-  version: 0.0.1
+  version: 0.0.3
 paths:
   /ad:
     get:
@@ -313,8 +787,84 @@ paths:
       summary: 获取作者博客广告
       tags:
       - Me
-  /api/articles:
+  /admin/dashboard/terminal:
     get:
+      consumes:
+      - application/json
+      description: 建立WebSocket连接，提供受控的命令行访问能力，支持实时命令执行和输出显示
+      parameters:
+      - default: superadmin
+        description: 用户角色
+        in: header
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: WebSocket连接升级成功
+          schema:
+            type: string
+        "400":
+          description: WebSocket升级失败
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 无权限访问
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: WebSocket终端接口
+      tags:
+      - Terminal
+  /admin/dashboard/terminal/info:
+    get:
+      consumes:
+      - application/json
+      description: 获取服务器终端的系统信息，包括操作系统、架构和Go版本
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.terminalInfo'
+        "401":
+          description: no permission
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取终端信息
+      tags:
+      - System
+  /articles:
+    get:
+      parameters:
+      - description: 关键字（匹配文件名，模糊）
+        in: query
+        name: title
+        type: string
+      - description: 页码（默认1）
+        in: query
+        name: page
+        type: integer
+      - description: 每页的条数（默认10，最大100）
+        in: query
+        name: page_size
+        type: integer
+      - description: 排序：共8种组合，两种排序方式-上传日期 created_desc（默认）/created_asc/likes_desc/likes_asc/comments_desc/comments_asc/reposts_desc/reposts_asc/collections_desc/collections_asc
+        in: query
+        name: order
+        type: string
       produces:
       - application/json
       responses:
@@ -322,7 +872,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/controllers.ArticleResp'
+              $ref: '#/definitions/controllers.ArticleListResp'
             type: array
         "401":
           description: Unauthorized
@@ -341,7 +891,304 @@ paths:
       summary: 获取全部文章
       tags:
       - Articles
-  /api/calculator/calculate:
+  /articles/{article_id}/like:
+    post:
+      consumes:
+      - application/json
+      description: 对指定文章进行点赞或取消点赞（切换）
+      parameters:
+      - description: 文章ID
+        in: path
+        name: article_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 返回点赞状态与总数
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 点赞/取消点赞文章
+      tags:
+      - Interactions
+  /articles/{article_id}/repost:
+    post:
+      description: 用户对文章进行转发；同一篇文章仅首次转发计入总数，且对同一用户限制 3 秒一次。
+      parameters:
+      - description: 文章ID
+        in: path
+        name: article_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.repostResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controllers.ErrorMsg'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/controllers.ErrorMsg'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controllers.ErrorMsg'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/controllers.ErrorMsg'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorMsg'
+      security:
+      - Bearer: []
+      summary: 文章转发
+      tags:
+      - articles
+  /articles/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据文章ID永久删除当前用户拥有的文章。该操作不可恢复。
+      parameters:
+      - description: 文章ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 文章ID无效
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 未认证
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: 无权限访问" // 可选，但建议用 404 隐藏存在性
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: 文章不存在或无权限
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 永久删除当前用户的文章
+      tags:
+      - Articles
+  /articles/{id}/comments:
+    get:
+      description: 返回某篇文章的所有评论（包括回复），按时间升序排列，前端可自行递归遍历多叉树结构
+      parameters:
+      - description: 文章ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controllers.commentListResp'
+            type: array
+        "400":
+          description: 无效的文章ID
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 文章不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取文章评论列表
+      tags:
+      - Comments
+  /articles/me:
+    get:
+      parameters:
+      - description: 页码（默认1）
+        in: query
+        name: page
+        type: integer
+      - description: 每页条数（默认10，最大50）
+        in: query
+        name: page_size
+        type: integer
+      - description: 排序：created_desc(默认)/created_asc/likes_desc/updated_desc
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controllers.MyArticleItem'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取当前用户的文章列表（管理用）
+      tags:
+      - Articles
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 登录参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.LoginDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: token,result_url
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 用户登录
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 退出登录
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 注册参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.RegisterDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 用户注册
+      tags:
+      - Auth
+  /calculator/calculate:
     post:
       consumes:
       - application/json
@@ -366,10 +1213,239 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - Bearer: []
       summary: 计算器计算
       tags:
-      - 计算器
-  /api/create_articles:
+      - Calculator
+  /collections:
+    post:
+      consumes:
+      - application/json
+      description: 给当前登录用户创建一个收藏夹（名称 1~50 字）
+      parameters:
+      - description: 收藏夹信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.createCollectionReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.collectionResp'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: create a collection
+      tags:
+      - Collections
+  /collections/{id}:
+    delete:
+      description: 删除指定收藏夹；会逐条移除该夹内的文章，并正确维护计数后再删除收藏夹本身-内部的文章会全部删除
+      parameters:
+      - description: 收藏夹ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'ok: true'
+          schema:
+            $ref: '#/definitions/controllers.deleteResp'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 删除用户指定的收藏夹
+      tags:
+      - Collections
+  /collections/all_items:
+    get:
+      description: 返回当前登录用户的所有收藏夹及各自包含的文章（按加入时间倒序）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.MyCollectionsWithItemsResp'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 我的收藏夹（含各夹内全部文章）
+      tags:
+      - Collections
+  /collections/item:
+    delete:
+      consumes:
+      - application/json
+      description: 从指定收藏夹里删除指定文章；若该用户对该文的总收藏数从 1->0，则文章的 collection_count -1|注意:对应的两个参数都在请求里
+      parameters:
+      - description: 收藏夹ID与文章ID
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.removeItemReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.removeItemResp'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 从收藏夹移除文章
+      tags:
+      - Collections
+    post:
+      consumes:
+      - application/json
+      description: 将指定文章加入到指定收藏夹；同一收藏夹不可重复加入同一文章
+      parameters:
+      - description: 收藏夹ID与文章ID
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.addItemReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'ok: true'
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 添加文章到我的收藏夹
+      tags:
+      - Collections
+  /comments:
+    post:
+      consumes:
+      - application/json
+      description: 用户对某篇文章发表评论，支持一级评论和回复（嵌套评论）
+      parameters:
+      - description: 评论内容
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CommentCreateReq'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            $ref: '#/definitions/controllers.commentResp'
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 未授权
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 文章不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "429":
+          description: 评论过于频繁
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 创建评论
+      tags:
+      - Comments
+  /create_articles:
     post:
       consumes:
       - application/json
@@ -410,422 +1486,18 @@ paths:
       summary: 创建文章
       tags:
       - Articles
-  /api/game/2048/save:
-    post:
-      consumes:
-      - application/json
-      description: 保存用户的2048游戏分数到数据库
-      parameters:
-      - description: 游戏分数
-        in: body
-        name: score
-        required: true
-        schema:
-          $ref: '#/definitions/controllers.Game2048SaveRequest'
+  /dashboard/add:
+    get:
+      description: 返回用户/文件/文章在 Last7Days、Last3Months、LastDay 三个窗口内的新增数量（按此顺序）
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: 保存2048游戏分数
-      tags:
-      - 游戏
-  /api/game/leaderboard/me:
-    get:
-      consumes:
-      - application/json
-      description: |-
-        返回指定游戏的公共排行榜Top10和当前用户在该游戏中的成绩与排名
-        不传game参数时，返回所有游戏的排行榜和个人数据
-        传game参数时，只返回指定游戏的排行榜和个人数据
-      parameters:
-      - description: 游戏代号（可选值：guess_game, map_game, 2048_game）不传则返回所有游戏
-        in: query
-        name: game
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 返回单个游戏排行榜（传game参数）
-          schema:
-            properties:
-              game:
-                type: string
-              leaderboard:
-                items:
-                  $ref: '#/definitions/controllers.LBEntry'
-                type: array
-              my_rank:
-                properties:
-                  best:
-                    type: integer
-                  rank:
-                    type: integer
-                  user_id:
-                    type: integer
-                  username:
-                    type: string
-                type: object
-            type: object
-        "400":
-          description: 无效的游戏代号
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "401":
-          description: 未授权
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-        "500":
-          description: 服务器内部错误
-          schema:
-            properties:
-              error:
-                type: string
-            type: object
-      security:
-      - ApiKeyAuth: []
-      summary: 获取游戏排行榜及个人排名
-      tags:
-      - 游戏排行榜
-  /api/game/map/complete:
-    post:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 响应数据
-          schema:
-            $ref: '#/definitions/controllers.completeMapGameResp'
-      security:
-      - Bearer: []
-      summary: 完成地图游戏
-      tags:
-      - Game
-  /api/game/map/display:
-    get:
-      description: |-
-        根据choice参数生成不同算法的地图并返回最优路径
-        choice=1: 递归路径生成算法（简单随机路径，适合初学者）
-        choice=2: Prim迷宫生成算法（中等难度，生成随机迷宫）
-        choice=3: DFS深度优先迷宫算法（困难难度，生成复杂迷宫）
-        前端建议：使用三个按钮分别对应三种算法，按钮文字可为"简单路径"、"Prim迷宫"、"DFS迷宫"
-      parameters:
-      - description: '地图生成算法选择: 1=递归路径, 2=Prim迷宫, 3=DFS迷宫'
-        in: query
-        name: choice
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 返回地图数据、起终点、最优路径
-          schema:
-            $ref: '#/definitions/controllers.DisplayResp'
-        "400":
-          description: 无效的choice参数
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: 地图游戏可视化展示 - 支持三种地图生成算法
-      tags:
-      - Game
-  /api/game/map/reset:
-    post:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 响应数据
-          schema:
-            $ref: '#/definitions/controllers.resetMapGameResp'
-      security:
-      - Bearer: []
-      summary: 重置地图游戏状态
-      tags:
-      - Game
-  /api/game/map/start:
-    post:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 响应数据
-          schema:
-            $ref: '#/definitions/controllers.startMapGameResp'
-      security:
-      - Bearer: []
-      summary: 开始地图游戏
-      tags:
-      - Game
-  /api/gameguess:
-    post:
-      parameters:
-      - description: 请求参数
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/controllers.guessReq'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 响应数据
-          schema:
-            $ref: '#/definitions/controllers.guessResp'
-      security:
-      - Bearer: []
-      summary: 猜数字游戏
-      tags:
-      - Game
-  /api/rmb-top10:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              additionalProperties: true
-              type: object
-            type: array
-      security:
-      - Bearer: []
-      summary: 读取当前人民币对Top10地区的汇率快照（来自 Redis）
-      tags:
-      - Exchange
-  /api/translate:
-    post:
-      consumes:
-      - application/json
-      description: 使用AI模型翻译文本，支持自动检测源语言，翻译结果会保存到历史记录
-      parameters:
-      - description: 翻译请求参数
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/controllers.TranslationRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 翻译成功响应
-          schema:
-            $ref: '#/definitions/controllers.TranslationResponse'
-        "400":
-          description: 请求参数错误
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "429":
-          description: 服务繁忙，请稍后重试
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: 服务器内部错误
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: 翻译文本
-      tags:
-      - Translation
-  /api/translate/history:
-    get:
-      description: 分页查询当前用户的翻译历史记录
-      parameters:
-      - default: 1
-        description: 页码，默认为1
-        in: query
-        name: page
-        type: integer
-      - default: 10
-        description: 每页记录数，默认10，最大100
-        in: query
-        name: page_size
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 历史记录列表及分页信息
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: 用户未授权
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: 查询失败
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: 获取翻译历史记录
-      tags:
-      - Translation
-  /api/translate/history/{id}:
-    delete:
-      description: 根据记录ID删除当前用户的一条翻译历史记录
-      parameters:
-      - description: 历史记录ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 删除成功消息
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: 无效的ID参数
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: 用户未授权
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: 记录不存在
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: 删除失败
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: 删除指定翻译历史记录
-      tags:
-      - Translation
-  /api/translate/history/clear:
-    delete:
-      description: 删除当前用户的所有翻译历史记录
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 清空成功消息
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: 用户未授权
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: 清空失败
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: 清空翻译历史记录
-      tags:
-      - Translation
-  /api/translate/languages:
-    get:
-      description: 返回翻译服务支持的所有语言及其代码
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 语言代码与名称的映射表
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: 获取支持的语言列表
-      tags:
-      - Translation
-  /api/update_articles/{id}:
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: 文章ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: 更新文章参数
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/controllers.UpdateArticleDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/controllers.ArticleResp'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/controllers.DashboardAdd'
         "401":
           description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
           schema:
             additionalProperties:
               type: string
@@ -838,118 +1510,275 @@ paths:
             type: object
       security:
       - Bearer: []
-      summary: 更新文章数据
+      summary: 仪表盘-新增统计
       tags:
-      - Articles
-  /api/weather/top10:
-    get:
-      description: 并行获取10个热门城市的天气数据，包括温度、天气状况、空气质量等信息
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 10个城市的天气数据数组
-          schema:
-            items:
-              $ref: '#/definitions/controllers.CitySummary'
-            type: array
-        "401":
-          description: 用户未授权
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: 获取热门城市天气
-      tags:
-      - Weather
-  /api/weather/user:
-    get:
-      description: 返回当前用户的名称、位置信息及对应城市的天气数据
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 用户信息、位置和天气数据
-          schema:
-            additionalProperties: true
-            type: object
-        "401":
-          description: 用户未授权
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: 获取失败
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - Bearer: []
-      summary: 获取用户信息及天气
-      tags:
-      - Weather
-  /auth/login:
+      - Dashboard
+  /dashboard/curve:
     post:
       consumes:
       - application/json
+      description: 按 day/month/year 维度返回指定表在各时间段的新增数量
       parameters:
-      - description: 登录参数
+      - description: 请求体
         in: body
-        name: body
+        name: request
         required: true
         schema:
-          $ref: '#/definitions/controllers.LoginDTO'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: token,result_url
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: 用户登录
-      tags:
-      - Auth
-  /auth/register:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: 注册参数
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/controllers.LoginDTO'
+          $ref: '#/definitions/controllers.CurveInput'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/controllers.DailyData'
         "400":
           description: Bad Request
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: 用户注册
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 仪表盘折线数据
       tags:
-      - Auth
+      - Dashboard
+  /dashboard/time/sse:
+    get:
+      description: 这里用SSE协议，每 60 秒推送一次当前时间与系统运行时长；连接成功后立即推送一条。服务器会定期发送 ping 维持长连。
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: Switching Protocols
+          schema:
+            type: string
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 仪表盘-时间心跳（WebSocket）
+      tags:
+      - Dashboard
+  /dashboard/total:
+    get:
+      consumes:
+      - application/json
+      description: 返回各模型的总数统计（仅管理员可访问）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.TotalData'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 仪表盘-汇总数据
+      tags:
+      - Dashboard
+  /dashboard/user:
+    get:
+      consumes:
+      - application/json
+      description: 获取用户列表，支持分页和排序
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: page_size
+        type: integer
+      - default: created_desc
+        description: 排序方式
+        enum:
+        - created_asc
+        - created_desc
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.UserListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controllers.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户列表
+      tags:
+      - UserManagement
+  /dashboard/user/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 从仪表盘删除指定ID的用户（仅管理员可访问）
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.deleteUserDTO'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 删除用户
+      tags:
+      - UserManagement
+    post:
+      consumes:
+      - application/json
+      description: 管理员添加新用户，需要提供用户名、密码、角色等信息
+      parameters:
+      - description: 用户信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.addUserReqDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 添加成功
+          schema:
+            $ref: '#/definitions/controllers.addUserResDTO'
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 未授权访问
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 添加新用户
+      tags:
+      - UserManagement
+    put:
+      consumes:
+      - application/json
+      description: 管理员更新指定用户的信息，包括用户名、角色和状态
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 用户更新信息
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.userUpdateDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 未授权访问
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更新用户信息
+      tags:
+      - UserManagement
   /exchangeRates:
     post:
       produces:
@@ -966,6 +1795,93 @@ paths:
       summary: 获取当前汇率数据
       tags:
       - Me
+  /exchangeRates/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除指定的汇率记录
+      parameters:
+      - description: 汇率记录ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功删除
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 无效的ID
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 未授权
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: 汇率记录不存在
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除汇率记录
+      tags:
+      - ExchangeRate
+    put:
+      consumes:
+      - application/json
+      description: 根据ID更新指定的汇率记录信息
+      parameters:
+      - description: 汇率记录ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新汇率请求体
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.updateRate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 成功更新
+          schema:
+            $ref: '#/definitions/controllers.updateRateResponse'
+        "400":
+          description: 无效的请求参数
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 未授权
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更新汇率记录
+      tags:
+      - ExchangeRate
   /files/{id}:
     delete:
       description: 根据ID删除当前用户的文件（先删磁盘，再删数据库）；文件不存在将被忽略以便幂等。
@@ -1086,7 +2002,7 @@ paths:
         in: query
         name: page
         type: integer
-      - description: 每页的条数（默认20，最大100）
+      - description: 每页的条数（默认10，最大100）
         in: query
         name: page_size
         type: integer
@@ -1149,6 +2065,196 @@ paths:
       summary: 上传文件
       tags:
       - Files
+  /game/2048/save:
+    post:
+      consumes:
+      - application/json
+      description: 保存用户的2048游戏分数到数据库
+      parameters:
+      - description: 游戏分数
+        in: body
+        name: score
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.Game2048SaveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 保存2048游戏分数
+      tags:
+      - Game
+  /game/leaderboard/me:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        返回指定游戏的公共排行榜Top10和当前用户在该游戏中的成绩与排名
+        不传game参数时，返回所有游戏的排行榜和个人数据
+        传game参数时，只返回指定游戏的排行榜和个人数据
+      parameters:
+      - description: 游戏代号（可选值：guess_game, map_game, 2048_game）不传则返回所有游戏
+        in: query
+        name: game
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 返回单个游戏排行榜（传game参数）
+          schema:
+            properties:
+              game:
+                type: string
+              leaderboard:
+                items:
+                  $ref: '#/definitions/controllers.LBEntry'
+                type: array
+              my_rank:
+                properties:
+                  best:
+                    type: integer
+                  rank:
+                    type: integer
+                  user_id:
+                    type: integer
+                  username:
+                    type: string
+                type: object
+            type: object
+        "400":
+          description: 无效的游戏代号
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "401":
+          description: 未授权
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            properties:
+              error:
+                type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取游戏排行榜及个人排名
+      tags:
+      - GameLeaderboard
+  /game/map/complete:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 响应数据
+          schema:
+            $ref: '#/definitions/controllers.completeMapGameResp'
+      security:
+      - Bearer: []
+      summary: 完成地图游戏
+      tags:
+      - Game
+  /game/map/display:
+    get:
+      description: |-
+        根据choice参数生成不同算法的地图并返回最优路径
+        choice=1: 递归路径生成算法（简单随机路径，适合初学者）
+        choice=2: Prim迷宫生成算法（中等难度，生成随机迷宫）
+        choice=3: DFS深度优先迷宫算法（困难难度，生成复杂迷宫）
+        前端建议：使用三个按钮分别对应三种算法，按钮文字可为"简单路径"、"Prim迷宫"、"DFS迷宫"
+      parameters:
+      - description: '地图生成算法选择: 1=递归路径, 2=Prim迷宫, 3=DFS迷宫'
+        in: query
+        name: choice
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 返回地图数据、起终点、最优路径
+          schema:
+            $ref: '#/definitions/controllers.DisplayResp'
+        "400":
+          description: 无效的choice参数
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 地图游戏可视化展示 - 支持三种地图生成算法
+      tags:
+      - Game
+  /game/map/reset:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 响应数据
+          schema:
+            $ref: '#/definitions/controllers.resetMapGameResp'
+      security:
+      - Bearer: []
+      summary: 重置地图游戏状态
+      tags:
+      - Game
+  /game/map/start:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 响应数据
+          schema:
+            $ref: '#/definitions/controllers.startMapGameResp'
+      security:
+      - Bearer: []
+      summary: 开始地图游戏
+      tags:
+      - Game
+  /gameguess:
+    post:
+      parameters:
+      - description: 请求参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.guessReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 响应数据
+          schema:
+            $ref: '#/definitions/controllers.guessResp'
+      security:
+      - Bearer: []
+      summary: 猜数字游戏
+      tags:
+      - Game
   /me:
     get:
       produces:
@@ -1210,6 +2316,23 @@ paths:
       tags:
       - image
       - proxy
+  /rmb-top10:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+      security:
+      - Bearer: []
+      summary: 读取当前人民币对Top10地区的汇率快照（来自 Redis）
+      tags:
+      - Exchange
   /rmb-top10/refresh:
     post:
       produces:
@@ -1226,4 +2349,321 @@ paths:
       summary: 手动刷新人民币 Top10 汇率（写入 Redis，TTL=24h）
       tags:
       - Exchange
+  /translate:
+    post:
+      consumes:
+      - application/json
+      description: 使用AI模型翻译文本，支持自动检测源语言，翻译结果会保存到历史记录
+      parameters:
+      - description: 翻译请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.TranslationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 翻译成功响应
+          schema:
+            $ref: '#/definitions/controllers.TranslationResponse'
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: 服务繁忙，请稍后重试
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 翻译文本
+      tags:
+      - Translation
+  /translate/history:
+    get:
+      description: 分页查询当前用户的翻译历史记录
+      parameters:
+      - default: 1
+        description: 页码，默认为1
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页记录数，默认10，最大100
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 历史记录列表及分页信息
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未授权
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 查询失败
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取翻译历史记录
+      tags:
+      - Translation
+  /translate/history/{id}:
+    delete:
+      description: 根据记录ID删除当前用户的一条翻译历史记录
+      parameters:
+      - description: 历史记录ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功消息
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 无效的ID参数
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 用户未授权
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: 记录不存在
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 删除失败
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 删除指定翻译历史记录
+      tags:
+      - Translation
+  /translate/history/clear:
+    delete:
+      description: 删除当前用户的所有翻译历史记录
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 清空成功消息
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 用户未授权
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 清空失败
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 清空翻译历史记录
+      tags:
+      - Translation
+  /translate/languages:
+    get:
+      description: 返回翻译服务支持的所有语言及其代码
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 语言代码与名称的映射表
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取支持的语言列表
+      tags:
+      - Translation
+  /update_articles/{id}:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 文章ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新文章参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.UpdateArticleDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controllers.ArticleResp'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 更新文章数据
+      tags:
+      - Articles
+  /user/delete:
+    delete:
+      consumes:
+      - application/json
+      description: Delete the current user's account after password verification
+      parameters:
+      - description: User credentials
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.deleteInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 退出成功
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 未认证
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器错误
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete user account
+      tags:
+      - User
+  /weather/top10:
+    get:
+      description: 并行获取10个热门城市的天气数据，包括温度、天气状况、空气质量等信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 10个城市的天气数据数组
+          schema:
+            items:
+              $ref: '#/definitions/controllers.CitySummary'
+            type: array
+        "401":
+          description: 用户未授权
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取热门城市天气
+      tags:
+      - Weather
+  /weather/user:
+    get:
+      description: 返回当前用户的名称、位置信息及对应城市的天气数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户信息、位置和天气数据
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: 用户未授权
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 获取失败
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - Bearer: []
+      summary: 获取用户信息及天气
+      tags:
+      - Weather
 swagger: "2.0"
