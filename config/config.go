@@ -88,7 +88,7 @@ func GetPort() string {
 		return ":8080"
 	}
 	// 确保端口格式正确
-	port := AppConfig.App.Port
+	port := AppConfig.App.Port //兼容性
 	if port[0] != ':' {
 		port = ":" + port
 	}

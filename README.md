@@ -13,7 +13,7 @@ Go-Web 是目前一个以 Go 语言为核心构建的综合性 Web 应用，集�
 - 📝 **前后端分离**：前后端分离，前端使用原生 JavaScript、html和css，后端使用 Gin + Gorm + Mysql + Redis 框架
 - 🧾 **文章论坛系统**：多用户的文章写作、点赞、评论、转发、收藏夹及收藏文件与广告位一应俱全
 - 📁 **文件管理**：基于配额的安全文件上传、下载、筛选与下载统计
-- 🎮 **多游戏大厅**：猜数字、地图寻路(三种迷宫生成算法)、2048 三款小游戏 + 实时排行榜
+- 🎮 **多游戏大厅**：猜数字、地图寻路(三种迷宫生成算法并支持寻路的可视化)、2048 三款小游戏 + 实时排行榜
 - 🌦️ **天气与定位**：高德 IP 定位 + 腾讯天气数据 + AQI 展示
 - 💱 **汇率监控**：实时汇率、CNY Top10 榜单与手动刷新
 - 🌐 **AI 翻译**：对接 OpenAI 风格接口，支持多语言翻译与历史管理
@@ -27,7 +27,7 @@ Go-Web 是目前一个以 Go 语言为核心构建的综合性 Web 应用，集�
 ### 后端
 - Go 1.24+
 - Gin、GORM、MySQL、Redis
-- Zap、fsnotify、Viper、JWT、bcrypt
+- Zap、fsnotify、Viper、JWT、bcrypt、sync、context、io、http/net等标准库
 - SSE协议与WebSocket
 - Swagger（Swagger 文档）
 
@@ -44,7 +44,8 @@ Go-Web 是目前一个以 Go 语言为核心构建的综合性 Web 应用，集�
 
 ## 🧰 系统要求
 
-- `Go >= 1.24`
+- 运行系统linux或者wsl(win系统也可以但是部分终端命令需要更改)
+- GO版本`Go >= 1.24`
 - 可用的 `MySQL` 实例（默认端口 `13306`，可在 `config/config.yaml` 修改）
 - 可用的 `Redis` 实例（默认 `localhost:6379`）
 - 生成接口文档需安装 `swag`：`go install github.com/swaggo/swag/cmd/swag@latest`
@@ -92,13 +93,13 @@ Go-Web 是目前一个以 Go 语言为核心构建的综合性 Web 应用，集�
   - 统计、用户列表、文件列表、游戏数据
   - 绘制新增用户、新增文件以及新增文章的折线图
 - **超级管理员终端**：
-   - 终端UI界面交互展示
+   - 终端UI界面交互展示以及返回终端的状态信息
    - 自定义的指令功能
    - 支持超级管理员对系统资源的查询、管理
-   - 支持指令的执行终端以及多用户指令
+   - 支持指令多行输出执行以及多用户指令
 -  **补充模块**：
-   - 使用自定义的登录和错误处理中间件
-   - 附有监控的goroutine协程并且加入统计文件和代码行数的的脚本
+   - 使用自定义的登录和错误处理中间件进行项目信息的管理登记
+   - 附有监控的goroutine协程并且加入统计文件和代码行数的的脚本(这里自动考虑了gitingtor的忽略文件并支持用户的自定义文件的统计)
 ## 项目展示
 ### 项目入口界面
 - 项目封面
@@ -131,7 +132,7 @@ Go-Web 是目前一个以 Go 语言为核心构建的综合性 Web 应用，集�
 - ![alt text](/static/pictures/dashboard.png)
 - /help指令已查询当前终端支持哪些命令
 ![alt text](/static/pictures/terminal1.png)
-- 文件的查询以及cpu使用率等查询指令
+- 磁盘、cpu、内存、使用率等查询指令
 ![alt text](/static/pictures/terminal2.png)
 - 操作系统查询、echo、cat以及file等指令的支持
 ![alt text](/static/pictures/terminal3.png)
@@ -141,7 +142,7 @@ Go-Web 是目前一个以 Go 语言为核心构建的综合性 Web 应用，集�
 
 ```
 project/
-├── assets/                         # 设计稿与素材资源
+├── assets/                        
 ├── config/                         # 配置及初始化
 │   ├── config.go                   # Viper 读取 + 统一初始化
 │   ├── config.yaml                 # 默认配置（数据库、Redis、API、上传配额等）
@@ -198,8 +199,8 @@ project/
 │   ├── upload.html / file_lists.html
 │   ├── calculator.html
 │   ├── dashboard.html
-│   └── shell.html
-├── utils/                         # 工具函数（JWT、密码、路径等）
+│   └── ...
+├── utils/                         # 自定义的工具函数
 ├── Reference_learning_documents/  # 学习笔记与参考资料
 ├── info.md                        # 项目信息
 ├── main.go                        # 应用入口
@@ -215,7 +216,7 @@ project/
 
 ```yaml
 app:
-  name: Go-Web            # 应用名称
+  name: Go-Web            # 应用名称-可自定义
   port: :3000             # 应用监听端口（支持 :3000 / 3000 两种写法）
 
 database:
@@ -279,10 +280,11 @@ upload:
 6. 访问入口  
    - 页面入口：`http://localhost:3000`  
    - Swagger：`http://localhost:3000/swagger/index.html`
+   - ![alt text](/static/pictures/swagger.png)
 
 ## 📜 页面路径速查
 
-- 首页：`/`
+- 首页封面：`/`
 - 认证：`/auth/login`、`/auth/register`、`/auth/logout`
 - 受保护页面（需登录）：`/page/*`（文章、收藏夹、游戏、天气、翻译、文件、计算器）
 - 管理后台：`/admin/dashboard`、`/admin/users`
@@ -432,8 +434,8 @@ upload:
 - Swagger 页面无法访问：确保已执行 `swag init`，并访问 `http://localhost:3000/swagger/index.html`。
 - `files/` 无写入权限：确保运行用户对项目目录有写权限；应用会自动创建目录。
 - 数据库连接失败：检查 `config/config.yaml` 中 `database.dsn` 与数据库端口（示例 `127.0.0.1:13306`）。
-- Redis 未启动：确认 `redis.addr` 指向可用实例，例如 `localhost:6379`。
-- 接口返回 401：需先登录并在请求头设置 `Authorization: Bearer <token>`。
+- Redis 未启动：确认 `redis.addr` 指向可用实例及其端口号，例如 `localhost:6379`。
+- 接口返回 401：需先登录并在请求头设置 `Authorization: Bearer <token>`依以接受令牌。
 - 终端命令不执行：仅允许白名单内命令（如 `uptime`、`ls`、`free`、`df` 等）。
 
 ## 📄 许可证与贡献
@@ -451,15 +453,15 @@ upload:
 
 - 作者：soul-XuYang
 - 类型：学习各个框架 / 以及构建相关综合项目
-- 年份：2025
-- [邮箱](610415432@qq.com)
-- [GitHub](https://github.com/Soul-XuYang/go-web)
+- 本项目起始时间：2025.10月初
+- [邮箱](610415432@qq.com)和[GitHub](https://github.com/Soul-XuYang/go-web)
+- 个人博客：[Soul-XuYang.github.io](https://soul-xu-yang.github.io/)
 
 ---
 
 <div align="center">
 
-**如果这个项目对您有帮助，欢迎 ⭐ Star 支持！**
+**如果这个项目对您有帮助，欢迎 ⭐ Star 支持 最后，感谢各位的浏览和支持！**
 
 Made with ❤️ by Soul-XuYang
 

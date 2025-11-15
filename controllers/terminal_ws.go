@@ -196,7 +196,7 @@ type terminalInfo struct {
 // @Produce json
 // @Success 200 {object} terminalInfo
 // @Failure 401 {object} map[string]string "no permission"
-// @Router /api/admin/dashboard/terminal/info [get]
+// @Router /admin/dashboard/terminal/info [get]
 // @Security ApiKeyAuth
 func GetTerminalInfo(c *gin.Context) {
 	role := c.GetString("role")
@@ -224,7 +224,7 @@ func GetTerminalInfo(c *gin.Context) {
 // @Success 101 {string} string "WebSocket连接升级成功"
 // @Failure 401 {object} map[string]string "无权限访问"
 // @Failure 400 {object} map[string]string "WebSocket升级失败"
-// @Router /api/admin/dashboard/terminal [get]
+// @Router /admin/dashboard/terminal [get]
 // @Security ApiKeyAuth
 func TerminalWS(c *gin.Context) {
 	role := c.GetString("role")

@@ -35,7 +35,7 @@ type repostResponse struct {
 }
 
 // ErrorMsg 通用错误响应
-type errorMsg struct {
+type ErrorMsg struct {
 	Error string `json:"error" example:"invalid article id"`
 }
 
@@ -157,10 +157,9 @@ func Repost(c *gin.Context) {
 	totalKey := fmt.Sprintf(config.RedisRepostKey, articleID)
 	_ = global.RedisDB.Set(totalKey, strconv.FormatInt(totalReposts, 10), 24*time.Hour).Err() //设定文章点赞总数
 	c.JSON(http.StatusOK, &repostResponse{
-		RepostFlag: true,
-		FirstTime: inserted,
+		RepostFlag:   true,
+		FirstTime:    inserted,
 		TotalReposts: totalReposts,
-
 	})
 }
 
@@ -181,9 +180,9 @@ type collectionResp struct {
 // @Produce      json
 // @Param        body  body      createCollectionReq  true  "收藏夹信息"
 // @Success      200   {object}  collectionResp
-// @Failure      400   {object}  gin.H
-// @Failure      401   {object}  gin.H
-// @Failure      500   {object}  gin.H
+// @Failure      400   {object}  map[string]interface{}
+// @Failure      401   {object}  map[string]interface{}
+// @Failure      500   {object}  map[string]interface{}
 // @Router       /collections [post]
 func CreateMycollection(c *gin.Context) { //创建个人的收藏夹
 	userID := c.GetUint("user_id")
@@ -245,8 +244,8 @@ type MyCollectionsResp struct {
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {object}  MyCollectionsResp
-// @Failure      401  {object}  gin.H
-// @Failure      500  {object}  gin.H
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
 // GET /api/collections/all
 func ListMyCollections(c *gin.Context) { //这个是用户选择加入哪个收藏夹时先给前端的响应
 	userID := c.GetUint("user_id")
@@ -307,9 +306,9 @@ type MyCollectionsWithItemsResp struct { //用户对应的所有item
 // @Security     BearerAuth
 // @Produce      json
 // @Success      200  {object}  MyCollectionsWithItemsResp  "OK"
-// @Failure      401  {object}  gin.H
-// @Failure      500  {object}  gin.H
-// @Router       /api/collections/all_items [get]
+// @Failure      401  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /collections/all_items [get]
 // GET /api/collections/all_items
 func ListMyCollectionsWithItems(c *gin.Context) {
 	userID := c.GetUint("user_id")
@@ -415,11 +414,11 @@ type addItemReq struct {
 // @Accept      json
 // @Produce     json
 // @Param       data body addItemReq true "收藏夹ID与文章ID"
-// @Success     200 {object} gin.H "ok: true"
-// @Failure     400 {object} gin.H
-// @Failure     401 {object} gin.H
-// @Failure     500 {object} gin.H
-// @Router      /api/collections/item [post]
+// @Success     200 {object} map[string]interface{} "ok: true"
+// @Failure     400 {object} map[string]interface{}
+// @Failure     401 {object} map[string]interface{}
+// @Failure     500 {object} map[string]interface{}
+// @Router      /collections/item [post]
 func AddArticleToMyCollection(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -540,10 +539,10 @@ type removeItemReq struct {
 // @Produce     json
 // @Param       data body removeItemReq true "收藏夹ID与文章ID"
 // @Success     200 {object} removeItemResp "OK"
-// @Failure     400 {object} gin.H
-// @Failure     401 {object} gin.H
-// @Failure     500 {object} gin.H
-// @Router      /api/collections/item [delete]
+// @Failure     400 {object} map[string]interface{}
+// @Failure     401 {object} map[string]interface{}
+// @Failure     500 {object} map[string]interface{}
+// @Router      /collections/item [delete]
 func RemoveArticleFromMyCollection(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -643,10 +642,10 @@ func RemoveArticleFromMyCollection(c *gin.Context) {
 // @Produce     json
 // @Param       id   path     int  true "收藏夹ID"
 // @Success     200  {object} deleteResp "ok: true"
-// @Failure     400  {object} gin.H
-// @Failure     401  {object} gin.H
-// @Failure     500  {object} gin.H
-// @Router      /api/collections/{id} [delete]
+// @Failure     400  {object} map[string]interface{}
+// @Failure     401  {object} map[string]interface{}
+// @Failure     500  {object} map[string]interface{}
+// @Router      /collections/{id} [delete]
 func DeleteMyCollection(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {

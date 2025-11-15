@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"project/utils"
 	"time"
 
@@ -31,15 +32,19 @@ func (m *Monitor) StopMonitor() {
 	m.cancel() // 执行这个取消函数
 }
 func (m *Monitor) StartMonitor(path string) { // 开启一个新的线程
-	go func() { 
+	go func() {
 		ticker := time.NewTicker(m.interval) // 创建定时计数器
 		defer ticker.Stop()                  // 最后程序要停止
+		gitignore, err := utils.NewGitIgnore(filepath.Join(path, ".gitignore"))
+		if err != nil {
+			L().Warn("Failed to load .gitignore, fallback to default ignore list", zap.Error(err))
+		}
 		code_counter := utils.NewCodeCounter()
-		if err := code_counter.Analyze(path); err != nil {
+		if err := code_counter.Analyze(path, gitignore); err != nil {
 			L().Error("Code files analysis failed", zap.Error(err))
 			return
 		}
-		time.Sleep(2*time.Second)
+		time.Sleep(2 * time.Second)
 		code_counter.PrintReport()
 
 		for {

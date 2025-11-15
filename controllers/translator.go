@@ -56,7 +56,7 @@ var (
 // @Failure     400      {object}  map[string]string    "请求参数错误"
 // @Failure     429      {object}  map[string]string    "服务繁忙，请稍后重试"
 // @Failure     500      {object}  map[string]string    "服务器内部错误"
-// @Router      /api/translate [post]
+// @Router      /translate [post]
 func TranslateText(c *gin.Context) {
 	//并发限制-select 的规则是：只在“就绪”的分支里随机选一个
 	select {
@@ -185,7 +185,7 @@ Do NOT add any commentary, labels, or extra text. Preserve original formatting (
 // @Security    Bearer
 // @Produce     json
 // @Success     200  {object}  map[string]string  "语言代码与名称的映射表"
-// @Router      /api/translate/languages [get]
+// @Router      /translate/languages [get]
 func GetSupportedLanguages(c *gin.Context) {
 	languages := gin.H{
 		"auto":  "Auto Detect",
@@ -226,7 +226,7 @@ func GetSupportedLanguages(c *gin.Context) {
 // @Success     200        {object}  map[string]interface{}  "历史记录列表及分页信息"
 // @Failure     401        {object}  map[string]string       "用户未授权"
 // @Failure     500        {object}  map[string]string       "查询失败"
-// @Router      /api/translate/history [get]
+// @Router      /translate/history [get]
 func GetTranslationHistory(c *gin.Context) { //查询历史记录
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -286,7 +286,7 @@ func GetTranslationHistory(c *gin.Context) { //查询历史记录
 // @Failure     401  {object}  map[string]string  "用户未授权"
 // @Failure     404  {object}  map[string]string  "记录不存在"
 // @Failure     500  {object}  map[string]string  "删除失败"
-// @Router      /api/translate/history/{id} [delete]
+// @Router      /translate/history/{id} [delete]
 func DeleteTranslationHistory(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -324,7 +324,7 @@ func DeleteTranslationHistory(c *gin.Context) {
 // @Success     200  {object}  map[string]string  "清空成功消息"
 // @Failure     401  {object}  map[string]string  "用户未授权"
 // @Failure     500  {object}  map[string]string  "清空失败"
-// @Router      /api/translate/history/clear [delete]
+// @Router      /translate/history/clear [delete]
 func ClearTranslationHistory(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID <= 0 {

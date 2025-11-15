@@ -23,7 +23,7 @@ import (
 
 // TotalData 仪表盘汇总数据
 // @Description 仪表盘顶部各项总数
-type totalData struct {
+type TotalData struct {
 	TotalUsers           int64  `json:"totalUsers" example:"1234"`          // 用户总数
 	TotalArticles        int64  `json:"totalArticles" example:"567"`        // 文章总数
 	TotalCollections     int64  `json:"totalCollections" example:"89"`      // 收藏夹总数
@@ -41,14 +41,14 @@ type totalData struct {
 // GetDashboardTotalData
 // @Summary 仪表盘-汇总数据
 // @Description 返回各模型的总数统计（仅管理员可访问）
-// @Tags dashboard
+// @Tags Dashboard
 // @Accept json
 // @Produce json
 // @Security Bearer
 // @Success 200 {object} TotalData
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /api/dashboard/total [get]
+// @Router /dashboard/total [get]
 func GetDashboardTotalData(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	Role := c.GetString("role")
@@ -109,7 +109,7 @@ func GetDashboardTotalData(c *gin.Context) {
 		return
 	}
 	// 收集结果
-	totalData := &totalData{}
+	totalData := &TotalData{}
 	for result := range resultChan { //注意这里没有顺序的差异索引无需索引
 		switch result.Name {
 		case "users":
@@ -195,13 +195,13 @@ type DashboardAdd struct {
 // GetDashboardAdd
 // @Summary 仪表盘-新增统计
 // @Description 返回用户/文件/文章在 Last7Days、Last3Months、LastDay 三个窗口内的新增数量（按此顺序）
-// @Tags dashboard
+// @Tags Dashboard
 // @Produce json
 // @Security Bearer
 // @Success 200 {object} DashboardAdd
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /api/dashboard/add [get]
+// @Router /dashboard/add [get]
 func GetDashboardAdd(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	Role := c.GetString("role")
@@ -248,7 +248,7 @@ func GetDashboardAdd(c *gin.Context) {
 
 // CurveInput 请求体
 // @Description 折线数据请求体
-type curveInput struct {
+type CurveInput struct {
 	// 时间范围，格式如 "7days" / "6months" / "1year"
 	// swagger:enum
 	// example: 7days
@@ -260,7 +260,7 @@ type curveInput struct {
 	Table string `json:"table" binding:"required,oneof=users files articles" example:"users"`
 }
 
-type dailyData struct {
+type DailyData struct {
 	// 时间维度: day / month / year
 	// enum: day,month,year
 	TimeDimension string `json:"time_dimension" example:"day"`
@@ -273,15 +273,16 @@ type dailyData struct {
 // GetDashboardCurveData
 // @Summary 仪表盘折线数据
 // @Description 按 day/month/year 维度返回指定表在各时间段的新增数量
-// @Tags dashboard
+// @Tags Dashboard
 // @Accept json
 // @Produce json
+// @Security Bearer
 // @Param request body CurveInput true "请求体"
 // @Success 200 {object} DailyData
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /api/dashboard/curve [post]
+// @Router /dashboard/curve [post]
 func GetDashboardCurveData(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	Role := c.GetString("role")
@@ -289,7 +290,7 @@ func GetDashboardCurveData(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "no permission,the user does not log in"})
 		return
 	}
-	var input curveInput //获得输入的数据
+	var input CurveInput //获得输入的数据
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid input"})
 		return
@@ -386,7 +387,7 @@ func GetDashboardCurveData(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询数据失败"})
 		return
 	}
-	c.JSON(http.StatusOK, &dailyData{
+	c.JSON(http.StatusOK, &DailyData{
 		TimeDimension: time_dimension, //day month year
 		Data:          results,
 		DataLength:    length,
@@ -419,7 +420,7 @@ const timeLayoutSecond = "2006-01-02 15:04:05"
 // GetDashboardTimeInfo
 // @Summary 仪表盘-时间心跳（WebSocket）
 // @Description 这里用SSE协议，每 60 秒推送一次当前时间与系统运行时长；连接成功后立即推送一条。服务器会定期发送 ping 维持长连。
-// @Tags dashboard
+// @Tags Dashboard
 // @Security Bearer
 // @Produce json
 // @Success 101 {string} string "Switching Protocols"
@@ -486,7 +487,7 @@ type UserListResponse struct {
 
 // @Summary 获取用户列表
 // @Description 获取用户列表，支持分页和排序
-// @Tags 用户管理
+// @Tags UserManagement
 // @Accept json
 // @Produce json
 // @Param page query int false "页码" default(1)
@@ -496,7 +497,7 @@ type UserListResponse struct {
 // @Failure 401 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Security ApiKeyAuth
-// @Router /api/dashboard/user [get]
+// @Router /dashboard/user [get]
 func GetUserList(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	Role := c.GetString("role")
@@ -564,7 +565,7 @@ type deleteUserDTO struct {
 // DeleteUserFromDashboard
 // @Summary 删除用户
 // @Description 从仪表盘删除指定ID的用户（仅管理员可访问）
-// @Tags 用户管理
+// @Tags UserManagement
 // @Accept json
 // @Produce json
 // @Param id path int true "用户ID"
@@ -573,7 +574,7 @@ type deleteUserDTO struct {
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /api/dashboard/user/{id} [delete]
+// @Router /dashboard/user/{id} [delete]
 func DeleteUserFromDashboard(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	Role := c.GetString("role")
@@ -607,7 +608,7 @@ type userUpdateDTO struct {
 // UpdateUser
 // @Summary 更新用户信息
 // @Description 管理员更新指定用户的信息，包括用户名、角色和状态
-// @Tags 用户管理
+// @Tags UserManagement
 // @Accept json
 // @Produce json
 // @Param id path string true "用户ID"
@@ -616,7 +617,7 @@ type userUpdateDTO struct {
 // @Failure 400 {object} map[string]string "请求参数错误"
 // @Failure 401 {object} map[string]string "未授权访问"
 // @Failure 500 {object} map[string]string "服务器内部错误"
-// @Router /api/dashboard/user/{id} [put]
+// @Router /dashboard/user/{id} [put]
 // @Security ApiKeyAuth
 func UpdateUser(c *gin.Context) { //这里请求是put并且接收参数
 	userID := c.GetUint("user_id")
@@ -660,7 +661,7 @@ type addUserResDTO struct {
 // AddUser
 // @Summary 添加新用户
 // @Description 管理员添加新用户，需要提供用户名、密码、角色等信息
-// @Tags 用户管理
+// @Tags UserManagement
 // @Accept json
 // @Produce json
 // @Param data body addUserReqDTO true "用户信息"
@@ -668,7 +669,7 @@ type addUserResDTO struct {
 // @Failure 400 {object} map[string]string "请求参数错误"
 // @Failure 401 {object} map[string]string "未授权访问"
 // @Failure 500 {object} map[string]string "服务器内部错误"
-// @Router /api/dashboard/user/{id} [post]
+// @Router /dashboard/user/{id} [post]
 // @Security ApiKeyAuth
 func AddUser(c *gin.Context) {
 	userID := c.GetUint("user_id")

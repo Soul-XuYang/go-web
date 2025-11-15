@@ -28,12 +28,12 @@ import (
 // @Accept       json
 // @Produce      json
 // @Param        article_id  path  uint  true  "文章ID"
-// @Success      200  {object}  map[string]interface{}  {"like_flag":true,"total_likes":5}
+// @Success      200  {object}  map[string]interface{}  "返回点赞状态与总数"
 // @Failure      400  {object}  map[string]string
 // @Failure      401  {object}  map[string]string
 // @Failure      404  {object}  map[string]string
 // @Failure      500  {object}  map[string]string
-// @Router       /api/articles/{article_id}/like [post]
+// @Router       /articles/{article_id}/like [post]
 func ToggleLike(c *gin.Context) {
 	userID := c.GetUint("user_id")
 	if userID == 0 {
@@ -125,7 +125,7 @@ func ToggleLike(c *gin.Context) {
 		return
 	}
 
-    // 这里设置缓存-用户点赞的状态和文章总体的点赞数	
+	// 这里设置缓存-用户点赞的状态和文章总体的点赞数
 	if likeFlag {
 		_ = global.RedisDB.Set(userLikeKey, "1", 24*time.Hour).Err()
 	} else {
@@ -134,7 +134,7 @@ func ToggleLike(c *gin.Context) {
 	_ = global.RedisDB.Set(likeKey, strconv.FormatInt(newTotalLikes, 10), 24*time.Hour).Err() //默认设置总点赞数的缓存
 
 	c.JSON(http.StatusOK, gin.H{
-		"like_flag":   likeFlag,  //点赞的状态
+		"like_flag":   likeFlag, //点赞的状态
 		"total_likes": newTotalLikes,
 	})
 }
@@ -162,11 +162,11 @@ type CommentCreateReq struct {
 // @Produce      json
 // @Param        body  body  CommentCreateReq  true  "评论内容"
 // @Success      201   {object}  commentResp  "创建成功"
-// @Failure      400   {object}  gin.H  "请求参数错误"
-// @Failure      401   {object}  gin.H  "未授权"
-// @Failure      404   {object}  gin.H  "文章不存在"
-// @Failure      429   {object}  gin.H  "评论过于频繁"
-// @Failure      500   {object}  gin.H  "服务器内部错误"
+// @Failure      400   {object}  map[string]interface{}  "请求参数错误"
+// @Failure      401   {object}  map[string]interface{}  "未授权"
+// @Failure      404   {object}  map[string]interface{}  "文章不存在"
+// @Failure      429   {object}  map[string]interface{}  "评论过于频繁"
+// @Failure      500   {object}  map[string]interface{}  "服务器内部错误"
 // @Router       /comments [post]
 // @Security     ApiKeyAuth
 func CreateComment(c *gin.Context) {
@@ -283,12 +283,13 @@ type commentListResp struct {
 // @Summary      获取文章评论列表
 // @Description  返回某篇文章的所有评论（包括回复），按时间升序排列，前端可自行递归遍历多叉树结构
 // @Tags         Comments
+// @Security     BearerAuth
 // @Produce      json
 // @Param        id   path      uint  true  "文章ID"
 // @Success      200  {array}   commentListResp
-// @Failure      400  {object}  gin.H  "无效的文章ID"
-// @Failure      404  {object}  gin.H  "文章不存在"
-// @Failure      500  {object}  gin.H  "服务器错误"
+// @Failure      400  {object}  map[string]interface{}  "无效的文章ID"
+// @Failure      404  {object}  map[string]interface{}  "文章不存在"
+// @Failure      500  {object}  map[string]interface{}  "服务器错误"
 // @Router       /articles/{id}/comments [get]
 func GetArticleComments(c *gin.Context) { //依据文章id获取对应的所有评论
 	articleID, err := strconv.ParseUint(c.Param("id"), 10, 64)

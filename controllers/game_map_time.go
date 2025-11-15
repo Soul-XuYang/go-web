@@ -128,7 +128,7 @@ type resetMapGameResp struct { // 返回重置游戏状态的数据
 // @Security    Bearer
 // @Produce     json
 // @Success     200  {object}  startMapGameResp  "响应数据"
-// @Router      /api/game/map/start [post]
+// @Router      /game/map/start [post]
 func GameMapStart(c *gin.Context) { //开始游戏
 	// 不用请求参数-因为用户一点击按钮就开始游戏了
 	uid := c.GetUint("user_id")
@@ -220,7 +220,7 @@ func GameMapStart(c *gin.Context) { //开始游戏
 // @Security    Bearer
 // @Produce     json
 // @Success     200   {object}  completeMapGameResp  "响应数据"
-// @Router      /api/game/map/complete [post]
+// @Router      /game/map/complete [post]
 func GameMapComplete(c *gin.Context) {
 	uid := c.GetUint("user_id")
 	uname := c.GetString("username")
@@ -297,7 +297,7 @@ func GameMapComplete(c *gin.Context) {
 // @Security    Bearer
 // @Produce     json
 // @Success     200   {object}  resetMapGameResp  "响应数据"
-// @Router      /api/game/map/reset [post]
+// @Router      /game/map/reset [post]
 func GameMapReset(c *gin.Context) { // 重置按钮-清空当前用户的游戏状态-注意清空要一个个来
 	uid := c.GetUint("user_id")
 	if uid == 0 {
@@ -334,7 +334,7 @@ type DisplayResp struct {
 // @Param       choice  query     int  true  "地图生成算法选择: 1=递归路径, 2=Prim迷宫, 3=DFS迷宫"
 // @Success     200     {object}  DisplayResp  "返回地图数据、起终点、最优路径"
 // @Failure     400     {object}  map[string]string  "无效的choice参数"
-// @Router      /api/game/map/display [get]
+// @Router      /game/map/display [get]
 func Display_Map(c *gin.Context) {
 	choice := strings.TrimSpace(c.Query("choice"))
 	choiceInt, err := strconv.Atoi(choice)

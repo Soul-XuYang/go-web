@@ -89,7 +89,7 @@ func init_GamePlayer() *GamePlayer {
 // @Produce     json
 // @Param       body  body      guessReq  true  "请求参数"
 // @Success     200   {object}  guessResp  "响应数据"
-// @Router      /api/gameguess [post]
+// @Router      /gameguess [post]
 func GameGuess(c *gin.Context) { // 注意这里游戏表的用户id和用户名称都是从上下文中获取的，本身id就是外键就是共生共存的
 	var in guessReq
 	if err := c.ShouldBindJSON(&in); err != nil {

@@ -1,9 +1,10 @@
 # 忽略File数据
-/files
+/files   
 /file
 files/**
 file/*
-# 忽略参考的学习数据
+
+# 忽略参考学习文档
 /Reference_learning_documents
 
 # 图片文稿

@@ -85,7 +85,7 @@ func myBestAndRank(zsetKey string, uid uint, isLowerBetter bool) (best int, rank
 // @Failure 400 {object} object{error=string} "无效的游戏代号"
 // @Failure 401 {object} object{error=string} "未授权"
 // @Failure 500 {object} object{error=string} "服务器内部错误"
-// @Router /api/game/leaderboard/me [get]
+// @Router /game/leaderboard/me [get]
 func GameLeaderboardMe(c *gin.Context) {
 
 	select {
