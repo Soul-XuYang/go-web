@@ -55,12 +55,13 @@ type Config struct { //标明这个配置文件是可以全局使用的
 		Storagepath string
 	}
 }
-
 var AppConfig *Config //创建配置文件-指针全局可以修改并且避免拷贝-配置句柄
+
+var ConfigChoice = "config_docker"
 
 // 使用viper读取配置文件
 func InitConfig() {
-	viper.SetConfigName("config") //无extension
+	viper.SetConfigName(ConfigChoice) //无extension
 	viper.SetConfigType("yml")
 	viper.AddConfigPath("./config")
 	if err := viper.ReadInConfig(); err != nil {

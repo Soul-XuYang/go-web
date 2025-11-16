@@ -6,7 +6,7 @@
 
 ## 📝 项目简介
 
-Go-Web 是目前一个以 Go 语言为核心构建的综合性 Web 应用，集成文章互动中心、文件管理、游戏大厅、天气与汇率查询、AI 翻译等多个业务模块。项目采用 **Gin + Gorm + Mysql + Redis + HTML模板渲染** 的轻量方案，同时提供完整的 RESTful API。
+Go-Web 是目前一个以 Go 语言为核心构建的综合性 Web 应用，集成文章互动中心、文件管理、游戏大厅、天气与汇率查询、AI 翻译等多个业务模块。项目前后端分离，主要采用 **Gin + Gorm + Mysql + Redis** 的轻量方案，同时提供完整的 RESTful API端接口并支持Docker镜像构建与推送。
 
 ### 🎯 项目特色
 
@@ -212,7 +212,7 @@ project/
 
 ## ⚙️ 配置说明
 
-所有配置集中在 `config/config.yaml`，可根据实际环境覆盖：
+所有配置集中在 `config/config.yaml`，这里针对docker容器部署使用对应的`config/config_docker.yaml`可根据实际环境覆盖：
 
 ```yaml
 app:
@@ -281,6 +281,13 @@ upload:
    - 页面入口：`http://localhost:3000`  
    - Swagger：`http://localhost:3000/swagger/index.html`
    - ![alt text](/static/pictures/swagger.png)
+7. Docker镜像构建
+  - **补充**：这里使用得配置文件选择的是config_docker.yaml,这里你也可以通过环境变量传递参数来配置，并且根据文件配置建议对Mysql和Redis进行容器化部署。 
+  - **构建**：`docker build -t go-web .`指令
+  - **运行**：`docker run -d --name GoWeb --network go-net -p 8080:8080 go-web:latest`指令,这里使用docker-compose进行容器化部署。
+  - **停止**：`docker stop GoWeb`指令
+  - **后台**: 可以使用``docker logs -f GoWeb``指令查看日志
+  - **本地访问**：`http://localhost:8080`，这里推荐借助dockerDesktop管理容器和镜像。
 
 ## 📜 页面路径速查
 
@@ -427,8 +434,8 @@ upload:
   go test ./...
   swag fmt       # 格式化注释（生成前可选）
   tail -f log/app.log
-  ```
-
+- Docker构建镜像 docker build -t go-web:latest .
+  
 ## ❓ 常见问题
 
 - Swagger 页面无法访问：确保已执行 `swag init`，并访问 `http://localhost:3000/swagger/index.html`。
